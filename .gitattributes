@@ -1,0 +1,2 @@
+deploy/picoclaw/patches/*.patch text eol=lf whitespace=-blank-at-eol,-space-before-tab
+deploy/picoclaw/*.sh text eol=lf

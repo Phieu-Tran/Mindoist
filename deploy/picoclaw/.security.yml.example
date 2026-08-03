@@ -1,0 +1,8 @@
+# Copy to .security.yml, replace both placeholders, then run chmod 600.
+# Never commit the real file.
+# AI provider keys are managed in Mindoist Admin and are written only to the
+# container's private runtime volume. This bootstrap file keeps Telegram only.
+channel_list:
+  telegram:
+    settings:
+      token: "replace-with-the-new-botfather-token"
