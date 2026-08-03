@@ -1,0 +1,166 @@
+.create-task-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  background: hsl(220 25% 8% / .48);
+  padding: 1rem;
+  backdrop-filter: blur(3px);
+}
+
+.create-task-dialog {
+  display: grid;
+  width: min(28rem, 100%);
+  gap: 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+  background: var(--card);
+  box-shadow: 0 16px 48px oklch(0 0 0 / .16);
+  padding: 1rem;
+}
+
+/* Mica-style frosted glass in dark mode — see .frosted-surface in index.css
+   for the rationale; duplicated here since this file predates that class
+   and already owns its own backdrop-filter on .create-task-backdrop. */
+.dark .create-task-dialog {
+  backdrop-filter: blur(24px) saturate(1.4);
+  background: color-mix(in oklch, var(--card) 86%, transparent);
+  box-shadow: 0 16px 48px oklch(0 0 0 / .32);
+}
+
+.dark .create-task-backdrop {
+  backdrop-filter: blur(8px);
+}
+
+.create-task-dialog > header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: .75rem;
+}
+
+.create-task-dialog-icon {
+  display: grid;
+  width: 2.1rem;
+  height: 2.1rem;
+  place-items: center;
+  border-radius: var(--radius-control);
+  background: color-mix(in oklch, var(--primary) 12%, transparent);
+  color: var(--primary);
+}
+
+.create-task-dialog header p {
+  margin: 0;
+  color: var(--primary);
+  font-size: .68rem;
+  font-weight: 750;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+}
+
+.create-task-dialog h2 {
+  margin: .1rem 0 .15rem;
+  color: var(--foreground);
+  font-size: 1.2rem;
+  letter-spacing: 0;
+}
+
+.create-task-dialog time {
+  color: var(--muted-foreground);
+  font-size: .76rem;
+}
+
+.create-task-dialog header button {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  border-radius: var(--radius-control);
+  color: var(--muted-foreground);
+}
+
+.create-task-dialog header button:hover {
+  background: var(--accent);
+  color: var(--foreground);
+}
+
+.create-task-dialog label {
+  display: grid;
+  gap: .4rem;
+}
+
+.create-task-dialog label span {
+  color: var(--foreground);
+  font-size: .78rem;
+  font-weight: 680;
+}
+
+.create-task-dialog input {
+  width: 100%;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-control);
+  background: var(--background);
+  color: var(--foreground);
+  padding: .7rem .75rem;
+  font-size: .88rem;
+  outline: none;
+}
+
+.create-task-dialog input:focus {
+  border-color: var(--ring);
+  box-shadow: 0 0 0 2px var(--ring);
+}
+
+.create-task-error {
+  margin: 0;
+  border-radius: var(--radius-control);
+  background: color-mix(in oklch, var(--destructive) 8%, transparent);
+  color: var(--destructive);
+  padding: .55rem .65rem;
+  font-size: .75rem;
+}
+
+.create-task-dialog footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: .5rem;
+  border-top: 1px solid var(--border);
+  padding-top: .85rem;
+}
+
+.create-task-dialog footer button {
+  min-height: 2.2rem;
+  border-radius: var(--radius-control);
+  color: var(--muted-foreground);
+  padding: .45rem .8rem;
+  font-size: .78rem;
+  font-weight: 650;
+}
+
+.create-task-dialog footer button:hover {
+  background: var(--accent);
+  color: var(--foreground);
+}
+
+.create-task-dialog footer button.is-primary {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.create-task-dialog footer button:disabled {
+  cursor: not-allowed;
+  opacity: .5;
+}
+
+@media (max-width: 540px) {
+  .create-task-backdrop {
+    align-items: end;
+    padding: 0;
+  }
+
+  .create-task-dialog {
+    width: 100%;
+    border-radius: var(--radius-panel) var(--radius-panel) 0 0;
+  }
+}
