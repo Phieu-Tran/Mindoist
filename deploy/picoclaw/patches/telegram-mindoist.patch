@@ -1,0 +1,115 @@
+diff --git a/pkg/channels/telegram/telegram.go b/pkg/channels/telegram/telegram.go
+index 2c56ccc..851b2c8 100644
+--- a/pkg/channels/telegram/telegram.go
++++ b/pkg/channels/telegram/telegram.go
+@@ -58,6 +58,7 @@ type TelegramChannel struct {
+ 	ctx       context.Context
+ 	cancel    context.CancelFunc
+ 	tgCfg     *config.TelegramSettings
++	mindoist  *mindoistTelegramGuard
+ 	progress  *channels.ToolFeedbackAnimator
+ 
+ 	registerFunc      func(context.Context, []commands.Definition) error
+@@ -82,6 +83,11 @@ func NewTelegramChannel(
+ 	telegramCfg *config.TelegramSettings,
+ 	bus *bus.MessageBus,
+ ) (*TelegramChannel, error) {
++	mindoistGuard, err := newMindoistTelegramGuardFromEnv()
++	if err != nil {
++		return nil, fmt.Errorf("mindoist telegram guard: %w", err)
++	}
++
+ 	channelName := bc.Name()
+ 	var opts []telego.BotOption
+ 
+@@ -119,6 +125,7 @@ func NewTelegramChannel(
+ 		chatIDs:     make(map[string]int64),
+ 		tgCfg:       telegramCfg,
+ 
++		mindoist:        mindoistGuard,
+ 		mediaGroups:     make(map[string]*telegramMediaGroup),
+ 		mediaGroupDelay: telegramMediaGroupDelay(telegramCfg),
+ 	}
+@@ -875,6 +882,38 @@ func (c *TelegramChannel) handleMessages(ctx context.Context, messages []*telego
+ 		return fmt.Errorf("message sender (user) is nil")
+ 	}
+ 
++	decision, guardErr := c.mindoist.check(ctx, mindoistInbound{
++		TelegramUserID:    fmt.Sprintf("%d", user.ID),
++		TelegramChatID:    fmt.Sprintf("%d", message.Chat.ID),
++		ChatType:          message.Chat.Type,
++		Text:              firstNonEmptyTelegramText(message),
++		TelegramUsername:  user.Username,
++		TelegramFirstName: user.FirstName,
++		TelegramLastName:  user.LastName,
++		LanguageCode:      user.LanguageCode,
++	})
++	if guardErr != nil {
++		logger.WarnCF("telegram", "Mindoist authorization unavailable", map[string]any{
++			"error": guardErr.Error(),
++		})
++		if _, sendErr := c.sendChunk(ctx, sendChunkParams{
++			chatID:     message.Chat.ID,
++			content:    mindoistReply(user.LanguageCode, "unavailable"),
++			mdFallback: mindoistReply(user.LanguageCode, "unavailable"),
++		}); sendErr != nil {
++			logger.WarnC("telegram", "Failed to send fixed Mindoist unavailable reply")
++		}
++		return nil
++	}
++	if !decision.Continue {
++		if decision.Reply != "" {
++			if _, sendErr := c.sendChunk(ctx, sendChunkParams{chatID: message.Chat.ID, content: decision.Reply, mdFallback: decision.Reply}); sendErr != nil {
++				logger.WarnC("telegram", "Failed to send fixed Mindoist authorization reply")
++			}
++		}
++		return nil
++	}
++
+ 	platformID := fmt.Sprintf("%d", user.ID)
+ 	sender := bus.SenderInfo{
+ 		Platform:    "telegram",
+@@ -1007,6 +1046,7 @@ func (c *TelegramChannel) handleMessages(ctx context.Context, messages []*telego
+ 		"username":   user.Username,
+ 		"first_name": user.FirstName,
+ 		"is_group":   fmt.Sprintf("%t", message.Chat.Type != "private"),
++		"mindoist_user_id": decision.UserID,
+ 	}
+ 
+ 	inboundCtx := bus.InboundContext{
+@@ -1031,6 +1071,13 @@ func (c *TelegramChannel) handleMessages(ctx context.Context, messages []*telego
+ 	return nil
+ }
+ 
++func firstNonEmptyTelegramText(message *telego.Message) string {
++	if strings.TrimSpace(message.Text) != "" {
++		return message.Text
++	}
++	return message.Caption
++}
++
+ func (c *TelegramChannel) collectTelegramMessageParts(
+ 	ctx context.Context,
+ 	msg *telego.Message,
+diff --git a/pkg/agent/instance.go b/pkg/agent/instance.go
+--- a/pkg/agent/instance.go
++++ b/pkg/agent/instance.go
+@@ -16,6 +16,7 @@ import (
+ 	"github.com/sipeed/picoclaw/pkg/routing"
+ 	"github.com/sipeed/picoclaw/pkg/session"
+ 	"github.com/sipeed/picoclaw/pkg/tools"
++	mindoisttools "github.com/sipeed/picoclaw/pkg/tools/mindoist"
+ )
+ 
+ // AgentInstance represents a fully configured agent with its own workspace,
+@@ -94,5 +95,10 @@ func NewAgentInstance(
+ 	toolsRegistry := tools.NewToolRegistry()
+ 	toolsRegistry.SetAllowlist(agentToolAllowlist)
+ 
++	if err := mindoisttools.RegisterFromEnv(toolsRegistry); err != nil {
++		logger.ErrorCF("agent", "Failed to initialize Mindoist task tools; continuing without them",
++			map[string]any{"error": err.Error()})
++	}
++
+ 	if cfg.Tools.IsToolEnabled("read_file") {
+ 		maxReadFileSize := cfg.Tools.ReadFile.MaxReadFileSize

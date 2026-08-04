@@ -1,0 +1,46 @@
+{
+  "name": "@mindoist/shared",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./types": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/types/index.js"
+    },
+    "./nlparse": {
+      "types": "./dist/nlparse/index.d.ts",
+      "import": "./dist/nlparse/index.js"
+    },
+    "./recurrence": {
+      "types": "./dist/recurrence/index.d.ts",
+      "import": "./dist/recurrence/index.js"
+    },
+    "./recurrence/utils": {
+      "types": "./dist/recurrence/utils.d.ts",
+      "import": "./dist/recurrence/utils.js"
+    },
+    "./scheduling": {
+      "types": "./dist/scheduling/index.d.ts",
+      "import": "./dist/scheduling/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "typescript": "catalog:",
+    "vitest": "^2.1.9"
+  },
+  "dependencies": {
+    "chrono-node": "^2.10.0",
+    "rrule": "^2.8.1"
+  }
+}
