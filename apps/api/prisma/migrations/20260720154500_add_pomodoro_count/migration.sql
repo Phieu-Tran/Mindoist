@@ -1,0 +1,2 @@
+ALTER TABLE "tasks"
+ADD COLUMN "pomodoro_count" INTEGER NOT NULL DEFAULT 0;

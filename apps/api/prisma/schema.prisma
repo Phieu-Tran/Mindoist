@@ -1,0 +1,668 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Core models — 9 tables per proposal §7
+// Soft delete (deletedAt) + updated_at on every table for sync engine.
+// ---------------------------------------------------------------------------
+
+model User {
+  id                   String     @id @default(uuid())
+  email                String     @unique
+  password             String
+  name                 String
+  hiddenNavItems       String     @default("[]") @map("hidden_nav_items")
+  pomodoroWorkMinutes  Int        @default(25) @map("pomodoro_work_minutes")
+  pomodoroBreakMinutes Int        @default(5) @map("pomodoro_break_minutes")
+  workHoursPerDay      Int        @default(8) @map("work_hours_per_day")
+  timeZone             String?    @map("time_zone")
+  onboardingRequired   Boolean    @default(false) @map("onboarding_required")
+  role                 UserRole   @default(USER)
+  status               UserStatus @default(ACTIVE)
+  createdAt            DateTime   @default(now()) @map("created_at")
+  updatedAt            DateTime   @updatedAt @map("updated_at")
+
+  projects               Project[]
+  tasks                  Task[]
+  tags                   Tag[]
+  notes                  Note[]
+  areas                  Area[]
+  googleAccounts         GoogleAccount[]
+  pushSubscriptions      PushSubscription[]
+  deviceTokens           DeviceToken[]
+  refreshTokens          RefreshToken[]
+  syncLogs               SyncLog[]
+  countdowns             Countdown[]
+  timeBlocks             TimeBlock[]
+  externalCalendars      ExternalCalendar[]
+  externalEventLinks     ExternalEventLink[]
+  telegramConnection     TelegramConnection?
+  telegramLinkChallenges TelegramLinkChallenge[]
+  telegramTaskDrafts     TelegramTaskDraft[]
+  telegramTaskBatchDrafts TelegramTaskBatchDraft[]
+  adminAuditLogs         AdminAuditLog[]         @relation("AdminAuditActor")
+
+  @@map("users")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+enum AiProviderType {
+  GEMINI
+  ANTHROPIC
+  OPENAI
+  OPENROUTER
+  OPENAI_COMPATIBLE
+}
+
+model AiProviderConfig {
+  id                 String         @id @default(uuid())
+  label              String
+  provider           AiProviderType
+  model              String
+  apiBase            String?        @map("api_base")
+  encryptedApiKey    String         @map("encrypted_api_key") @db.Text
+  apiKeyHint         String         @map("api_key_hint")
+  enabled            Boolean        @default(true)
+  priority           Int            @default(100)
+  requestTimeoutMs   Int            @default(30000) @map("request_timeout_ms")
+  lastTestStatus     String?        @map("last_test_status")
+  lastTestedAt       DateTime?      @map("last_tested_at")
+  lastTestLatencyMs  Int?           @map("last_test_latency_ms")
+  lastTestHttpStatus Int?           @map("last_test_http_status")
+  lastTestError      String?        @map("last_test_error") @db.Text
+  createdAt          DateTime       @default(now()) @map("created_at")
+  updatedAt          DateTime       @updatedAt @map("updated_at")
+
+  @@index([enabled, priority])
+  @@map("ai_provider_configs")
+}
+
+model AdminAuditLog {
+  id          String   @id @default(uuid())
+  actorUserId String?  @map("actor_user_id")
+  action      String
+  entityType  String   @map("entity_type")
+  entityId    String?  @map("entity_id")
+  metadata    Json?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  actor User? @relation("AdminAuditActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([actorUserId, createdAt])
+  @@map("admin_audit_logs")
+}
+
+enum ProjectType {
+  DAILY_LOG
+  JOB
+  PERSONAL
+  CUSTOM
+}
+
+model Project {
+  id                  String      @id @default(uuid())
+  userId              String      @map("user_id")
+  parentId            String?     @map("parent_id")
+  areaId              String?     @map("area_id")
+  name                String
+  color               String?
+  type                ProjectType @default(CUSTOM)
+  isArchived          Boolean     @default(false) @map("is_archived")
+  calendarSyncEnabled Boolean     @default(false) @map("calendar_sync_enabled")
+  sortOrder           Float       @default(0) @map("sort_order")
+  createdAt           DateTime    @default(now()) @map("created_at")
+  updatedAt           DateTime    @updatedAt @map("updated_at")
+  deletedAt           DateTime?   @map("deleted_at")
+
+  user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent             Project?            @relation("ProjectTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children           Project[]           @relation("ProjectTree")
+  area               Area?               @relation(fields: [areaId], references: [id], onDelete: SetNull)
+  sections           Section[]
+  columns            ProjectColumn[]
+  tasks              Task[]
+  telegramTaskDrafts TelegramTaskDraft[]
+  telegramTaskBatchDrafts TelegramTaskBatchDraft[]
+
+  @@index([userId])
+  @@index([parentId])
+  @@index([areaId])
+  @@map("projects")
+}
+
+model Area {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  name      String
+  color     String?
+  sortOrder Float    @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projects Project[]
+
+  @@unique([userId, name])
+  @@index([userId])
+  @@map("areas")
+}
+
+model ProjectColumn {
+  id        String    @id @default(uuid())
+  projectId String    @map("project_id")
+  name      String
+  color     String    @default("slate")
+  isDone    Boolean   @default(false) @map("is_done")
+  sortOrder Float     @default(0) @map("sort_order")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tasks   Task[]
+
+  @@index([projectId])
+  @@map("project_columns")
+}
+
+model Section {
+  id        String    @id @default(uuid())
+  projectId String    @map("project_id")
+  name      String
+  sortOrder Float     @default(0) @map("sort_order")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tasks   Task[]
+
+  @@index([projectId])
+  @@map("sections")
+}
+
+model Task {
+  id                    String              @id @default(uuid())
+  userId                String              @map("user_id")
+  projectId             String?             @map("project_id")
+  projectColumnId       String?             @map("project_column_id")
+  sectionId             String?             @map("section_id")
+  parentId              String?             @map("parent_id")
+  title                 String
+  description           String?
+  color                 String?
+  priority              Int? // 1=highest, 4=lowest, null=no priority
+  dueDate               DateTime?           @map("due_date")
+  dueTime               String?             @map("due_time") // HH:mm, null = all-day
+  deadlineDate          DateTime?           @map("deadline_date") @db.Date
+  deadlineTime          String?             @map("deadline_time")
+  deadlineTimeZone      String?             @map("deadline_time_zone")
+  startDate             DateTime?           @map("start_date") // optional start for date-range tasks
+  durationMin           Int?                @map("duration_min")
+  rrule                 String? // RFC 5545 recurrence
+  recurringResetMode    RecurringResetMode? @default(RESET) @map("recurring_reset_mode")
+  recurrenceBasis       RecurrenceBasis?    @default(DUE_DATE) @map("recurrence_basis")
+  importSource          String?             @map("import_source") // e.g. "ticktick"
+  externalId            String?             @map("external_id") // id from imported source
+  pomodoroCount         Int                 @default(0) @map("pomodoro_count")
+  dueNotificationSentAt DateTime?           @map("due_notification_sent_at")
+  completedAt           DateTime?           @map("completed_at")
+  sortOrder             Float               @default(0) @map("sort_order")
+  createdAt             DateTime            @default(now()) @map("created_at")
+  updatedAt             DateTime            @updatedAt @map("updated_at")
+  deletedAt             DateTime?           @map("deleted_at")
+
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project       Project?       @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  projectColumn ProjectColumn? @relation(fields: [projectColumnId], references: [id], onDelete: SetNull)
+  section       Section?       @relation(fields: [sectionId], references: [id], onDelete: SetNull)
+  parent        Task?          @relation("Subtasks", fields: [parentId], references: [id], onDelete: SetNull)
+  subtasks      Task[]         @relation("Subtasks")
+
+  taskTags                TaskTag[]
+  notes                   Note[]
+  reminders               Reminder[]
+  checklistItems          TaskChecklistItem[]
+  gcalLink                GCalLink?
+  timeBlocks              TimeBlock[]
+  externalEventLinks      ExternalEventLink[]
+  confirmedTelegramDrafts TelegramTaskDraft[] @relation("ConfirmedTelegramTask")
+
+  @@unique([userId, importSource, externalId], name: "unique_import_identity")
+  @@index([userId])
+  @@index([projectId])
+  @@index([projectColumnId])
+  @@index([sectionId])
+  @@index([parentId])
+  @@index([dueDate])
+  @@index([deadlineDate])
+  @@index([dueNotificationSentAt])
+  @@map("tasks")
+}
+
+enum TimeBlockSource {
+  MANUAL
+  RECURRENCE
+  IMPORT
+  EXTERNAL
+}
+
+model TimeBlock {
+  id        String          @id @default(uuid())
+  userId    String          @map("user_id")
+  taskId    String          @map("task_id")
+  startAt   DateTime        @map("start_at")
+  endAt     DateTime        @map("end_at")
+  timeZone  String          @map("time_zone")
+  allDay    Boolean         @default(false) @map("all_day")
+  source    TimeBlockSource @default(MANUAL)
+  createdAt DateTime        @default(now()) @map("created_at")
+  updatedAt DateTime        @updatedAt @map("updated_at")
+  deletedAt DateTime?       @map("deleted_at")
+
+  user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  task               Task                @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  externalEventLinks ExternalEventLink[]
+
+  @@index([userId, startAt])
+  @@index([taskId])
+  @@map("time_blocks")
+}
+
+enum CalendarProvider {
+  GOOGLE
+}
+
+model ExternalCalendar {
+  id                 String           @id @default(uuid())
+  userId             String           @map("user_id")
+  provider           CalendarProvider
+  externalCalendarId String           @map("external_calendar_id")
+  name               String
+  color              String?
+  timeZone           String?          @map("time_zone")
+  isVisible          Boolean          @default(true) @map("is_visible")
+  isReadOnly         Boolean          @default(true) @map("is_read_only")
+  createdAt          DateTime         @default(now()) @map("created_at")
+  updatedAt          DateTime         @updatedAt @map("updated_at")
+  deletedAt          DateTime?        @map("deleted_at")
+
+  user       User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  eventLinks ExternalEventLink[]
+
+  @@unique([userId, provider, externalCalendarId])
+  @@index([userId])
+  @@map("external_calendars")
+}
+
+model ExternalEventLink {
+  id                 String   @id @default(uuid())
+  userId             String   @map("user_id")
+  externalCalendarId String   @map("external_calendar_id")
+  externalEventId    String   @map("external_event_id")
+  taskId             String?  @map("task_id")
+  timeBlockId        String?  @map("time_block_id")
+  etag               String?
+  lastSyncedAt       DateTime @default(now()) @map("last_synced_at")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  calendar  ExternalCalendar @relation(fields: [externalCalendarId], references: [id], onDelete: Cascade)
+  task      Task?            @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  timeBlock TimeBlock?       @relation(fields: [timeBlockId], references: [id], onDelete: SetNull)
+
+  @@unique([externalCalendarId, externalEventId])
+  @@unique([externalCalendarId, timeBlockId])
+  @@index([userId])
+  @@index([taskId])
+  @@index([timeBlockId])
+  @@map("external_event_links")
+}
+
+model TaskChecklistItem {
+  id          String    @id @default(uuid())
+  taskId      String    @map("task_id")
+  title       String
+  completedAt DateTime? @map("completed_at")
+  sortOrder   Float     @default(0) @map("sort_order")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@map("task_checklist_items")
+}
+
+model Tag {
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  name      String
+  color     String?
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  taskTags TaskTag[]
+
+  @@unique([userId, name])
+  @@index([userId])
+  @@map("tags")
+}
+
+model TaskTag {
+  taskId String @map("task_id")
+  tagId  String @map("tag_id")
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@id([taskId, tagId])
+  @@index([tagId])
+  @@map("task_tags")
+}
+
+model Note {
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  taskId    String?   @map("task_id")
+  title     String?
+  content   String? // markdown
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  user User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  task Task? @relation(fields: [taskId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([taskId])
+  @@map("notes")
+}
+
+enum ReminderType {
+  email
+  push
+}
+
+model Reminder {
+  id        String       @id @default(uuid())
+  taskId    String       @map("task_id")
+  remindAt  DateTime     @map("remind_at")
+  type      ReminderType @default(push)
+  isSent    Boolean      @default(false) @map("is_sent")
+  createdAt DateTime     @default(now()) @map("created_at")
+  updatedAt DateTime     @updatedAt @map("updated_at")
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@index([remindAt])
+  @@map("reminders")
+}
+
+model GCalLink {
+  taskId           String   @id @map("task_id")
+  googleEventId    String   @map("google_event_id")
+  googleCalendarId String   @map("google_calendar_id")
+  etag             String?
+  lastSyncedAt     DateTime @map("last_synced_at")
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([googleEventId])
+  @@map("gcal_links")
+}
+
+model GoogleAccount {
+  userId        String    @id @map("user_id")
+  refreshToken  String    @map("refresh_token")
+  syncToken     String?   @map("sync_token")
+  channelId     String?   @map("channel_id")
+  channelExpiry DateTime? @map("channel_expiry")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("google_accounts")
+}
+
+model PushSubscription {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  endpoint  String
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, endpoint])
+  @@index([userId])
+  @@map("push_subscriptions")
+}
+
+// Long-lived credential that mints short-lived access tokens. Only a SHA-256
+// hash of the token is stored, so a database leak cannot be replayed as a
+// session. Rotated on every use: presenting an already-revoked token is
+// treated as theft and drops every session the user has.
+model RefreshToken {
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  tokenHash String    @unique @map("token_hash")
+  expiresAt DateTime  @map("expires_at")
+  revokedAt DateTime? @map("revoked_at")
+  // Set only when the revocation was a rotation, never on logout. Two clients
+  // racing for the same token (a second browser tab) is normal and must not
+  // read as theft, so a rotation stays replayable for a short grace window.
+  rotatedAt DateTime? @map("rotated_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}
+
+// Native (Expo) push targets. Web push and Expo push are different transports
+// - VAPID keys vs an Expo push token - so they cannot share a table; a React
+// Native app has no service worker endpoint to store in PushSubscription.
+model DeviceToken {
+  id         String   @id @default(uuid())
+  userId     String   @map("user_id")
+  token      String // ExponentPushToken[...]
+  platform   String // "android" | "ios"
+  deviceName String?  @map("device_name")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, token])
+  @@index([userId])
+  @@map("device_tokens")
+}
+
+model Countdown {
+  id                      String    @id @default(uuid())
+  userId                  String    @map("user_id")
+  title                   String
+  targetDate              DateTime  @map("target_date")
+  color                   String?
+  imageUrl                String?   @map("image_url")
+  reminderDaysBefore      Int?      @map("reminder_days_before")
+  showInCalendar          Boolean   @default(false) @map("show_in_calendar")
+  notificationSentAt      DateTime? @map("notification_sent_at")
+  earlyNotificationSentAt DateTime? @map("early_notification_sent_at")
+  createdAt               DateTime  @default(now()) @map("created_at")
+  updatedAt               DateTime  @updatedAt @map("updated_at")
+  deletedAt               DateTime? @map("deleted_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([notificationSentAt])
+  @@map("countdowns")
+}
+
+model SyncLog {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  direction String // 'push' | 'pull'
+  action    String // 'create' | 'update' | 'delete' | 'conflict'
+  taskId    String?  @map("task_id")
+  details   String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("sync_logs")
+}
+
+model TelegramConnection {
+  id                  String   @id @default(uuid())
+  userId              String   @unique @map("user_id")
+  telegramUserId      String   @unique @map("telegram_user_id")
+  telegramChatId      String   @unique @map("telegram_chat_id")
+  telegramUsername    String?  @map("telegram_username")
+  telegramDisplayName String?  @map("telegram_display_name")
+  linkedAt            DateTime @default(now()) @map("linked_at")
+  lastSeenAt          DateTime @default(now()) @map("last_seen_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  inboundMessages TelegramInboundMessage[]
+
+  @@map("telegram_connections")
+}
+
+model TelegramInboundMessage {
+  id                String   @id @default(uuid())
+  connectionId      String   @map("connection_id")
+  telegramChatId    String   @map("telegram_chat_id")
+  telegramMessageId String   @map("telegram_message_id")
+  telegramSentAt    DateTime @map("telegram_sent_at")
+  accepted          Boolean
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  connection TelegramConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+  @@unique([telegramChatId, telegramMessageId])
+  @@index([createdAt])
+  @@map("telegram_inbound_messages")
+}
+
+model TelegramLinkChallenge {
+  id         String    @id @default(uuid())
+  userId     String    @map("user_id")
+  codeHash   String    @unique @map("code_hash")
+  expiresAt  DateTime  @map("expires_at")
+  consumedAt DateTime? @map("consumed_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+  @@index([expiresAt])
+  @@map("telegram_link_challenges")
+}
+
+enum TelegramTaskDraftStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
+model TelegramTaskDraft {
+  id              String                  @id @default(uuid())
+  userId          String                  @map("user_id")
+  telegramChatId  String                  @map("telegram_chat_id")
+  title           String
+  description     String?
+  projectId       String?                 @map("project_id")
+  projectName     String?                 @map("project_name")
+  color           String?
+  tagIds          String[]                @default([]) @map("tag_ids")
+  tagNames        String[]                @default([]) @map("tag_names")
+  priority        Int?
+  dueDate         DateTime?               @map("due_date") @db.Date
+  dueTime         String?                 @map("due_time")
+  status          TelegramTaskDraftStatus @default(PENDING)
+  expiresAt       DateTime                @map("expires_at")
+  confirmedTaskId String?                 @map("confirmed_task_id")
+  createdAt       DateTime                @default(now()) @map("created_at")
+  updatedAt       DateTime                @updatedAt @map("updated_at")
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project       Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  confirmedTask Task?    @relation("ConfirmedTelegramTask", fields: [confirmedTaskId], references: [id], onDelete: SetNull)
+
+  @@index([userId, status, createdAt])
+  @@index([telegramChatId, status, createdAt])
+  @@index([expiresAt])
+  @@map("telegram_task_drafts")
+}
+
+model TelegramTaskBatchDraft {
+  id               String                  @id @default(uuid())
+  userId           String                  @map("user_id")
+  telegramChatId   String                  @map("telegram_chat_id")
+  titles           String[]
+  projectId        String?                 @map("project_id")
+  projectName      String?                 @map("project_name")
+  color            String?
+  tagIds           String[]                @default([]) @map("tag_ids")
+  tagNames         String[]                @default([]) @map("tag_names")
+  createTagNames   String[]                @default([]) @map("create_tag_names")
+  priority         Int?
+  dueDate          DateTime?               @map("due_date") @db.Date
+  dueTime          String?                 @map("due_time")
+  status           TelegramTaskDraftStatus @default(PENDING)
+  expiresAt        DateTime                @map("expires_at")
+  confirmedTaskIds String[]                @default([]) @map("confirmed_task_ids")
+  createdAt        DateTime                @default(now()) @map("created_at")
+  updatedAt        DateTime                @updatedAt @map("updated_at")
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  @@index([userId, status, createdAt])
+  @@index([telegramChatId, status, createdAt])
+  @@index([expiresAt])
+  @@map("telegram_task_batch_drafts")
+}
+
+enum RecurringResetMode {
+  RESET // copy subtasks/checklist from parent, completedAt=null
+  KEEP // occurrence is blank (no subtasks/checklist copied)
+}
+
+enum RecurrenceBasis {
+  DUE_DATE // next occurrence from dueDate (calendar-based)
+  COMPLETION_DATE // next occurrence from actual completion date
+}

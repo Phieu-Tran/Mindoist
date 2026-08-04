@@ -1,0 +1,4 @@
+.env
+.security.yml
+.agent-token
+*.log
