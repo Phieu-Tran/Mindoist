@@ -1,0 +1,511 @@
+@import "tailwindcss";
+@import "@mindoist/design-tokens/web.css";
+@plugin "tailwindcss-animate";
+
+/*
+ * Mindoist Design Tokens (shadcn/ui format)
+ * Accent: one active preset, persisted through data-accent on <html>
+ * Canvas: #f7f8fa; Sidebar: #f1f3f7; Ink: #1c2028
+ * Gray family: cool-neutral
+ * Source of truth: docs/design/DESIGN.md §3
+ *
+ * Values are oklch() — a lossless re-expression of the same locked hex
+ * palette (every value below round-trips to its original hex exactly, see
+ * docs/design/evidence/oklch-migration/ for the conversion table), not a
+ * re-tuned palette. Two real gains from the switch: it matches Tailwind v4 /
+ * shadcn's own default token format, and every color-mix() below now runs
+ * `in oklch` instead of `in srgb` — oklch interpolates hue-to-hue blends
+ * without the muddy/grayish midpoint sRGB mixing produces, which is what
+ * actually determines derived tones like task-color-bg/border/text.
+ */
+
+@theme inline {
+  --font-sans: "Geist Variable", "system-ui", -apple-system, "Segoe UI", Roboto, sans-serif;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--foreground);
+  --color-popover: var(--card);
+  --color-popover-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  /* D5 — one radius scale for the whole app (was 19 hand-picked rem values
+     + 4 one-off Tailwind arbitrary classes across index.css/CalendarView.css/
+     ProjectWorkspace.css/SummaryDashboard.css/CreateProjectDialog.css/
+     CreateTaskDialog.css/button.tsx, no shared logic between them). Literal
+     px, not rem — this app runs html{font-size:87.5%}, so a "0.5rem" in a
+     component file doesn't mean the same 8px it would in a default Tailwind
+     project. Exposed both as `var(--radius-chip|control|panel)` for plain
+     CSS and as the `rounded-chip|control|panel` utilities (Tailwind v4
+     turns every @theme entry into both). 9999px/50% (pills, avatars, dots)
+     are intentionally outside this scale — they're "fully round", not a
+     size choice. */
+  --radius-chip: 6px;
+  --radius-control: 8px;
+  --radius-panel: 12px;
+}
+
+:root {
+  color-scheme: light;
+  --radius: 0.5rem;
+  --background: var(--ds-surface-canvas);
+  --foreground: var(--ds-content-primary);
+  /* Elevated surface (card/popover) — DESIGN.md §3 locks light surface to
+     pure white, distinct from the --background canvas. */
+  --card: var(--ds-surface-raised);
+  --primary: oklch(0.5444 0.19 271.82);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.9638 0.0058 264.53);
+  --secondary-foreground: oklch(0.2430 0.0164 264.20);
+  --muted: oklch(0.9638 0.0058 264.53);
+  /* 0.5130→0.5070 (2026-07-26): re-verified against the real --accent value
+     (0.9210 — this token was a stale 0.9420 in the audit script's hand-copy,
+     not what actually ships) with a from-scratch OKLCH→linear-sRGB script;
+     0.5130 rounded to exactly the AA edge (~4.5:1) instead of clearing it. */
+  --muted-foreground: oklch(0.5070 0.0350 265.11);
+  --accent: oklch(0.9210 0.0058 264.53);
+  --accent-foreground: oklch(0.2430 0.0164 264.20);
+  --destructive: oklch(0.5771 0.2152 27.33);
+  --destructive-foreground: oklch(1 0 0);
+  --border: var(--ds-border-default);
+  --input: color-mix(in oklch, var(--muted-foreground) 75%, var(--background));
+  --ring: oklch(0.5444 0.19 271.82);
+  --sidebar: oklch(0.9380 0.0058 264.53);
+  /* Was 0.5444 — a dead/unused token before D2 wired --sidebar-foreground
+     up in real components; once live it measured 4.15-4.38:1 (below AA) on
+     every real surface. Matched to --muted-foreground's corrected value
+     since both play the same "secondary text" role. */
+  --sidebar-foreground: oklch(0.5070 0.0350 265.11);
+  --sidebar-accent: oklch(0.9424 0.0116 264.51);
+}
+
+.dark {
+  color-scheme: dark;
+  --background: var(--ds-surface-canvas);
+  --foreground: var(--ds-content-primary);
+  /* Elevated surface one step above canvas, so cards/popovers stay
+     visually layered instead of blending into --background. */
+  --card: var(--ds-surface-raised);
+  /* Matches :root.dark[data-accent="indigo"] below (the default preset,
+     always applied by lib/appearance.ts before first paint) — this base
+     value is a pre-JS/no-JS fallback, not a value that renders in practice.
+     Previously it used a different, unverified pairing (L0.6368/white
+     foreground, ~3.5:1 contrast, below AA) left over from before the accent
+     preset system existed; aligned to the real preset's verified 7:1+ pair
+     so the fallback is never worse than what actually ships. */
+  --primary: oklch(0.7217 0.16 274.81);
+  --primary-foreground: oklch(0.1984 0.0270 270.68);
+  --secondary: oklch(0.2772 0.0154 269.12);
+  --secondary-foreground: oklch(0.8412 0.0077 260.73);
+  --muted: oklch(0.2450 0.0155 274.17);
+  /* 0.6496→0.6600 (2026-07-26): the only 2 real dark-theme AA failures
+     found once contrast-audit.mjs's double-gamma-decode bug was fixed (it
+     had made ~21 pairs look like failures when only these 2 vs --accent
+     actually were, at 4.43:1). See MASTERPLAN.md X3. */
+  --muted-foreground: oklch(0.6600 0.0141 266.65);
+  --accent: oklch(0.2850 0.0154 269.12);
+  --accent-foreground: oklch(0.8412 0.0077 260.73);
+  --destructive: oklch(0.7106 0.1661 22.22);
+  --destructive-foreground: oklch(1 0 0);
+  --border: var(--ds-border-default);
+  --input: color-mix(in oklch, var(--muted-foreground) 75%, var(--background));
+  --ring: oklch(0.7217 0.16 274.81);
+  --sidebar: oklch(0.1550 0.0104 268.19);
+  --sidebar-foreground: oklch(0.6600 0.0141 266.65);
+  --sidebar-accent: oklch(0.2772 0.0154 269.12);
+}
+
+/* One active accent at a time. Each preset controls only semantic accent slots.
+ *
+ * Chroma refresh (2026-07-24, "Quiet Focus" redesign pass): same hue/lightness
+ * as before (brand identity unchanged), chroma raised ~10-20% per preset for a
+ * more confident/premium feel — the "spend your boldness in one place" accent
+ * is now a little more assertive while the neutral chrome around it stays flat.
+ * Every pair below was verified against WCAG AA (>=4.5:1) with a from-scratch
+ * OKLCH->linear-sRGB->relative-luminance script (no library), not eyeballed;
+ * margins hex-noted here so a future re-tune can sanity-check against them:
+ * indigo/ocean/jade/rose/amber all ~5.83:1 (light, vs primary-foreground);
+ * dark pairs all >=7:1 (comfortable headroom, dark primaries sit
+ * on a near-black foreground already). Verify with
+ * `node apps/web/contrast-audit.mjs`, which now parses these tokens
+ * straight out of this file instead of a hand-copied snapshot.
+ */
+/* Accent presets own action/focus/sidebar-selection only. Priority, project
+ * identity and calendar provider colors come from @mindoist/design-tokens
+ * and intentionally do not appear in any data-accent selector.
+ */
+:root[data-accent="indigo"] {
+  --primary: oklch(0.5195 0.19 271.82);
+  --primary-foreground: oklch(1 0 0);
+  --ring: oklch(0.5195 0.19 271.82);
+  --sidebar-accent: oklch(0.9439 0.0180 272.31);
+}
+
+:root[data-accent="ocean"] {
+  --primary: oklch(0.5000 0.16 246.80);
+  --primary-foreground: oklch(1 0 0);
+  --ring: oklch(0.5000 0.16 246.80);
+  --sidebar-accent: oklch(0.9504 0.0192 235.73);
+}
+
+:root[data-accent="jade"] {
+  --primary: oklch(0.4855 0.115 171.82);
+  --primary-foreground: oklch(1 0 0);
+  --ring: oklch(0.4855 0.115 171.82);
+  --sidebar-accent: oklch(0.9486 0.0172 174.05);
+}
+
+:root[data-accent="rose"] {
+  --primary: oklch(0.5305 0.185 5.00);
+  --primary-foreground: oklch(1 0 0);
+  --ring: oklch(0.5305 0.185 5.00);
+  --sidebar-accent: oklch(0.9421 0.0186 356.44);
+}
+
+:root[data-accent="amber"] {
+  --primary: oklch(0.5110 0.135 74.30);
+  --primary-foreground: oklch(1 0 0);
+  --ring: oklch(0.5110 0.135 74.30);
+  --sidebar-accent: oklch(0.9478 0.0241 85.79);
+}
+
+:root.dark[data-accent="indigo"] {
+  --primary: oklch(0.7217 0.16 274.81);
+  --primary-foreground: oklch(0.1984 0.0270 270.68);
+  --ring: oklch(0.7217 0.16 274.81);
+  --sidebar-accent: oklch(0.2993 0.0588 273.03);
+}
+
+:root.dark[data-accent="ocean"] {
+  --primary: oklch(0.7512 0.125 235.73);
+  --primary-foreground: oklch(0.2133 0.0294 237.73);
+  --ring: oklch(0.7512 0.125 235.73);
+  --sidebar-accent: oklch(0.3098 0.0422 232.09);
+}
+
+:root.dark[data-accent="jade"] {
+  --primary: oklch(0.7613 0.13 171.20);
+  --primary-foreground: oklch(0.2257 0.0341 168.66);
+  --ring: oklch(0.7613 0.13 171.20);
+  --sidebar-accent: oklch(0.3098 0.0407 172.40);
+}
+
+:root.dark[data-accent="rose"] {
+  --primary: oklch(0.7501 0.14 0.43);
+  --primary-foreground: oklch(0.2181 0.0463 0.55);
+  --ring: oklch(0.7501 0.14 0.43);
+  --sidebar-accent: oklch(0.3004 0.0496 353.01);
+}
+
+:root.dark[data-accent="amber"] {
+  --primary: oklch(0.7842 0.155 78.81);
+  --primary-foreground: oklch(0.2174 0.0452 79.08);
+  --ring: oklch(0.7842 0.155 78.81);
+  --sidebar-accent: oklch(0.3164 0.0404 82.64);
+}
+
+.accent-swatch {
+  border: 1px solid color-mix(in oklch, currentColor 20%, transparent);
+}
+.accent-swatch-indigo { background-color: oklch(0.5444 0.19 271.82); }
+.accent-swatch-ocean { background-color: oklch(0.5297 0.16 246.80); }
+.accent-swatch-jade { background-color: oklch(0.5187 0.115 171.82); }
+.accent-swatch-rose { background-color: oklch(0.5467 0.185 5.00); }
+.accent-swatch-amber { background-color: oklch(0.5367 0.135 74.30); }
+
+/* Task color accents: controlled palette for calendar/task identity.
+   Flat filled dot, no border/inset ring — selection is shown with a
+   checkmark overlay instead (see TaskDetail/CountdownList), matching the
+   AccentPicker swatch idiom already used elsewhere in the app. */
+.task-color-swatch {
+  background: var(--task-color-accent);
+}
+
+.task-color-dot {
+  background: var(--task-color-accent);
+}
+
+/* Countdown gallery card (D6): was an inline `style={{...}}` in
+   CountdownList.tsx switching between two property sets by `hasImage` —
+   moved to CSS so task-color derived values aren't set via inline style
+   (DESIGN.md §7.2). */
+.countdown-card-flat {
+  background: var(--task-color-bg);
+  border-color: var(--task-color-border);
+  color: var(--task-color-text);
+}
+.countdown-card-image {
+  border-color: var(--task-color-border);
+}
+
+/* Each color defines only its accent — a proven, perceptually-vivid hue
+   (Tailwind's 500/400 shades) rather than a formula-generated one. An
+   earlier version derived every accent from the same raw HSL(H, 62%, 46%)
+   recipe, which looks fine for blues/purples but reads as a muddy
+   brown/olive for yellow-green hues (amber, lime) — hue and lightness
+   don't map to perceived brightness the same way, so a uniform HSL
+   formula produces an uneven-looking set. Picking tested hex values
+   (now expressed as their exact oklch equivalent, not re-derived) fixes
+   that without extra math — re-normalizing L/C by formula here would
+   reintroduce the same class of bug this comment already warns about.
+   bg/border/text are still derived automatically below, so the "pastel
+   family" consistency is kept — just anchored to a better accent. */
+.task-color-slate { --task-color-accent: oklch(0.5544 0.0407 257.42); }
+.task-color-sky { --task-color-accent: oklch(0.6847 0.1479 237.32); }
+.task-color-indigo { --task-color-accent: oklch(0.5854 0.2041 277.12); }
+.task-color-violet { --task-color-accent: oklch(0.6056 0.2189 292.72); }
+.task-color-rose { --task-color-accent: oklch(0.6450 0.2154 16.44); }
+.task-color-amber { --task-color-accent: oklch(0.7686 0.1647 70.08); }
+.task-color-jade { --task-color-accent: oklch(0.6959 0.1491 162.48); }
+.task-color-lime { --task-color-accent: oklch(0.7681 0.2044 130.85); }
+.task-color-none { --task-color-accent: var(--muted-foreground); }
+
+.dark .task-color-slate { --task-color-accent: oklch(0.7107 0.0351 256.79); }
+.dark .task-color-sky { --task-color-accent: oklch(0.7535 0.1390 232.66); }
+.dark .task-color-indigo { --task-color-accent: oklch(0.6801 0.1583 276.93); }
+.dark .task-color-violet { --task-color-accent: oklch(0.7090 0.1592 293.54); }
+.dark .task-color-rose { --task-color-accent: oklch(0.7192 0.1690 13.43); }
+.dark .task-color-amber { --task-color-accent: oklch(0.8369 0.1644 84.43); }
+.dark .task-color-jade { --task-color-accent: oklch(0.7729 0.1535 163.22); }
+.dark .task-color-lime { --task-color-accent: oklch(0.8493 0.2073 128.85); }
+
+/* bg/border/text derived from the accent via RELATIVE COLOR SYNTAX, not
+   color-mix(). D-design-overhaul-2026-07-25 §2.6: mixing an accent into a
+   near-zero-chroma neutral (--background/--border/--foreground all carry
+   the neutral hue ~264.5 even at chroma≈0) drags the result's hue toward
+   264.5 regardless of mix weight — lime→blue (+112°), amber→red (+221°),
+   measured live in Chromium, not guessed from the spec. `oklch(from X L C h)`
+   keeps the accent's own hue exact; only L/C move. Border keeps the old 45%
+   mix's effective weighting (L interpolated toward the theme border's L,
+   C scaled by the same 0.45) so it looks the same "temperature" as before,
+   just without the hue theft. */
+[class*="task-color-"] {
+  --task-color-bg: oklch(from var(--task-color-accent) 0.945 calc(c * 0.20) h);
+  --task-color-border: oklch(from var(--task-color-accent) calc(l * 0.45 + 0.4868) calc(c * 0.45) h);
+  --task-color-text: oklch(from var(--task-color-accent) calc(l * 0.86) c h);
+}
+
+.dark [class*="task-color-"] {
+  --task-color-bg: oklch(from var(--task-color-accent) 0.285 calc(c * 0.42) h);
+  --task-color-border: oklch(from var(--task-color-accent) calc(l * 0.45 + 0.17215) calc(c * 0.45) h);
+  --task-color-text: oklch(from var(--task-color-accent) 0.82 calc(c * 0.85) h);
+}
+
+/* Metadata chips (D3): same hue-safe relative-color-syntax recipe as
+   task-color above, applied to the semantic due/priority roles. Soft
+   pastel fill + saturated text — verified ≥4.5:1 AA in both themes
+   (docs/plan/D-design-overhaul-2026-07-25.md §4.4). */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.0625rem 0.4375rem;
+  border-radius: var(--radius-chip);
+  /* Literal px, not text-xs/rem: html{font-size:87.5%} (index.css above)
+     makes 0.75rem render at 10.5px, under the 11px floor D3 sets for
+     metadata legibility. px is immune to that root scaling. */
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+.chip-neutral { background: var(--muted); color: var(--muted-foreground); }
+.chip-overdue { background: oklch(from var(--destructive) 0.945 calc(c * 0.20) h); color: oklch(from var(--destructive) calc(l * 0.86) c h); }
+.chip-today   { background: oklch(from var(--primary) 0.945 calc(c * 0.20) h); color: oklch(from var(--primary) calc(l * 0.86) c h); }
+.chip-p1      { background: oklch(from var(--color-p1) 0.945 calc(c * 0.20) h); color: oklch(from var(--color-p1) calc(l * 0.86) c h); }
+.chip-p2      { background: oklch(from var(--color-p2) 0.945 calc(c * 0.20) h); color: oklch(from var(--color-p2) calc(l * 0.86) c h); }
+.chip-p3      { background: oklch(from var(--color-p3) 0.945 calc(c * 0.20) h); color: oklch(from var(--color-p3) calc(l * 0.86) c h); }
+.chip-p4      { background: oklch(from var(--color-p4) 0.945 calc(c * 0.20) h); color: oklch(from var(--color-p4) calc(l * 0.86) c h); }
+
+.dark .chip-overdue { background: oklch(from var(--destructive) 0.285 calc(c * 0.42) h); color: oklch(from var(--destructive) 0.82 calc(c * 0.85) h); }
+.dark .chip-today   { background: oklch(from var(--primary) 0.285 calc(c * 0.42) h); color: oklch(from var(--primary) 0.82 calc(c * 0.85) h); }
+.dark .chip-p1      { background: oklch(from var(--color-p1) 0.285 calc(c * 0.42) h); color: oklch(from var(--color-p1) 0.82 calc(c * 0.85) h); }
+.dark .chip-p2      { background: oklch(from var(--color-p2) 0.285 calc(c * 0.42) h); color: oklch(from var(--color-p2) 0.82 calc(c * 0.85) h); }
+.dark .chip-p3      { background: oklch(from var(--color-p3) 0.285 calc(c * 0.42) h); color: oklch(from var(--color-p3) 0.82 calc(c * 0.85) h); }
+.dark .chip-p4      { background: oklch(from var(--color-p4) 0.285 calc(c * 0.42) h); color: oklch(from var(--color-p4) 0.82 calc(c * 0.85) h); }
+
+/* Project color dots — same accents as the task colors above, so a
+   project and a task tagged with the same color name match everywhere. */
+.project-color-indigo { background: var(--color-project-indigo); }
+.project-color-ocean { background: var(--color-project-ocean); }
+.project-color-jade { background: var(--color-project-jade); }
+.project-color-rose { background: var(--color-project-rose); }
+.project-color-amber { background: var(--color-project-amber); }
+.project-color-default { background: var(--color-project-indigo); }
+
+html {
+  /* App-wide density default. Tailwind's spacing/typography scale is
+     entirely rem-based, so this uniformly tightens the whole UI (rows,
+     padding, text) without touching every component — the same effect
+     the user was getting by manually zooming the browser to ~80%, but
+     baked in as the default instead of a per-session workaround. */
+  font-size: 87.5%;
+}
+
+.skip-link {
+  position: fixed;
+  left: 1rem;
+  top: -4rem;
+  z-index: 100;
+  padding: .75rem 1rem;
+  border-radius: var(--radius-control);
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+.skip-link:focus { top: 1rem; }
+
+@media (pointer: coarse) {
+  button, [role="button"], input, select, textarea { min-height: 44px; }
+}
+
+/* Windows 11 "Mica"-style frosted glass, dark mode only: floating
+   popovers/dropdowns/dialogs get a translucent, blurred surface instead of
+   a flat opaque panel, so a hint of the content behind shows through. Kept
+   dark-only because the same translucency reads as muddy/low-contrast on
+   the light canvas — flat opaque stays correct there. */
+.dark .frosted-surface {
+  backdrop-filter: blur(24px) saturate(1.4);
+  background-color: color-mix(in oklch, var(--background) 80%, transparent);
+}
+
+/* Companion for modal backdrops — blurs whatever sits behind the dialog. */
+.dark .frosted-backdrop {
+  backdrop-filter: blur(8px);
+}
+
+/* Must be in @layer base: this file has no @layer blocks anywhere else, so
+   without this every rule below is "unlayered" - and per the CSS cascade
+   layers spec, unlayered rules always beat layered ones regardless of
+   specificity. Tailwind's own utilities (border-l-[...], etc.) live inside
+   its internal `utilities` layer, so this reset was silently overriding
+   every border-color utility class in the app - any element with a
+   specific border-left color utility still rendered the flat default
+   --border gray, no matter how specific its own class was. */
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+    border-color: var(--border);
+  }
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background-color: var(--background);
+  color: var(--foreground);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Micro-animation: task completion — spring-like fade + scale down */
+@keyframes task-complete {
+  0% { opacity: 1; transform: scale(1); }
+  30% { opacity: 0.85; transform: scale(1.02); }
+  100% { opacity: 0.55; transform: scale(0.97); }
+}
+.task-completing {
+  animation: task-complete 350ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* Reduced motion: every animation/transition becomes instant */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Focus-visible ring utility */
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* Soft focus for large editable text surfaces (inspector title/description):
+   a hairline edge plus a diffuse glow instead of the hard 2px ring, which
+   reads as a heavy box around what is really just body text. */
+/* Programmatic focus target: the modal inspector takes focus on open so screen
+   readers announce the dialog, but it must not draw a ring around the panel.
+   Needs to live here, unlayered, to beat the global :focus-visible outline —
+   a `focus-visible:outline-none` utility sits in @layer utilities and loses. */
+.focus-silent:focus-visible {
+  outline: none;
+}
+
+.focus-soft:focus-visible {
+  outline: none;
+  border-color: color-mix(in oklch, var(--ring) 40%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in oklch, var(--ring) 22%, transparent),
+    0 1px 10px -2px color-mix(in oklch, var(--ring) 30%, transparent);
+}
+
+/* Shell layout constants */
+:root {
+  --shell-sidebar-width: 15rem;
+  --shell-appbar-height: 3.5rem;
+  --shell-bottomnav-height: 3.75rem;
+  --shell-content-max: 55rem;
+}
+
+/* Tablet drawer overlay */
+.drawer-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: oklch(0 0 0 / 0.4);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 200ms ease;
+}
+.drawer-overlay[data-open="true"] {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ── Custom scrollbar ── */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklch, var(--border) 60%, transparent) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: color-mix(in oklch, var(--border) 60%, transparent);
+  border-radius: 999px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in oklch, var(--border) 80%, transparent);
+}
