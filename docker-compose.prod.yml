@@ -1,0 +1,74 @@
+# Production runtime: api + web + postgres.
+# The web service serves the built SPA via `vite preview` on ${WEB_PORT:-5174}
+# (see apps/web/Dockerfile) — no bundled web server. It expects a reverse
+# proxy you set up yourself in front of both `web` and `api` on the same
+# domain (routing API paths to `api`, everything else to `web`). TLS
+# termination is also left to that reverse proxy.
+#
+# Usage:
+#   docker compose -f docker-compose.prod.yml --env-file .env up -d --build
+# Required env vars (see .env.example): POSTGRES_PASSWORD, JWT_SECRET, DOMAIN.
+# Optional: POSTGRES_USER, POSTGRES_DB, API_PORT, WEB_PORT, GOOGLE_CLIENT_ID,
+# GOOGLE_CLIENT_SECRET, API_DOMAIN, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY,
+# VAPID_EMAIL, DEFAULT_TIMEZONE.
+# Optional Telegram linking: TELEGRAM_BOT_USERNAME, MINDOIST_AGENT_TOKEN.
+# API_DOMAIN: only set this if the API is split onto its own subdomain
+# (api.example.com) instead of sharing DOMAIN with the web app. It swaps the
+# Google OAuth redirect URIs to that subdomain and bakes it into the web
+# build as VITE_API_URL, so the frontend calls the API's own origin instead
+# of relative paths.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-mindoist_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_DB: ${POSTGRES_DB:-mindoist_db}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-mindoist_user} -d ${POSTGRES_DB:-mindoist_db}']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    ports:
+      - '${API_PORT:-3000}:3000'
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-mindoist_user}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-mindoist_db}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      PORT: 3000
+      FRONTEND_URL: https://${DOMAIN:?DOMAIN is required}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_AUTH_REDIRECT_URI: https://${API_DOMAIN:-${DOMAIN:?DOMAIN is required}}/auth/google/callback
+      GOOGLE_REDIRECT_URI: https://${API_DOMAIN:-${DOMAIN:?DOMAIN is required}}/gcal/callback
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+      VAPID_EMAIL: ${VAPID_EMAIL:-}
+      DEFAULT_TIMEZONE: ${DEFAULT_TIMEZONE:-}
+      TELEGRAM_BOT_USERNAME: ${TELEGRAM_BOT_USERNAME:-}
+      MINDOIST_AGENT_TOKEN: ${MINDOIST_AGENT_TOKEN:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        VITE_API_URL: ${API_DOMAIN:+https://${API_DOMAIN}}
+    restart: unless-stopped
+    ports:
+      - '${WEB_PORT:-5174}:5174'
+
+volumes:
+  pgdata:
