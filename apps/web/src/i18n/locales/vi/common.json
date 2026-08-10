@@ -1,0 +1,46 @@
+{
+  "app": {
+    "title": "Mindoist",
+    "description": "Ứng dụng thiền định và năng suất"
+  },
+  "home": {
+    "welcome": "Chào mừng đến với Mindoist",
+    "subtitle": "Sống tỉnh thức, làm việc hiệu quả"
+  },
+  "language": {
+    "en": "English",
+    "vi": "Tiếng Việt"
+  },
+  "offline": "Bạn đang ngoại tuyến. Thay đổi sẽ được đồng bộ khi kết nối lại.",
+  "sync": {
+    "title": "Trung tâm đồng bộ",
+    "description": "Xem thay đổi đang chờ và thử lại khi đồng bộ gặp lỗi.",
+    "status": "Trạng thái",
+    "synced": "Đã đồng bộ",
+    "syncing": "Đang đồng bộ…",
+    "offline": "Ngoại tuyến",
+    "error": "Đồng bộ cần xử lý",
+    "pending": "{{count}} thay đổi đang chờ",
+    "pendingLabel": "Thay đổi đang chờ",
+    "lastSynced": "Đồng bộ lần cuối",
+    "never": "Chưa có",
+    "retry": "Đồng bộ ngay",
+    "close": "Đóng trung tâm đồng bộ"
+  },
+  "save": "Lưu",
+  "themeToggle": "Giao diện (hiện tại {{theme}})",
+  "appearance": {
+    "label": "Giao diện",
+    "language": "Ngôn ngữ",
+    "accent": "Màu chủ đạo",
+    "chooseAccent": "Chọn màu chủ đạo",
+    "currentAccent": "Màu chủ đạo (hiện tại {{accent}})",
+    "colors": {
+      "indigo": "Chàm",
+      "ocean": "Đại dương",
+      "jade": "Ngọc bích",
+      "rose": "Hồng",
+      "amber": "Hổ phách"
+    }
+  }
+}

@@ -1,0 +1,1322 @@
+/* ══════════════════════════════════════════════════════════════
+   CalendarView.css — B1.12 Calendar Redesign
+
+   Design sources & principles applied:
+   ──────────────────────────────────────
+   calendarjs.com:
+     • Fully CSS-variable-driven — all visual decisions via tokens
+     • Minimal chrome: no visible cell borders; rely on spacing
+     • Today highlighted with a filled circle behind the number
+
+   vanilla-calendar.pro:
+     • Clean, airy day cells with generous padding
+     • Subtle hover state on every cell (background shift)
+     • Uppercase weekday abbreviations with letter-spacing
+
+   themeselection.com roundup (11 libraries):
+     • Grid → gap-based separation (modern pattern)
+     • Event pills: rounded, small, with color dot prefix
+     • Confident day-number typography (16px, semibold)
+     • Toolbar as compact outlined-button group
+
+   Applied principles:
+   1. BORDERLESS GRID — no cell borders; row separation via
+      a single ultra-thin horizontal line per week
+   2. TODAY PILL — filled rounded rect behind the day number
+   3. CARD-LIKE EVENT PILLS — small rounded pills with dot
+   4. CONFIDENT TYPOGRAPHY — day numbers 0.875rem/600,
+      uppercase headers with tracking, muted weekends
+   5. DARK-MODE FIRST — every background explicitly mapped;
+      no reliance on FullCalendar's white defaults
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Container ── */
+.calendar-view {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--card, var(--background));
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+  box-shadow: none;
+  padding: 0.9rem 1rem 0.5rem;
+}
+
+/* FullCalendar's root element must be a shrinkable flex child (not
+   auto-height) for its own internal scroller to take over — otherwise
+   the time grid (6am-11pm) renders at full natural height and spills
+   out past this card's rounded corners instead of scrolling inside it. */
+.calendar-view .fc {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* On phones Plan and Calendar are mutually exclusive modes, not a flex split. */
+@media (max-width: 767px) {
+  .calendar-layout {
+    display: block;
+    height: calc(100dvh - 8.5rem);
+    min-height: 36rem;
+  }
+  .calendar-layout .calendar-canvas { height: 100%; }
+  .calendar-layout .calendar-panel { width: 100%; min-height: calc(100vh - 10rem); }
+  .calendar-layout-plan-open .calendar-canvas { display: none; }
+  .calendar-view { min-height: 0; padding: .75rem; }
+}
+
+/* ── Header: icon + title + legend, all in one row ── */
+.calendar-header-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.calendar-header-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--foreground);
+  letter-spacing: -0.01em;
+}
+
+.calendar-panel-toggle {
+  margin-left: auto;
+  border-radius: var(--radius-chip);
+  padding: 0.25rem;
+  color: var(--muted-foreground);
+  transition: background 150ms ease, color 150ms ease;
+}
+
+.calendar-panel-toggle:hover {
+  background: color-mix(in oklch, var(--muted) 50%, transparent);
+  color: var(--foreground);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   §1  Dark-mode palette for FullCalendar 7 classic theme
+
+   FullCalendar 7 gates its dark palette behind
+   [data-color-scheme=dark]. Mindoist toggles via .dark class.
+   Re-declare all --fc-classic-* variables in .dark scope so
+   every background/border maps to Mindoist dark tokens.
+   ══════════════════════════════════════════════════════════════ */
+
+.dark .calendar-view .fc {
+  /* calendar content */
+  --fc-classic-event: var(--primary);
+  --fc-classic-event-contrast: var(--primary-foreground);
+
+  /* neutral backgrounds — match Mindoist dark tokens */
+  --fc-classic-background: var(--background);
+  --fc-classic-faint: color-mix(in oklch, var(--border) 30%, transparent);
+  --fc-classic-muted: color-mix(in oklch, var(--border) 50%, transparent);
+  --fc-classic-strong: color-mix(in oklch, var(--border) 70%, transparent);
+
+  /* neutral foregrounds */
+  --fc-classic-foreground: var(--foreground);
+  --fc-classic-faint-foreground: color-mix(in oklch, var(--muted-foreground) 60%, transparent);
+  --fc-classic-muted-foreground: var(--muted-foreground);
+
+  /* neutral borders */
+  --fc-classic-border: color-mix(in oklch, var(--border) 40%, transparent);
+  --fc-classic-strong-border: color-mix(in oklch, var(--border) 60%, transparent);
+
+  /* today highlight */
+  --fc-classic-today: color-mix(in oklch, var(--primary) 12%, transparent);
+  --fc-classic-highlight: color-mix(in oklch, var(--primary) 8%, transparent);
+}
+
+/* Light-mode palette override (maps to Mindoist tokens) */
+.calendar-view .fc {
+  --fc-classic-event: var(--primary);
+  --fc-classic-event-contrast: var(--primary-foreground);
+  --fc-classic-background: var(--background);
+  --fc-classic-foreground: var(--foreground);
+  --fc-classic-today: color-mix(in oklch, var(--primary) 10%, transparent);
+  --fc-classic-highlight: color-mix(in oklch, var(--primary) 6%, transparent);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   §2  FullCalendar reset — kill all injected white backgrounds
+
+   FullCalendar 7 sets background-color on tables, thead, th,
+   td, scrollgrid sections, and sticky headers. Override every
+   one to transparent (or the correct token) to prevent white
+   streaks in dark mode.
+
+   FIX B1.12: expanded selector list to catch ALL elements
+   that FullCalendar uses in its table-based layout — including
+   nested wrapper divs, the view harness, and internal scroll
+   containers that were missed in B1.10/B1.11 resets.
+   ══════════════════════════════════════════════════════════════ */
+
+.calendar-view .fc {
+  --fc-border-color: color-mix(in oklch, var(--border) 40%, transparent);
+  --fc-page-bg-color: transparent;
+  --fc-neutral-bg-color: transparent;
+  --fc-today-bg-color: transparent;
+  --fc-event-border-color: transparent;
+  font-family: var(--font-sans, inherit);
+}
+
+/* Dark mode keeps the original, softer border weight — the light-mode
+   bump above exists because a near-white border on a near-white
+   background (#e2e5eb on #f7f8fa) was nearly invisible; on dark
+   backgrounds the same low alpha already reads clearly. */
+.dark .calendar-view .fc {
+  --fc-border-color: color-mix(in oklch, var(--border) 18%, transparent);
+}
+
+/* Kill injected white backgrounds in the HEADER only.
+   B1.12's broad selectors also matched body cells (fc-daygrid-body td,
+   fc-timegrid-body td, fc-daygrid), killing the today pill, today tint,
+   and hover — invisible in light mode. B1.13 narrowed to header-only. */
+.calendar-view .fc .fc-scrollgrid-section-header,
+.calendar-view .fc .fc-scrollgrid-section-header *,
+.calendar-view .fc .fc-scrollgrid-section-header > *,
+.calendar-view .fc .fc-scrollgrid-section-header > td,
+.calendar-view .fc .fc-scrollgrid-section-header table,
+.calendar-view .fc .fc-scrollgrid-section-header table *,
+.calendar-view .fc .fc-scrollgrid-section-header.fc-scrollgrid-section-sticky *,
+.calendar-view .fc .fc-scrollgrid-section-header.fc-scrollgrid-section-sticky > *,
+.calendar-view .fc .fc-col-header,
+.calendar-view .fc .fc-col-header * {
+  background: transparent !important;
+  border-color: var(--fc-border-color) !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   §3  Toolbar (Month / Week / Day / Today)
+
+   Custom-built (see CalendarToolbar.tsx) rather than FullCalendar's own
+   generated headerToolbar - gives full control over the left-nav /
+   centered-title / right-segmented-control layout instead of overriding
+   FullCalendar's toolbar DOM with CSS.
+   ══════════════════════════════════════════════════════════════ */
+
+.calendar-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.3rem 0.25rem 0.6rem;
+  flex-wrap: wrap;
+}
+
+.calendar-toolbar-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.calendar-toolbar-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--radius-chip);
+  color: var(--muted-foreground);
+  border: 1px solid color-mix(in oklch, var(--border) 50%, transparent);
+  transition: background 150ms ease, color 150ms ease, border-color 150ms ease;
+}
+
+.calendar-toolbar-nav-btn:hover {
+  background: color-mix(in oklch, var(--muted) 50%, transparent);
+  color: var(--foreground);
+  border-color: var(--border);
+}
+
+.calendar-toolbar-nav-btn:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
+}
+
+.calendar-toolbar-today {
+  height: 2rem;
+  padding: 0 0.75rem;
+  border-radius: var(--radius-chip);
+  border: 1px solid color-mix(in oklch, var(--border) 50%, transparent);
+  background: transparent;
+  color: var(--muted-foreground);
+  font-weight: 500;
+  font-size: 0.78rem;
+  transition: background 150ms ease, color 150ms ease, border-color 150ms ease;
+}
+
+.calendar-toolbar-today:hover:not(:disabled) {
+  background: color-mix(in oklch, var(--muted) 50%, transparent);
+  color: var(--foreground);
+  border-color: var(--border);
+}
+
+.calendar-toolbar-today:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.calendar-toolbar-today:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
+}
+
+.calendar-toolbar-title {
+  flex: 1 1 auto;
+  min-width: 8rem;
+  margin: 0;
+  text-align: center;
+  font-size: 1.05rem;
+  font-weight: 650;
+  color: var(--foreground);
+  letter-spacing: -0.01em;
+}
+
+/* Day-count switcher (Akiflow-style "5 days" dropdown). The segmented
+   Month/Week/Day track it replaced could not hold five options without
+   crowding the toolbar, so it collapses to a single quiet trigger.
+
+   <Select>'s default trigger is dressed as a form field — solid input
+   border, opaque background, shorter and smaller-typed than everything
+   around it. In a toolbar that reads as a foreign control, so the trigger
+   is restyled to match .calendar-toolbar-today and the nav buttons
+   exactly: same height, radius, hairline border, and hover. */
+.calendar-toolbar-views {
+  flex: 0 0 auto;
+}
+
+.calendar-toolbar-views > button {
+  height: 2rem;
+  min-width: 5.25rem;
+  padding: 0 0.6rem 0 0.75rem;
+  gap: 0.4rem;
+  border-radius: var(--radius-chip);
+  border: 1px solid color-mix(in oklch, var(--border) 50%, transparent);
+  background: transparent;
+  color: var(--muted-foreground);
+  font-size: 0.78rem;
+  font-weight: 500;
+  transition: background 150ms ease, color 150ms ease, border-color 150ms ease;
+}
+
+.calendar-toolbar-views > button:hover {
+  background: color-mix(in oklch, var(--muted) 50%, transparent);
+  color: var(--foreground);
+  border-color: var(--border);
+}
+
+.calendar-toolbar-views > button > span {
+  color: inherit;
+}
+
+/* The trigger carries a Tailwind focus ring while the global :focus-visible
+   rule draws an outline too — unlayered CSS wins, so both used to land at
+   once. One outline, matching the sibling buttons. */
+.calendar-toolbar-views > button:focus-visible {
+  box-shadow: none;
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
+}
+
+.calendar-toolbar-views > button svg {
+  width: 0.85rem;
+  height: 0.85rem;
+  opacity: 0.7;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   §4  Day-of-week header row
+
+   Single ultra-thin bottom line; no cell borders.
+   Uppercase labels with letter-spacing for confidence.
+   B1.12: reinforced transparent background on header wrapper
+   to prevent white strip leak in dark mode.
+   ══════════════════════════════════════════════════════════════ */
+
+.calendar-view .fc .fc-col-header {
+  border-bottom: 1px solid color-mix(in oklch, var(--border) 14%, transparent);
+  background: transparent !important;
+}
+
+.dark .calendar-view .fc .fc-col-header {
+  border-bottom-color: color-mix(in oklch, var(--border) 8%, transparent);
+}
+
+.calendar-view .fc .fc-col-header-cell {
+  background: transparent !important;
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted-foreground);
+  padding: 0.55rem 0.3rem 0.45rem;
+  border: none !important;
+  border-right: none !important;
+}
+
+.calendar-view .fc .fc-col-header-cell-cushion {
+  padding: 0.15rem 0.3rem;
+  /* D9: weekday labels rendered centered while FullCalendar's own
+     day-number layout (.fc-daygrid-day-top) right-aligns by default —
+     same column, two directions. Matching the header to the number
+     (rather than fighting FC's built-in day-number alignment) so both
+     read from the same edge. */
+  display: block;
+  text-align: right;
+}
+
+/* Day countdown under the column header (see CalendarDayCountdown.tsx).
+   The header cell uppercases and letterspaces its label, and §2 forces
+   `background: transparent !important` on every descendant, so the chip
+   opts back out of the label typography and carries color only — no
+   filled pill, which also matches how quiet Akiflow's meter reads. */
+.calendar-day-header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.1rem;
+}
+
+.calendar-day-countdown {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.62rem;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+  color: color-mix(in oklch, var(--muted-foreground) 75%, transparent);
+}
+
+.calendar-day-countdown[data-urgency="soon"] {
+  color: var(--color-p2);
+}
+
+.calendar-day-countdown[data-urgency="critical"],
+.calendar-day-countdown[data-urgency="overdue"] {
+  color: var(--destructive);
+}
+
+/* Weekend columns — slightly muted */
+.calendar-view .fc .fc-col-header-cell:nth-child(7n+1),
+.calendar-view .fc .fc-col-header-cell:nth-child(7n) {
+  color: color-mix(in oklch, var(--muted-foreground) 55%, transparent);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   §5  Month-view day cells
+
+   Faint grid lines between cells (Akiflow-style) — thin enough to
+   read as texture, not as heavy table borders.
+   ══════════════════════════════════════════════════════════════ */
+
+.calendar-view .fc td,
+.calendar-view .fc th {
+  border: none !important;
+}
+
+.calendar-view .fc .fc-daygrid-day {
+  background: transparent;
+  transition: background 150ms ease;
+  padding: 0.1rem 0.05rem;
+  /* inset box-shadow instead of a real border: draws the same faint grid
+     line without adding to the cell's box model. A real border here would
+     make body <td> cells 1px wider/taller than the header's <th> cells
+     (which don't get this rule), and that per-column drift compounds across
+     7 columns until the header and body tables' independently-computed
+     widths disagree enough for a column to visually collapse. */
+  box-shadow: inset -1px -1px 0 0 var(--fc-border-color) !important;
+}
+
+.calendar-view .fc .fc-daygrid-day:last-child {
+  box-shadow: inset 0 -1px 0 0 var(--fc-border-color) !important;
+}
+
+.calendar-view .fc .fc-daygrid-day:hover {
+  background: color-mix(in oklch, var(--muted) 25%, transparent);
+}
+
+.calendar-view .fc .fc-daygrid-day-frame {
+  /* D9: was 5.5rem — measured as ~80px of near-empty cell for a
+     single-digit number on most days (no event). Tightened; still leaves
+     room for 2-3 event pills before FullCalendar's own "+n more" kicks in. */
+  min-height: 4.25rem;
+  padding: 0.2rem 0.25rem;
+}
+
+.calendar-view .fc .fc-daygrid-day-number {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--foreground);
+  padding: 0.25rem 0.4rem;
+  border-radius: var(--radius-chip);
+  transition: background 150ms ease;
+  position: relative;
+  z-index: 1;
+}
+
+/* Weekend day numbers — muted */
+.calendar-view .fc .fc-daygrid-day:first-child .fc-daygrid-day-number,
+.calendar-view .fc .fc-daygrid-day:last-child .fc-daygrid-day-number {
+  color: color-mix(in oklch, var(--foreground) 55%, transparent);
+}
+
+/* ── Today badge — filled circle around the number, not the whole cell ── */
+.calendar-view .fc .fc-daygrid-day.fc-day-today .fc-daygrid-day-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.6rem;
+  height: 1.6rem;
+  padding: 0;
+  border-radius: 999px;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  font-weight: 700;
+}
+
+/* Hover state for empty cells (suggests click-to-add) */
+.calendar-view .fc .fc-daygrid-day:hover .fc-daygrid-day-number {
+  background: color-mix(in oklch, var(--primary) 10%, transparent);
+}
+
+.calendar-view .fc .fc-daygrid-day.fc-day-today:hover .fc-daygrid-day-number {
+  background: color-mix(in oklch, var(--primary) 85%, transparent);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   §6  Events (month + timegrid)
+   ══════════════════════════════════════════════════════════════ */
+
+/* border-radius is 0 by default, not var(--radius-chip): a multi-day
+   task (startDate != dueDate) renders as several joined day-segments
+   (FullCalendar marks only the first with .fc-event-start and only the
+   last with .fc-event-end), and rounding every segment unconditionally
+   turned what should read as one continuous range bar (see the TickTick
+   reference) into a row of disconnected single-day pills. Single-day
+   events get both classes at once, so they're unaffected - still fully
+   rounded pills. */
+.calendar-view .fc .fc-event {
+  border: none !important;
+  border-radius: 0;
+  padding: 0.12rem 0.45rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  line-height: 1.45;
+  cursor: pointer;
+  transition: opacity 150ms ease, transform 100ms ease, box-shadow 150ms ease;
+  overflow: hidden;
+  box-shadow: none;
+}
+
+.calendar-view .fc .fc-event.fc-event-start {
+  border-top-left-radius: var(--radius-chip);
+  border-bottom-left-radius: var(--radius-chip);
+}
+
+.calendar-view .fc .fc-event.fc-event-end {
+  border-top-right-radius: var(--radius-chip);
+  border-bottom-right-radius: var(--radius-chip);
+}
+
+.calendar-view .fc .fc-event:hover {
+  opacity: 0.96;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px color-mix(in oklch, var(--calendar-event-accent, var(--task-color-accent, var(--primary))) 12%, transparent);
+}
+
+.calendar-view .fc .fc-event-title {
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.calendar-view .fc .fc-event-time {
+  font-weight: 400;
+  opacity: 0.8;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* "More events" link */
+.calendar-view .fc .fc-daygrid-more-link {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--muted-foreground);
+  padding: 0.1rem 0.3rem;
+  border-radius: var(--radius-chip);
+  transition: background 150ms ease;
+}
+
+.calendar-view .fc .fc-daygrid-more-link:hover {
+  background: color-mix(in oklch, var(--primary) 10%, transparent);
+  color: var(--primary);
+}
+
+.calendar-view .fc .fc-timegrid-more-link,
+.calendar-view .fc .fc-timegrid .fc-more-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.45rem;
+  padding: 0.12rem 0.45rem;
+  border-radius: var(--radius-chip);
+  border: 1px solid color-mix(in oklch, var(--border) 45%, transparent);
+  background: color-mix(in oklch, var(--card, var(--background)) 88%, var(--primary) 12%);
+  color: var(--muted-foreground);
+  font-size: 0.68rem;
+  font-weight: 650;
+  line-height: 1;
+  box-shadow: 0 2px 8px color-mix(in oklch, var(--foreground) 7%, transparent);
+}
+
+.calendar-view .fc .fc-timegrid-more-link:hover,
+.calendar-view .fc .fc-timegrid .fc-more-link:hover {
+  border-color: color-mix(in oklch, var(--primary) 35%, transparent);
+  background: color-mix(in oklch, var(--card, var(--background)) 78%, var(--primary) 22%);
+  color: var(--primary);
+}
+
+/* "+more" popover — the shared --fc-page-bg-color/--fc-neutral-bg-color
+   overrides above are transparent (they're meant for grid cells, so the
+   app's own background shows through), but that same transparency leaks
+   into this popover since FullCalendar's theme reuses those variables for
+   it too. A popover needs its own opaque surface or the day cells behind
+   it bleed through and the text overlaps unreadably. */
+.calendar-view .fc .fc-popover {
+  background: var(--card, var(--background));
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+  box-shadow: 0 4px 16px color-mix(in oklch, var(--foreground) 12%, transparent);
+  overflow: hidden;
+}
+
+.calendar-view .fc .fc-popover-header {
+  background: color-mix(in oklch, var(--muted) 40%, transparent);
+  color: var(--foreground);
+}
+
+.calendar-view .fc .fc-popover-body {
+  background: var(--card, var(--background));
+  padding: 0.3rem;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   §7  All-day row
+   ══════════════════════════════════════════════════════════════ */
+
+.calendar-view .fc .fc-daygrid-day-frame .fc-scrollgrid-shrink {
+  font-size: 0.68rem;
+  color: var(--muted-foreground);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   §8  Time grid (Week / Day views)
+   ══════════════════════════════════════════════════════════════ */
+
+.calendar-view .fc .fc-timegrid-slot-label-cushion {
+  padding-right: 0.45rem;
+  font-size: 0.67rem;
+  font-weight: 500;
+  color: var(--muted-foreground);
+}
+
+/* Root cause of every earlier "still can't see the lines" round: §5's
+   `.calendar-view .fc td, .fc th { border: none !important; }` reset
+   (needed to kill FullCalendar's own default table borders) sets
+   border-top-style: none on every slot <td> too, and a color with no
+   style is invisible no matter what it's set to - all the color-only
+   tuning below never rendered anything until style/width were also set
+   explicitly here. Confirmed via computed styles (borderTopStyle: "none",
+   width: "0px" before this fix, regardless of color). */
+.calendar-view .fc .fc-timegrid-slot {
+  height: 2.85rem;
+  border-top: 1px solid color-mix(in oklch, var(--border) 18%, transparent) !important;
+}
+
+.calendar-view .fc .fc-timegrid-slot-minor {
+  border-top-style: solid !important;
+  border-top-color: color-mix(in oklch, var(--border) 7%, transparent) !important;
+}
+
+.dark .calendar-view .fc .fc-timegrid-slot {
+  border-top-color: color-mix(in oklch, var(--border) 12%, transparent) !important;
+}
+
+.dark .calendar-view .fc .fc-timegrid-slot-minor {
+  border-top-color: color-mix(in oklch, var(--border) 5%, transparent) !important;
+}
+
+/* Time grid column borders (vertical day dividers) - same fix, same
+   weight as the hour line above so the grid reads as one texture. */
+.calendar-view .fc .fc-timegrid-col,
+.calendar-view .fc .fc-timegrid-col-frame {
+  border-left: 1px solid color-mix(in oklch, var(--border) 14%, transparent) !important;
+  border-right: 1px solid color-mix(in oklch, var(--border) 14%, transparent) !important;
+}
+
+.dark .calendar-view .fc .fc-timegrid-col,
+.dark .calendar-view .fc .fc-timegrid-col-frame {
+  border-left-color: color-mix(in oklch, var(--border) 8%, transparent) !important;
+  border-right-color: color-mix(in oklch, var(--border) 8%, transparent) !important;
+}
+
+/* The divider under "All day" (and the outer scrollgrid frame) was still
+   inheriting the ambient --fc-border-color (70% mix) - no rule above
+   covers it specifically, so it stayed at full strength while the slot
+   and column lines around it got much lighter. (A broad `.fc-timegrid *`
+   catch-all was tried here first, but `.fc-timegrid` itself counts as a
+   class in that selector's specificity, so it tied - or with :not()
+   exclusions, beat - the event border-left and now-indicator rules and
+   silently overrode their colors too. This targets only the one real
+   element that needed it.) */
+.calendar-view .fc .fc-scrollgrid {
+  border-color: color-mix(in oklch, var(--border) 16%, transparent) !important;
+}
+
+.dark .calendar-view .fc .fc-scrollgrid {
+  border-color: color-mix(in oklch, var(--border) 8%, transparent) !important;
+}
+
+/* Current-time indicator — thin red line with a round dot marking its
+   start in the time-axis gutter (FullCalendar's default is a CSS-border
+   triangle "arrow"; reset to a small circle instead). */
+.calendar-view .fc .fc-timegrid-now-indicator-line {
+  border-color: var(--destructive);
+  border-width: 1.5px;
+}
+
+.calendar-view .fc .fc-timegrid-now-indicator-arrow {
+  display: block;
+  width: 8px;
+  height: 8px;
+  margin-top: -4px;
+  border: none;
+  border-radius: 50%;
+  background: var(--destructive);
+}
+
+.calendar-view .fc .fc-timegrid-now-indicator-today {
+  background: color-mix(in oklch, var(--destructive) 4%, transparent);
+}
+
+/* Timegrid events — more breathing room than the default (closer to
+   Akiflow's cards; the mobile override below keeps the tighter padding,
+   since there's less width to spare there). slotEventOverlap lets a
+   later event partially cover an earlier one (Akiflow's "floating card"
+   look) instead of splitting both into narrower side-by-side columns -
+   FullCalendar already stacks the DOM order/z-index correctly for this;
+   the background-colored ring here is what actually makes that read as
+   layered cards instead of two colors fused together. FullCalendar
+   doesn't mark which harnesses are genuinely time-overlapping vs. just
+   sequential in the same column (both look identical in the DOM), so
+   the ring is applied uniformly - it doubles as normal card separation
+   for non-overlapping neighbors too. */
+.calendar-view .fc .fc-timegrid-event {
+  border-radius: var(--radius-control);
+  padding: 0.46rem 0.68rem;
+  font-size: 0.75rem;
+  border-left: 0 !important;
+  box-shadow:
+    0 0 0 2px var(--background),
+    0 6px 18px color-mix(in oklch, var(--calendar-event-accent, var(--primary)) 10%, transparent);
+}
+
+/* A small gap between side-by-side overlapping events so they read as
+   distinct blocks instead of touching edges when several tasks share a
+   time slot. */
+.calendar-view .fc .fc-timegrid-event-harness {
+  margin-inline: 2px 3px;
+}
+
+/* Solid-pastel-block look (closer to Akiflow) for priority-colored timed
+   events specifically - the month view's compact all-day chips stay as-is
+   (they're fine washed-out since they're just dots/bars), but a week/day
+   timed event has room to read as its own card, so a bit less washed out
+   reads better. Same relative-color-syntax recipe as the base
+   --calendar-event-bg rule above (mixing into a near-zero-chroma neutral
+   with color-mix()/`in oklch` drags hue toward the neutral's hue - see the
+   comment on that rule), just tuned for a slightly stronger tint. Custom
+   task colors (--task-color-bg) are untouched; this only affects priority
+   coloring. */
+.calendar-view .fc .fc-timegrid-event.calendar-priority-event-p1,
+.calendar-view .fc .fc-timegrid-event.calendar-priority-event-p2,
+.calendar-view .fc .fc-timegrid-event.calendar-priority-event-p3,
+.calendar-view .fc .fc-timegrid-event.calendar-priority-event-p4,
+.calendar-view .fc .fc-timegrid-event.calendar-priority-event-none {
+  --calendar-event-bg: oklch(from var(--calendar-event-accent) calc(l * 0.18 + 0.7759) calc(c * 0.24) h);
+}
+
+.dark .calendar-view .fc .fc-timegrid-event.calendar-priority-event-p1,
+.dark .calendar-view .fc .fc-timegrid-event.calendar-priority-event-p2,
+.dark .calendar-view .fc .fc-timegrid-event.calendar-priority-event-p3,
+.dark .calendar-view .fc .fc-timegrid-event.calendar-priority-event-p4,
+.dark .calendar-view .fc .fc-timegrid-event.calendar-priority-event-none {
+  --calendar-event-bg: oklch(from var(--calendar-event-accent) calc(l * 0.26 + 0.13008) calc(c * 0.34) h);
+}
+
+.calendar-view .fc .fc-timegrid-event.calendar-task-event {
+  border-inline-start-width: 0 !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   §9  Priority dot (applied via JS in eventDidMount)
+   ══════════════════════════════════════════════════════════════ */
+
+/* Same start/end-segment split as the base .fc-event rule above, and for
+   the same reason: a multi-day range task (rendered as several joined
+   day-grid segments) was getting the left accent border AND full corner
+   rounding on every single segment, so a 5-day range read as 5
+   disconnected pills instead of one continuous bar. Single-day events
+   still carry both .fc-event-start and .fc-event-end at once (that's how
+   FullCalendar marks a one-day span), so their look is unchanged. */
+.calendar-task-event {
+  position: relative;
+  background: var(--calendar-event-bg, var(--task-color-bg, oklch(from var(--primary) calc(l * 0.14 + 0.82216) calc(c * 0.14) h))) !important;
+  color: var(--calendar-event-text, var(--task-color-text, var(--foreground))) !important;
+}
+
+.calendar-view .fc .fc-daygrid-event.calendar-task-event {
+  min-height: 1.38rem;
+  padding-block: 0.1rem;
+  margin-block: 0.07rem;
+}
+
+.calendar-task-event.fc-event-start {
+  border-left: 3px solid var(--calendar-event-accent, var(--task-color-accent, var(--primary))) !important;
+  border-top-left-radius: var(--radius-chip) !important;
+  border-bottom-left-radius: var(--radius-chip) !important;
+}
+
+.calendar-task-event.fc-event-end {
+  border-top-right-radius: var(--radius-chip) !important;
+  border-bottom-right-radius: var(--radius-chip) !important;
+}
+
+/* Completed tasks stay visible on the calendar (so a day's full history
+   is still there at a glance from Calendar or Summary) but read as
+   "done" rather than "still pending" - dimmed + struck through. */
+.calendar-task-event-completed {
+  opacity: 0.5;
+}
+
+.calendar-task-event-completed .fc-event-title {
+  text-decoration: line-through;
+}
+
+/* FullCalendar's own stylesheet hardcodes `.fc-h-event .fc-event-main {
+   color: #fff }` for block-style (multi-day/all-day) events. That rule
+   isn't !important, but an explicit color on a descendant always wins
+   over an inherited one — so it silently overrode the readable text
+   color set above on multi-day bars (white-on-pale-tint, unreadable). */
+.calendar-view .fc .fc-event .fc-event-main {
+  color: inherit !important;
+}
+
+.calendar-task-event::before {
+  content: '';
+  position: absolute;
+  left: 0.35rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0;
+  height: 0;
+  opacity: 0;
+}
+
+/* Same soft recipe as the --task-color-bg/border/text derivation in
+   index.css (16%/45%/58%) — kept in sync by hand here since priority
+   colors (P1-P4) aren't part of that task-color system. Custom task
+   colors (e.g. task-color-jade) don't need their own rule anymore: that
+   class already carries --task-color-bg/border/text from the generic
+   index.css derivation, and .calendar-task-event's own fallback chain
+   (var(--calendar-event-bg, var(--task-color-bg, ...))) picks it up
+   automatically — so the calendar pill and the tiny color swatch now
+   render the exact same "soft" tint instead of two different formulas. */
+.calendar-priority-event-p1,
+.calendar-priority-event-p2,
+.calendar-priority-event-p3,
+.calendar-priority-event-p4,
+.calendar-priority-event-none {
+  /* Relative color syntax, not color-mix() — mixing an accent into an
+     opaque near-zero-chroma neutral (--background/--border/--foreground all
+     carry hue ~264.5 even at low chroma) drags the result's hue toward
+     264.5 in `in oklch`, and `in srgb` just hides it behind a muddy
+     midpoint instead of fixing it (see D-design-overhaul-2026-07-25 §2.6,
+     same bug already fixed for --task-color-bg/border/text). L constants
+     below reproduce each color-mix weight's target lightness
+     (accent.l * W + neutral.l * (1 - W)) so this reads identically to the
+     old mix, just without the hue theft. */
+  --calendar-event-bg: oklch(from var(--calendar-event-accent) calc(l * 0.16 + 0.80304) calc(c * 0.16) h);
+  --calendar-event-border: oklch(from var(--calendar-event-accent) calc(l * 0.45 + 0.48675) calc(c * 0.45) h);
+  --calendar-event-text: oklch(from var(--calendar-event-accent) calc(l * 0.58 + 0.10206) calc(c * 0.58) h);
+}
+
+.calendar-priority-event-p1 { --calendar-event-accent: var(--color-p1); }
+.calendar-priority-event-p2 { --calendar-event-accent: var(--color-p2); }
+.calendar-priority-event-p3 { --calendar-event-accent: var(--color-p3); }
+.calendar-priority-event-p4 { --calendar-event-accent: var(--color-p4); }
+.calendar-priority-event-none { --calendar-event-accent: var(--muted-foreground); }
+
+.calendar-time-block-event,
+.calendar-task-range-event {
+  --calendar-event-accent: var(--calendar-identity-color, var(--calendar-time-block-accent));
+  --calendar-event-bg: oklch(from var(--calendar-event-accent) 0.958 calc(c * 0.12) h);
+  --calendar-event-border: oklch(from var(--calendar-event-accent) calc(l * 0.34 + 0.582) calc(c * 0.34) h);
+  --calendar-event-text: oklch(from var(--calendar-event-accent) calc(l * 0.82) c h);
+}
+
+.calendar-conflict-event {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent 0,
+    transparent 5px,
+    color-mix(in oklch, var(--destructive) 18%, transparent) 5px,
+    color-mix(in oklch, var(--destructive) 18%, transparent) 8px
+  ) !important;
+  outline: 1px dashed var(--destructive);
+  outline-offset: -1px;
+}
+
+.calendar-deadline-event {
+  /* Was hardcoded to var(--card) regardless of the task's own color or
+     project identity - the accent (border/priority-dot) already read
+     --calendar-identity-color correctly, but the fill never did, so a
+     custom-colored task's single-moment deadline marker always looked
+     uncolored even though its range/time-block counterparts didn't.
+     Same oklch-from-accent recipe as .calendar-time-block-event /
+     .calendar-task-range-event below. */
+  --calendar-event-accent: var(--calendar-identity-color, var(--muted-foreground));
+  --calendar-event-bg: oklch(from var(--calendar-event-accent) 0.958 calc(c * 0.12) h);
+  --calendar-event-border: oklch(from var(--calendar-event-accent) calc(l * 0.34 + 0.582) calc(c * 0.34) h);
+  --calendar-event-text: oklch(from var(--calendar-event-accent) calc(l * 0.82) c h);
+  border-inline-start-style: dashed !important;
+}
+
+.dark .calendar-deadline-event {
+  --calendar-event-bg: oklch(from var(--calendar-event-accent) 0.265 calc(c * 0.3) h);
+  --calendar-event-border: oklch(from var(--calendar-event-accent) calc(l * 0.38 + 0.1995) calc(c * 0.38) h);
+  --calendar-event-text: oklch(from var(--calendar-event-accent) 0.82 calc(c * 0.78) h);
+}
+
+.calendar-deadline-event::after,
+.calendar-task-range-event.fc-event-end::after {
+  content: '';
+  position: absolute;
+  right: 0.35rem;
+  top: 50%;
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 999px;
+  background: var(--calendar-priority-marker, var(--muted-foreground));
+  transform: translateY(-50%);
+}
+
+.calendar-priority-marker-p1 { --calendar-priority-marker: var(--color-priority-p1); }
+.calendar-priority-marker-p2 { --calendar-priority-marker: var(--color-priority-p2); }
+.calendar-priority-marker-p3 { --calendar-priority-marker: var(--color-priority-p3); }
+.calendar-priority-marker-p4 { --calendar-priority-marker: var(--color-priority-p4); }
+.calendar-priority-marker-none { --calendar-priority-marker: var(--muted-foreground); }
+
+.dark .calendar-time-block-event,
+.dark .calendar-task-range-event {
+  --calendar-event-bg: oklch(from var(--calendar-event-accent) 0.265 calc(c * 0.3) h);
+  --calendar-event-border: oklch(from var(--calendar-event-accent) calc(l * 0.38 + 0.1995) calc(c * 0.38) h);
+  --calendar-event-text: oklch(from var(--calendar-event-accent) 0.82 calc(c * 0.78) h);
+}
+
+.calendar-google-event {
+  --calendar-event-accent: var(--color-provider-google);
+  --calendar-event-bg: color-mix(in oklch, var(--color-provider-google) 14%, var(--background));
+  --calendar-event-border: var(--border);
+  --calendar-event-text: var(--foreground);
+  background: var(--calendar-event-bg) !important;
+  color: var(--calendar-event-text) !important;
+  box-shadow: inset 0 0 0 1px var(--calendar-event-border);
+}
+
+.calendar-external-event {
+  --calendar-event-accent: var(--calendar-external-accent);
+  --calendar-event-bg: color-mix(in oklch, var(--calendar-external-accent) 14%, var(--background));
+  --calendar-event-border: var(--border);
+  --calendar-event-text: var(--foreground);
+  background: var(--calendar-event-bg) !important;
+  color: var(--calendar-event-text) !important;
+  box-shadow: inset 0 0 0 1px var(--calendar-event-border);
+}
+
+.dark .calendar-priority-event-p1,
+.dark .calendar-priority-event-p2,
+.dark .calendar-priority-event-p3,
+.dark .calendar-priority-event-p4,
+.dark .calendar-priority-event-none {
+  --calendar-event-bg: oklch(from var(--calendar-event-accent) calc(l * 0.24 + 0.144704) calc(c * 0.24) h);
+  --calendar-event-border: oklch(from var(--calendar-event-accent) calc(l * 0.48 + 0.16276) calc(c * 0.48) h);
+  --calendar-event-text: oklch(from var(--calendar-event-accent) calc(l * 0.72 + 0.262192) calc(c * 0.72) h);
+}
+
+.dark .calendar-google-event {
+  --calendar-event-bg: color-mix(in oklch, var(--muted) 86%, var(--background));
+  --calendar-event-border: color-mix(in oklch, var(--border) 70%, transparent);
+}
+
+.calendar-view .fc .fc-timegrid-event.calendar-google-event,
+.calendar-view .fc .fc-timegrid-event.calendar-external-event {
+  box-shadow: 0 6px 18px color-mix(in oklch, var(--calendar-event-accent, var(--primary)) 8%, transparent);
+}
+
+.calendar-priority-dot {
+  box-shadow: 0 0 0 3px color-mix(in oklch, currentColor 12%, transparent);
+}
+
+/* D9: legend text used to sit on a `color-mix(muted 44%, transparent)` pill
+   — a background D1/contrast-audit.mjs never checks (it only knows the 4
+   named surfaces), and it measurably failed AA for two of the four
+   priorities once actually composited and read with getComputedStyle
+   (P2 4.39:1, P4 4.55:1 — both below the 4.5 floor; verified in Chromium,
+   not assumed from the D1 fix carrying over). Dropped the pill: this text
+   now sits directly on `.calendar-view`'s own background
+   (`var(--card, var(--background))`), a pairing already verified at
+   7+:1 for every priority color. One fewer thing to keep in sync, and a
+   real bug fixed, not just simplified. */
+.calendar-legend-item:has(.calendar-priority-p1) { color: var(--color-p1); }
+.calendar-legend-item:has(.calendar-priority-p2) { color: var(--color-p2); }
+.calendar-legend-item:has(.calendar-priority-p3) { color: var(--color-p3); }
+.calendar-legend-item:has(.calendar-priority-p4) { color: var(--color-p4); }
+.calendar-legend-item:has(.calendar-priority-google) { color: var(--muted-foreground); }
+
+/* ══════════════════════════════════════════════════════════════
+   §10  Tooltip (hover on events)
+   ══════════════════════════════════════════════════════════════ */
+
+.calendar-event-tooltip {
+  display: none;
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--foreground);
+  color: var(--background);
+  padding: 0.35rem 0.55rem;
+  border-radius: var(--radius-chip);
+  font-size: 0.68rem;
+  font-weight: 500;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 10;
+  box-shadow: 0 8px 24px oklch(0 0 0 / 0.14);
+}
+
+.calendar-task-event:hover .calendar-event-tooltip,
+.calendar-task-event:focus-visible .calendar-event-tooltip {
+  display: block;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   §11  Legend bar
+   ══════════════════════════════════════════════════════════════ */
+
+.calendar-legend {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.35rem 0.25rem;
+  flex-wrap: wrap;
+}
+
+.calendar-legend-title {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--muted-foreground);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-right: 0.15rem;
+}
+
+.calendar-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.68rem;
+  color: var(--muted-foreground);
+}
+
+.calendar-priority-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.calendar-priority-p1 { background: var(--color-p1); }
+.calendar-priority-p2 { background: var(--color-p2); }
+.calendar-priority-p3 { background: var(--color-p3); }
+.calendar-priority-p4 { background: var(--color-p4); }
+.calendar-priority-google { background: var(--muted-foreground); }
+.calendar-priority-pnone { background: var(--muted-foreground); }
+
+/* ══════════════════════════════════════════════════════════════
+   §12  Custom event card (Week/Day timed events only — see
+   CalendarEventCard.tsx / eventContent in CalendarView.tsx). Month view
+   and all-day bars keep FullCalendar's default rendering.
+   ══════════════════════════════════════════════════════════════ */
+
+.calendar-view .fc .fc-timegrid-event .calendar-event-card {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.35rem;
+  height: 100%;
+  overflow: hidden;
+}
+
+.calendar-event-card-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
+.calendar-event-card-time {
+  font-size: 0.66rem;
+  font-weight: 600;
+  line-height: 1.15;
+  opacity: 0.66;
+}
+
+.calendar-event-card-title {
+  font-size: 0.74rem;
+  font-weight: 650;
+  line-height: 1.28;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* Compact (<=30min) events: time + title share a single line instead of
+   two stacked rows - there isn't enough box height for both otherwise. */
+.calendar-view .fc .fc-timegrid-event .calendar-event-card-compact {
+  align-items: center;
+}
+
+.calendar-event-card-compact .calendar-event-card-title {
+  display: block;
+  -webkit-line-clamp: unset;
+  white-space: nowrap;
+}
+
+.calendar-event-card-compact .calendar-event-card-time {
+  opacity: 0.75;
+}
+
+.calendar-event-card-icon {
+  width: 0.72rem;
+  height: 0.72rem;
+  margin-top: 0.05rem;
+  flex-shrink: 0;
+  opacity: 0.5;
+}
+
+.calendar-event-card-compact .calendar-event-card-icon {
+  margin-top: 0;
+}
+
+.calendar-task-event-completed .calendar-event-card-title {
+  text-decoration: line-through;
+}
+
+/* Focus ring for keyboard-selected events */
+.calendar-view .fc .fc-timegrid-event.calendar-task-event:focus-visible,
+.calendar-view .fc .fc-daygrid-event.calendar-task-event:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* Today badge in the Week/Day column header — mirrors the month view's
+   filled-circle day number, applied to the whole "WED 7/29" label since
+   the timegrid header shows weekday + date together, not a lone number. */
+.calendar-view .fc .fc-timegrid .fc-col-header-cell.fc-day-today .fc-col-header-cell-cushion {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* §2's `.fc-col-header *` reset forces background: transparent !important
+     on every header descendant (it exists to kill FullCalendar's injected
+     white backgrounds) - needs matching !important to win here too. */
+  background: var(--primary) !important;
+  color: var(--primary-foreground);
+  border-radius: 999px;
+  padding: 0.15rem 0.55rem;
+  font-weight: 700;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   §13  Today cell (month view) — intentionally no full-cell tint;
+   the circle badge on the day number (§5) is enough of a marker,
+   matching a cleaner reference style instead of washing the cell.
+   ══════════════════════════════════════════════════════════════ */
+
+/* ══════════════════════════════════════════════════════════════
+   §14  Select highlight (click-drag on empty cells)
+   ══════════════════════════════════════════════════════════════ */
+
+.calendar-view .fc .fc-highlight {
+  background: color-mix(in oklch, var(--primary) 8%, transparent) !important;
+  border-radius: var(--radius-chip);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   §15  Responsive adjustments
+   ══════════════════════════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+  .calendar-layout-plan-open .calendar-canvas {
+    display: none;
+  }
+
+  .calendar-layout .calendar-panel {
+    width: 100%;
+  }
+
+  .calendar-mobile-mode {
+    display: inline-flex;
+    margin-left: auto;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-control);
+    overflow: hidden;
+  }
+
+  .calendar-mobile-mode button {
+    min-height: 2.75rem;
+    padding: 0 0.65rem;
+    font-size: 0.75rem;
+    color: var(--muted-foreground);
+  }
+
+  .calendar-mobile-mode button[aria-pressed="true"] {
+    color: var(--foreground);
+    background: var(--accent);
+    font-weight: 600;
+  }
+  .calendar-toolbar-title {
+    font-size: 0.9rem;
+    min-width: 100%;
+    order: -1;
+  }
+
+  .calendar-toolbar-nav-btn {
+    width: 1.75rem;
+    height: 1.75rem;
+  }
+
+  .calendar-toolbar-today,
+  .calendar-toolbar-views > button {
+    font-size: 0.7rem;
+  }
+
+  .calendar-toolbar-views > button {
+    height: 1.85rem;
+    min-width: 4.75rem;
+  }
+
+  .calendar-view .fc .fc-daygrid-day-frame {
+    min-height: 4rem;
+    padding: 0.15rem 0.2rem;
+  }
+
+  .calendar-view .fc .fc-daygrid-day-number {
+    font-size: 0.78rem;
+    padding: 0.2rem 0.35rem;
+  }
+
+  .calendar-view .fc .fc-col-header-cell {
+    font-size: 0.6rem;
+    padding: 0.45rem 0.2rem 0.35rem;
+  }
+
+  .calendar-view .fc .fc-event {
+    font-size: 0.6rem;
+    padding: 0.05rem 0.25rem;
+  }
+
+  .calendar-view .fc .fc-timegrid-event {
+    font-size: 0.6rem;
+    padding: 0.1rem 0.3rem;
+  }
+
+  .calendar-legend {
+    flex-wrap: nowrap;
+    gap: 0.4rem;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    padding: 0.25rem 0.2rem;
+    scrollbar-width: none;
+    white-space: nowrap;
+  }
+
+  .calendar-legend::-webkit-scrollbar {
+    display: none;
+  }
+
+  .calendar-legend-item {
+    flex: 0 0 auto;
+    font-size: 0.6rem;
+  }
+
+  .calendar-legend-title {
+    flex: 0 0 auto;
+    font-size: 0.6rem;
+  }
+}
+
+@media (min-width: 769px) {
+  .calendar-mobile-mode { display: none; }
+}
+
+@media (max-width: 480px) {
+  .calendar-toolbar {
+    justify-content: center;
+  }
+
+  .calendar-view .fc .fc-daygrid-day-frame {
+    min-height: 3rem;
+  }
+
+  .calendar-view .fc .fc-daygrid-day-number {
+    font-size: 0.7rem;
+    padding: 0.15rem 0.3rem;
+  }
+
+  .calendar-view .fc .fc-col-header-cell {
+    font-size: 0.55rem;
+    letter-spacing: 0.05em;
+  }
+
+  .calendar-view .fc .fc-timegrid-slot {
+    height: 1.8rem;
+  }
+
+  .calendar-view .fc .fc-timegrid-axis-cushion {
+    font-size: 0.55rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .calendar-view .fc .fc-event,
+  .calendar-view .fc .fc-daygrid-day-number,
+  .calendar-view .fc .fc-daygrid-more-link,
+  .calendar-view .fc .fc-daygrid-day,
+  .calendar-view .fc .fc-daygrid-day-frame,
+  .calendar-view .fc .fc-timegrid-event {
+    transition: none;
+  }
+  .calendar-view .fc .fc-event:hover {
+    transform: none;
+  }
+}
