@@ -1,0 +1,4 @@
+ALTER TABLE "telegram_task_drafts"
+ADD COLUMN "color" TEXT,
+ADD COLUMN "tag_ids" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
+ADD COLUMN "tag_names" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[];
