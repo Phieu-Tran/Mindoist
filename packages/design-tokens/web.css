@@ -1,0 +1,99 @@
+/*
+ * Shared Mindoist design tokens.
+ * Layer 1: raw primitives. Layer 2: semantic ownership. Layer 3: component roles.
+ */
+:root {
+  --density-task-row: 36px;
+  --density-panel-gap: 12px;
+  /* Primitive colors */
+  --ds-neutral-0: #ffffff;
+  --ds-neutral-50: #f7f8fa;
+  --ds-neutral-100: #f1f3f7;
+  --ds-neutral-200: #e9ebf1;
+  --ds-neutral-300: #d6d9df;
+  --ds-neutral-500: #5d677c;
+  --ds-neutral-900: #1c2028;
+  --ds-neutral-950: #121417;
+
+  /* Semantic surfaces and content */
+  --ds-surface-canvas: var(--ds-neutral-50);
+  --ds-surface-raised: var(--ds-neutral-0);
+  --ds-surface-subtle: var(--ds-neutral-100);
+  --ds-content-primary: var(--ds-neutral-900);
+  --ds-content-muted: var(--ds-neutral-500);
+  --ds-border-default: var(--ds-neutral-300);
+
+  /* Owned functional color roles; never reassigned by data-accent. */
+  --color-priority-p1: oklch(0.5330 0.2152 27.33);
+  --color-priority-p2: oklch(0.5230 0.1867 47.60);
+  --color-priority-p3: oklch(0.5075 0.0511 264.64);
+  --color-priority-p4: oklch(0.5065 0.0407 257.42);
+  --color-project-slate: #64748b;
+  --color-project-sky: #0ea5e9;
+  --color-project-indigo: #6366f1;
+  --color-project-violet: #8b5cf6;
+  --color-project-jade: #10b981;
+  --color-project-rose: #f43f5e;
+  --color-project-amber: #f59e0b;
+  --color-project-lime: #84cc16;
+  --color-project-ocean: var(--color-project-sky);
+  --color-provider-google: #4285f4;
+  --color-provider-external: #f59e0b;
+
+  /* Compatibility aliases while existing components move to semantic names. */
+  --color-p1: var(--color-priority-p1);
+  --color-p2: var(--color-priority-p2);
+  --color-p3: var(--color-priority-p3);
+  --color-p4: var(--color-priority-p4);
+
+  /* Spacing, shape and motion primitives */
+  --ds-space-1: 4px;
+  --ds-space-2: 8px;
+  --ds-space-3: 12px;
+  --ds-space-4: 16px;
+  --ds-space-5: 24px;
+  --ds-radius-chip: 6px;
+  --ds-radius-control: 8px;
+  --ds-radius-panel: 12px;
+  --ds-duration-fast: 150ms;
+  --ds-duration-normal: 200ms;
+  --ds-motion-instant: 90ms;
+  --ds-motion-quick: 160ms;
+  --ds-motion-base: 240ms;
+  --ds-motion-slow: 360ms;
+
+  /* Component tokens */
+  --task-detail-row-min-height: 36px;
+  --task-detail-panel-width: 416px;
+  --calendar-surface: var(--ds-surface-raised);
+  --calendar-grid-line: var(--ds-border-default);
+  --calendar-event-radius: var(--ds-radius-chip);
+  --calendar-deadline-accent: var(--color-priority-p1);
+  --calendar-time-block-accent: var(--color-project-indigo);
+  --calendar-external-accent: var(--color-provider-google);
+}
+
+[data-density="compact"] { --density-task-row: 28px; --density-panel-gap: 8px; }
+[data-density="comfortable"] { --density-task-row: 44px; --density-panel-gap: 16px; }
+
+:root.dark {
+  --ds-surface-canvas: var(--ds-neutral-950);
+  --ds-surface-raised: #1e2126;
+  --ds-surface-subtle: #2a2e36;
+  --ds-content-primary: #eef0f4;
+  --ds-content-muted: #a2aab8;
+  --ds-border-default: #3a3f4a;
+  --color-priority-p1: oklch(0.7106 0.1661 22.22);
+  --color-priority-p2: oklch(0.7576 0.1590 55.93);
+  --color-priority-p3: oklch(0.6848 0.0476 264.19);
+  --color-priority-p4: oklch(0.7107 0.0351 256.79);
+  --color-project-slate: #94a3b8;
+  --color-project-sky: #38bdf8;
+  --color-project-indigo: #818cf8;
+  --color-project-violet: #a78bfa;
+  --color-project-jade: #34d399;
+  --color-project-rose: #fb7185;
+  --color-project-amber: #fbbf24;
+  --color-project-lime: #a3e635;
+  --color-project-ocean: var(--color-project-sky);
+}

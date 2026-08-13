@@ -1,0 +1,737 @@
+/* ── Layout ── */
+.project-workspace {
+  display: flex;
+  min-width: 0;
+  height: 100%;
+  flex-direction: column;
+}
+
+/* ── Header ── */
+.project-workspace-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: .65rem;
+}
+
+.project-workspace-heading {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: .55rem;
+}
+
+.project-workspace-header h2 {
+  margin: 0;
+  overflow: hidden;
+  color: var(--foreground);
+  font-size: clamp(1.05rem, 1.5vw, 1.25rem);
+  font-weight: 650;
+  letter-spacing: -.02em;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-workspace-task-count {
+  flex: 0 0 auto;
+  color: var(--muted-foreground);
+  font-size: .72rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.project-workspace-rename {
+  display: flex;
+  min-width: 0;
+  max-width: min(24rem, 45vw);
+  align-items: center;
+  gap: .25rem;
+}
+
+.project-workspace-rename input {
+  min-width: 8rem;
+  width: min(20rem, 32vw);
+  height: 2rem;
+  border: 1px solid color-mix(in oklch, var(--primary) 45%, transparent);
+  border-radius: var(--radius-control);
+  background: var(--background);
+  color: var(--foreground);
+  padding: .25rem .55rem;
+  font-size: 1rem;
+  font-weight: 650;
+  letter-spacing: -.02em;
+  outline: none;
+}
+
+.project-workspace-rename input:focus-visible {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px color-mix(in oklch, var(--primary) 22%, transparent);
+}
+
+.project-workspace-rename button,
+.project-workspace-rename-trigger {
+  display: inline-flex;
+  width: 1.8rem;
+  height: 1.8rem;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-control);
+  color: var(--muted-foreground);
+  transition: background var(--motion-quick), color var(--motion-quick), opacity var(--motion-quick), transform var(--motion-instant);
+}
+
+.project-workspace-rename-trigger { opacity: .62; }
+.project-workspace-rename-trigger:hover,
+.project-workspace-rename button:hover:not(:disabled) { background: var(--accent); color: var(--foreground); opacity: 1; }
+.project-workspace-rename button:active:not(:disabled),
+.project-workspace-rename-trigger:active { transform: scale(.94); }
+.project-workspace-rename button:disabled { cursor: not-allowed; opacity: .4; }
+.project-workspace-rename button:focus-visible,
+.project-workspace-rename-trigger:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; opacity: 1; }
+
+/* ── Buttons ── */
+.project-workspace-add-column,
+.project-workspace-state button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .4rem;
+  min-height: 2.15rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--background);
+  color: var(--foreground);
+  padding: .4rem .7rem;
+  font-size: .76rem;
+  font-weight: 620;
+  transition: border-color var(--motion-quick), background var(--motion-quick), box-shadow var(--motion-quick), transform var(--motion-instant);
+}
+
+.project-workspace-header-actions,
+.project-workspace-view-switch { display: flex; align-items: center; gap: .35rem; }
+.project-workspace-header-actions { flex: 0 0 auto; }
+
+.project-workspace-view-switch {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: color-mix(in oklch, var(--muted) 30%, transparent);
+  padding: .14rem;
+}
+
+.project-workspace-view-switch button {
+  display: flex;
+  min-height: 1.75rem;
+  align-items: center;
+  gap: .3rem;
+  border-radius: var(--radius-chip);
+  color: var(--muted-foreground);
+  padding: .25rem .48rem;
+  font-size: .7rem;
+  font-weight: 600;
+  transition: background var(--motion-quick), color var(--motion-quick), box-shadow var(--motion-quick);
+}
+
+.project-workspace-view-switch button:hover { color: var(--foreground); }
+
+.project-workspace-view-switch button.is-active {
+  background: var(--background);
+  color: var(--foreground);
+  box-shadow: 0 1px 3px color-mix(in oklch, var(--foreground) 8%, transparent);
+}
+
+.project-workspace-add-column:hover,
+.project-workspace-state button:hover {
+  border-color: color-mix(in oklch, var(--primary) 40%, transparent);
+  background: var(--accent);
+}
+
+.project-workspace-delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.15rem;
+  min-width: 2.15rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--background);
+  color: var(--muted-foreground);
+  transition: border-color var(--motion-quick), background var(--motion-quick), color var(--motion-quick);
+}
+
+.project-workspace-delete:hover {
+  border-color: color-mix(in oklch, var(--destructive) 40%, transparent);
+  background: color-mix(in oklch, var(--destructive) 8%, transparent);
+  color: var(--destructive);
+}
+
+.project-workspace-add-column:active,
+.project-workspace-state button:active {
+  transform: scale(.97);
+}
+
+.project-workspace-error {
+  margin: 0 0 .7rem;
+  border: 1px solid color-mix(in oklch, var(--destructive) 20%, transparent);
+  border-radius: var(--radius-control);
+  background: color-mix(in oklch, var(--destructive) 6%, transparent);
+  color: var(--destructive);
+  padding: .55rem .7rem;
+  font-size: .78rem;
+}
+
+/* ── Board ── */
+.project-board {
+  display: grid;
+  grid-auto-columns: minmax(17.5rem, 19rem);
+  grid-auto-flow: column;
+  align-items: stretch;
+  gap: .7rem;
+  /* A fixed (not min-) height so each column has something bounded to scroll
+     within - otherwise a long column just grows the whole page instead of
+     scrolling in place, and a short column can no longer be seen once you've
+     scrolled the page past it. */
+  height: calc(100vh - 9.5rem);
+  min-height: 20rem;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  padding: .1rem .1rem .6rem;
+  scroll-snap-type: x proximity;
+}
+
+/* ── Column ── */
+.project-column {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  border: 1px solid color-mix(in oklch, var(--border) 70%, transparent);
+  border-radius: var(--radius-panel);
+  background: color-mix(in oklch, var(--muted) 25%, transparent);
+  padding: .45rem;
+  scroll-snap-align: start;
+  transition: border-color var(--motion-quick), background var(--motion-quick), box-shadow var(--motion-quick);
+}
+
+.project-column:hover {
+  border-color: var(--border);
+}
+
+.project-column-drag-over {
+  border-color: color-mix(in oklch, var(--primary) 60%, transparent);
+  background: color-mix(in oklch, var(--primary) 4%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in oklch, var(--primary) 8%, transparent);
+}
+
+/* Column header */
+.project-column-header,
+.project-column-title-row,
+.project-column-actions,
+.project-column-rename,
+.project-task-card-main,
+.project-task-meta,
+.project-task-move {
+  display: flex;
+  align-items: center;
+}
+
+.project-column-header {
+  min-height: 2rem;
+  gap: .35rem;
+  padding: 0 .1rem .35rem;
+}
+
+.project-column-drag-handle {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 1.3rem;
+  height: 1.3rem;
+  border-radius: var(--radius-chip);
+  color: var(--muted-foreground);
+  cursor: grab;
+  transition: background var(--motion-instant), color var(--motion-instant);
+}
+
+.project-column-drag-handle:hover {
+  background: var(--accent);
+  color: var(--foreground);
+}
+
+.project-column-drag-handle:active {
+  cursor: grabbing;
+}
+
+.project-column.is-dragging {
+  opacity: 0.4;
+}
+
+.project-column-title-row {
+  min-width: 0;
+  gap: .4rem;
+}
+
+.project-column-title-row h3 {
+  margin: 0;
+  overflow: hidden;
+  color: var(--foreground);
+  font-size: .8rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-column-status {
+  width: .44rem;
+  height: .44rem;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--muted-foreground) 50%, transparent);
+}
+
+.project-column-status-done { background: var(--success, var(--color-project-jade)); }
+.project-column-status.column-color-ocean { background: var(--color-project-ocean); }
+.project-column-status.column-color-jade { background: var(--color-project-jade); }
+.project-column-status.column-color-amber { background: var(--color-project-amber); }
+.project-column-status.column-color-rose { background: var(--color-project-rose); }
+.project-column-status.column-color-indigo { background: var(--color-project-indigo); }
+
+.project-column-count {
+  min-width: 1.3rem;
+  border-radius: 999px;
+  background: var(--background);
+  color: var(--muted-foreground);
+  padding: .05rem .32rem;
+  font-size: .65rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.project-column-actions {
+  margin-left: auto;
+  gap: .05rem;
+  opacity: 0;
+  transition: opacity var(--motion-quick);
+}
+
+.project-column:hover .project-column-actions,
+.project-column-actions:focus-within { opacity: 1; }
+
+.project-column-actions button,
+.project-column-rename button {
+  display: grid;
+  width: 1.65rem;
+  height: 1.65rem;
+  place-items: center;
+  border-radius: var(--radius-chip);
+  color: var(--muted-foreground);
+  transition: background var(--motion-instant), color var(--motion-instant);
+}
+
+.project-column-actions button:hover,
+.project-column-rename button:hover {
+  background: var(--accent);
+  color: var(--foreground);
+}
+
+.project-column-actions button.is-active { color: var(--success, var(--color-project-jade)); }
+
+/* Column rename */
+.project-column-rename { gap: .2rem; }
+.project-column-rename input,
+.project-column-add input {
+  min-width: 0;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-chip);
+  background: var(--background);
+  color: var(--foreground);
+  padding: .38rem .45rem;
+  font-size: .76rem;
+  outline: none;
+  transition: border-color var(--motion-quick), box-shadow var(--motion-quick);
+}
+
+.project-column-rename input { width: 100%; }
+
+.project-column-rename input:focus,
+.project-column-add input:focus {
+  border-color: var(--ring);
+  box-shadow: 0 0 0 2px color-mix(in oklch, var(--ring) 10%, transparent);
+}
+
+.project-column-add select {
+  border: 1px solid var(--input);
+  border-radius: var(--radius-chip);
+  background: var(--background);
+  color: var(--foreground);
+  padding: .38rem .45rem;
+  font-size: .74rem;
+}
+
+/* Column confirm dialog */
+.project-column-confirm {
+  margin-bottom: .45rem;
+  border: 1px solid color-mix(in oklch, var(--destructive) 20%, transparent);
+  border-radius: var(--radius-control);
+  background: var(--background);
+  padding: .5rem;
+}
+
+.project-column-confirm p { margin: 0 0 .4rem; color: var(--foreground); font-size: .72rem; line-height: 1.4; }
+.project-column-confirm div { display: flex; justify-content: flex-end; gap: .3rem; }
+.project-column-confirm button { border-radius: var(--radius-chip); color: var(--muted-foreground); padding: .25rem .45rem; font-size: .7rem; transition: background var(--motion-instant), color var(--motion-instant); }
+.project-column-confirm button:hover { background: var(--accent); color: var(--foreground); }
+.project-column-confirm button.is-danger { background: var(--destructive); color: var(--destructive-foreground); }
+
+/* ── Task cards ── */
+.project-column-cards {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  gap: .32rem;
+  overflow-y: auto;
+}
+
+.project-column-empty {
+  display: grid;
+  min-height: 3rem;
+  place-items: center;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-control);
+  color: var(--muted-foreground);
+  padding: .65rem;
+  font-size: .72rem;
+  text-align: center;
+}
+
+.project-task-card {
+  border: 1px solid color-mix(in oklch, var(--border) 80%, transparent);
+  border-radius: var(--radius-control);
+  background: var(--card);
+  padding: .52rem;
+  transition: border-color var(--motion-quick), background var(--motion-quick), transform var(--motion-quick);
+}
+
+.project-task-card:hover {
+  border-color: color-mix(in oklch, var(--primary) 25%, transparent);
+  background: var(--accent);
+}
+
+.project-task-card.is-dragging {
+  opacity: .4;
+  transform: scale(.97);
+}
+
+.project-task-card.is-completed .project-task-title {
+  color: var(--muted-foreground);
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in oklch, var(--muted-foreground) 40%, transparent);
+}
+
+.project-task-card-main {
+  gap: .3rem;
+  align-items: flex-start;
+}
+
+.project-task-grip {
+  width: .8rem;
+  height: .8rem;
+  flex: 0 0 auto;
+  margin-top: .12rem;
+  color: color-mix(in oklch, var(--muted-foreground) 40%, transparent);
+  cursor: grab;
+  transition: color var(--motion-quick);
+}
+
+.project-task-card:hover .project-task-grip {
+  color: color-mix(in oklch, var(--muted-foreground) 70%, transparent);
+}
+
+.project-task-title {
+  display: -webkit-box;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--foreground);
+  font-size: .79rem;
+  font-weight: 620;
+  line-height: 1.38;
+  text-align: left;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  transition: color var(--motion-quick);
+}
+
+.project-task-title:hover { color: var(--primary); }
+
+.project-task-meta {
+  min-width: 0;
+  gap: .35rem;
+  margin: .32rem 0 0 1.05rem;
+  overflow: hidden;
+}
+
+.project-task-priority {
+  border-radius: var(--radius-chip);
+  padding: .1rem .3rem;
+  font-size: .6rem;
+  font-weight: 700;
+}
+
+.project-task-priority.priority-1 { background: color-mix(in oklch, var(--color-p1) 14%, transparent); color: var(--color-p1); }
+.project-task-priority.priority-2 { background: color-mix(in oklch, var(--color-p2) 14%, transparent); color: var(--color-p2); }
+.project-task-priority.priority-3 { background: color-mix(in oklch, var(--color-p3) 14%, transparent); color: var(--color-p3); }
+.project-task-priority.priority-4 { background: var(--muted); color: var(--muted-foreground); }
+
+.project-task-tag {
+  display: inline-flex;
+  min-width: 0;
+  max-width: 8.5rem;
+  align-items: center;
+  gap: .2rem;
+  overflow: hidden;
+  color: var(--muted-foreground);
+  font-size: .64rem;
+  line-height: 1.4;
+}
+
+.project-task-tag > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-task-tag b {
+  flex: 0 0 auto;
+  font-weight: 650;
+}
+
+.project-task-menu {
+  position: relative;
+  flex: 0 0 auto;
+  margin: -.25rem -.25rem 0 0;
+}
+
+.project-task-menu > button {
+  display: grid;
+  width: 1.75rem;
+  height: 1.75rem;
+  place-items: center;
+  border-radius: var(--radius-chip);
+  color: var(--muted-foreground);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity var(--motion-quick), background var(--motion-quick), color var(--motion-quick);
+}
+
+.project-task-card:hover .project-task-menu > button,
+.project-task-menu > button[aria-expanded="true"],
+.project-task-menu > button:focus-visible {
+  opacity: 1;
+}
+
+.project-task-menu > button:hover,
+.project-task-menu > button:focus-visible {
+  background: var(--accent);
+  color: var(--foreground);
+  outline: none;
+}
+
+.project-task-menu > button:focus-visible {
+  box-shadow: 0 0 0 2px var(--ring);
+}
+
+.project-task-menu > div {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + .2rem);
+  right: 0;
+  display: grid;
+  width: 10.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--card);
+  box-shadow: 0 8px 24px color-mix(in oklch, var(--foreground) 12%, transparent);
+  padding: .3rem;
+}
+
+.project-task-menu > div > span {
+  color: var(--muted-foreground);
+  padding: .25rem .45rem;
+  font-size: .64rem;
+  font-weight: 650;
+  text-transform: uppercase;
+}
+
+.project-task-menu > div button {
+  display: flex;
+  min-height: 2rem;
+  align-items: center;
+  gap: .35rem;
+  border-radius: var(--radius-chip);
+  color: var(--foreground);
+  padding: .35rem .45rem;
+  font-size: .72rem;
+  text-align: left;
+}
+
+.project-task-menu > div button:hover,
+.project-task-menu > div button:focus-visible {
+  background: var(--accent);
+  outline: none;
+}
+
+.project-task-menu > div button:focus-visible {
+  box-shadow: 0 0 0 2px var(--ring);
+}
+
+.project-task-menu > div button:disabled {
+  color: var(--muted-foreground);
+  cursor: default;
+}
+
+/* ── Add column ── */
+.project-column-add {
+  min-height: 7rem;
+  border-style: dashed;
+  background: transparent;
+}
+
+.project-column-add > button {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: .35rem;
+  border-radius: var(--radius-control);
+  color: var(--muted-foreground);
+  padding: .6rem;
+  font-size: .76rem;
+  transition: background var(--motion-quick), color var(--motion-quick);
+}
+
+.project-column-add > button:hover {
+  background: var(--accent);
+  color: var(--foreground);
+}
+
+.project-column-add form { display: grid; gap: .45rem; }
+.project-column-add label { color: var(--foreground); font-size: .74rem; font-weight: 620; }
+.project-column-add form div { display: flex; justify-content: flex-end; gap: .3rem; }
+.project-column-add form button { border-radius: var(--radius-chip); padding: .34rem .52rem; color: var(--muted-foreground); font-size: .7rem; transition: background var(--motion-instant), color var(--motion-instant); }
+.project-column-add form button[type="submit"] { background: var(--primary); color: var(--primary-foreground); font-weight: 620; }
+.project-column-add form button:disabled { cursor: not-allowed; opacity: .45; }
+
+/* ── List view ── */
+.project-workspace-list {
+  display: grid;
+  overflow: hidden;
+  border: 1px solid color-mix(in oklch, var(--border) 70%, transparent);
+  border-radius: var(--radius-panel);
+  background: var(--card);
+}
+
+.project-workspace-list-row {
+  display: grid;
+  grid-template-columns: minmax(12rem, 1fr) auto minmax(5rem, auto) minmax(6rem, auto) minmax(7rem, auto);
+  align-items: center;
+  gap: .65rem;
+  min-height: 3rem;
+  border-bottom: 1px solid color-mix(in oklch, var(--border) 50%, transparent);
+  padding: .5rem .65rem;
+  transition: background var(--motion-instant);
+}
+
+.project-workspace-list-row:last-child { border-bottom: 0; }
+.project-workspace-list-row:hover { background: color-mix(in oklch, var(--accent) 35%, transparent); }
+
+.project-workspace-list-row > button {
+  overflow: hidden;
+  color: var(--foreground);
+  font-size: .8rem;
+  font-weight: 600;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-workspace-list-row > button:hover { color: var(--primary); }
+.project-workspace-list-row.is-completed > button { color: var(--muted-foreground); text-decoration: line-through; }
+
+.project-workspace-list-row select {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-chip);
+  background: var(--background);
+  color: var(--muted-foreground);
+  padding: .3rem .4rem;
+  font-size: .7rem;
+  transition: border-color var(--motion-quick);
+}
+
+.project-workspace-list-row select:focus {
+  border-color: var(--ring);
+}
+
+/* ── Footer & states ── */
+.project-workspace-hint {
+  margin: .25rem 0 0;
+  color: var(--muted-foreground);
+  font-size: .68rem;
+}
+
+.project-workspace-state {
+  display: grid;
+  min-height: 18rem;
+  place-items: center;
+  align-content: center;
+  gap: .7rem;
+  color: var(--muted-foreground);
+  text-align: center;
+}
+
+.project-workspace-state p { margin: 0; }
+
+/* Skeleton */
+.project-workspace-skeleton { animation: project-pulse 1.4s ease-in-out infinite; }
+.project-workspace-skeleton-title { width: 12rem; height: 2rem; margin-bottom: 1rem; border-radius: var(--radius-control); background: var(--muted); }
+.project-workspace-skeleton-board { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .7rem; }
+.project-workspace-skeleton-board > div { height: 24rem; border-radius: var(--radius-panel); background: var(--muted); }
+
+@keyframes project-pulse { 50% { opacity: .5; } }
+
+/* ── Responsive ── */
+@media (max-width: 767px) {
+  .project-workspace-header { align-items: flex-end; }
+  .project-workspace-add-column { width: 2.2rem; flex: 0 0 auto; padding-inline: 0; font-size: 0; }
+  .project-workspace-view-switch button { width: 1.85rem; justify-content: center; font-size: 0; padding-inline: 0; }
+  .project-board { grid-auto-columns: minmax(min(17rem, calc(100vw - 2rem)), 85vw); min-height: calc(100vh - 12rem); }
+  .project-workspace-list-row { grid-template-columns: minmax(8rem, 1fr) auto minmax(6rem, auto); gap: .4rem; }
+  .project-workspace-list-row > :nth-child(2),
+  .project-workspace-list-row > :nth-child(3) { display: none; }
+  .project-workspace-hint { display: none; }
+}
+
+@media (hover: none) {
+  .project-task-menu > button {
+    width: 2.75rem;
+    height: 2.75rem;
+    opacity: 1;
+  }
+
+  .project-task-menu > div button {
+    min-height: 2.75rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .project-workspace-skeleton { animation: none; }
+  .project-task-card,
+  .project-column,
+  .project-workspace-add-column,
+  .project-task-grip,
+  .project-task-title { transition: none; }
+  .project-task-card:hover { transform: none; }
+}

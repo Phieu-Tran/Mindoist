@@ -1,0 +1,50 @@
+{
+  "app": {
+    "title": "Mindoist",
+    "description": "A mindfulness productivity app"
+  },
+  "home": {
+    "welcome": "Welcome to Mindoist",
+    "subtitle": "Stay mindful, stay productive"
+  },
+  "language": {
+    "en": "English",
+    "vi": "Tiếng Việt"
+  },
+  "offline": "You are offline. Changes will sync when reconnected.",
+  "sync": {
+    "title": "Sync center",
+    "description": "See what is waiting and retry when a sync needs attention.",
+    "status": "Status",
+    "synced": "Synced",
+    "syncing": "Syncing…",
+    "offline": "Offline",
+    "error": "Sync needs attention",
+    "pending": "{{count}} waiting",
+    "pendingLabel": "Changes waiting",
+    "lastSynced": "Last synced",
+    "never": "Not yet",
+    "retry": "Sync now",
+    "close": "Close sync center"
+  },
+  "save": "Save",
+  "themeToggle": "Theme (currently {{theme}})",
+  "appearance": {
+    "label": "Appearance",
+    "language": "Language",
+    "accent": "Accent color",
+    "chooseAccent": "Choose an accent color",
+    "currentAccent": "Accent color (currently {{accent}})",
+    "colors": {
+      "slate": "Slate",
+      "indigo": "Indigo",
+      "ocean": "Ocean",
+      "violet": "Violet",
+      "sky": "Sky",
+      "jade": "Jade",
+      "lime": "Lime",
+      "rose": "Rose",
+      "amber": "Amber"
+    }
+  }
+}

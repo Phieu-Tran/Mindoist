@@ -1,0 +1,16 @@
+import { fireEvent, render, screen } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
+import { DatePicker } from './date-picker';
+
+describe('DatePicker popup positioning', () => {
+  it('ignores scroll events after its anchor is detached during navigation', () => {
+    render(<DatePicker value="2026-08-13" onChange={vi.fn()} testId="deadline-date" />);
+    const anchor = screen.getByTestId('deadline-date');
+    fireEvent.click(anchor);
+    Object.defineProperty(anchor, 'isConnected', { configurable: true, get: () => false });
+    const measure = vi.spyOn(anchor, 'getBoundingClientRect');
+
+    expect(() => fireEvent.scroll(window)).not.toThrow();
+    expect(measure).not.toHaveBeenCalled();
+  });
+});

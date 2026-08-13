@@ -1,0 +1,80 @@
+# Dependencies
+node_modules/
+.pnpm/
+.pnpm-store/
+
+# Build outputs
+dist/
+build/
+*.tsbuildinfo
+
+# Environment & secrets
+.env
+.env.*
+!.env.example
+
+# Agent memory (local only, shared by Claude/Codex — do not push)
+.agent/
+
+# Skills installed via `npx skills add` (local tooling, not product code)
+.agents/
+
+# Product-only GitHub export mirror — its own independent git repo, never
+# tracked/committed by this one (see CLAUDE.md "GitHub Public Export")
+.export-prod/
+
+# Agent/dev-tooling instructions & internal workflow docs — not for GitHub
+CLAUDE.md
+AGENTS.md
+docs/agents/
+scripts/agents/
+.claude/
+.mcp.json
+.codex/
+
+# Serena
+.serena/
+.serena/cache/
+.serena/logs/
+.serena/project.local.yml
+
+# Local codebase knowledge graph index
+.codebase-memory/
+
+# Local debug artifacts
+/*.log
+/*-check*.png
+/quick-capture-plan.png
+/task-detail-polish.png
+# Scratch clone of another project, pulled in only to debug against it
+/.tmp-picoclaw-debug/
+# Build outputs and store screenshots: the APK ships via GitHub Releases,
+# not in the tree — 94MB of binaries do not belong in history.
+/artifacts/
+
+# IDE / OS
+.DS_Store
+Thumbs.db
+
+# Test / coverage
+coverage/
+playwright-report/
+test-results/
+
+# Docker
+pgdata/
+
+# Logs / scratch
+*.log
+apps/web/err.log
+apps/web/result.txt
+.playwright-mcp/
+.serena/memories/
+
+# Vitest/Vite temp config artifacts
+*.timestamp-*.mjs
+
+# Internal packages excluded from the public product snapshot
+/apps/mobile/
+/mcp/
+/scripts/

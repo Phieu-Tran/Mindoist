@@ -1,0 +1,104 @@
+.calendar-view {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+  background: color-mix(in oklch, var(--card) 96%, var(--background));
+  padding: 1rem 1.1rem 0.75rem;
+}
+
+.calendar-header-row {
+  display: flex;
+  min-height: 2.75rem;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+  border-bottom: 1px solid color-mix(in oklch, var(--border) 72%, transparent);
+  padding: 0 0.25rem 0.75rem;
+}
+
+.calendar-header-title {
+  margin: 0;
+  color: var(--foreground);
+  font-size: 1.4rem;
+  font-weight: 650;
+  letter-spacing: -0.025em;
+}
+
+.calendar-panel-toggle,
+.calendar-toolbar-nav-btn,
+.calendar-toolbar-today {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--card);
+  color: var(--muted-foreground);
+  transition: background var(--motion-quick) var(--ease-out), color var(--motion-quick) var(--ease-out), border-color var(--motion-quick) var(--ease-out);
+}
+
+.calendar-panel-toggle { width: 2.5rem; margin-left: auto; padding: 0.25rem; }
+.calendar-toolbar-nav-btn { width: 2.5rem; }
+.calendar-toolbar-today { padding: 0 0.9rem; font-size: 0.8rem; font-weight: 550; }
+.calendar-panel-toggle:hover,
+.calendar-toolbar-nav-btn:hover,
+.calendar-toolbar-today:hover:not(:disabled) { border-color: var(--muted-foreground); background: var(--muted); color: var(--foreground); }
+.calendar-toolbar-today:disabled { cursor: default; opacity: 0.45; }
+
+.calendar-toolbar {
+  display: flex;
+  min-height: 3.75rem;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.55rem 0.25rem 0.7rem;
+  flex-wrap: wrap;
+}
+
+.calendar-toolbar-nav { display: flex; align-items: center; gap: 0.3rem; }
+.calendar-toolbar-title { min-width: 0; flex: 1; margin: 0; overflow: hidden; color: var(--foreground); font-size: 1.08rem; font-weight: 650; letter-spacing: -0.015em; text-align: center; text-overflow: ellipsis; white-space: nowrap; }
+.calendar-toolbar-views { min-width: 7.5rem; background: var(--card); }
+
+.calendar-legend { display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap; }
+.calendar-legend-item { display: inline-flex; min-height: 1.75rem; align-items: center; gap: 0.35rem; border-radius: var(--radius-chip); background: var(--muted); padding: 0.15rem 0.5rem; color: var(--muted-foreground); font-size: 0.72rem; font-weight: 500; }
+.calendar-priority-dot { width: 7px; height: 7px; flex-shrink: 0; border-radius: 50%; }
+.calendar-priority-p1 { background: var(--color-p1); }
+.calendar-priority-p2 { background: var(--color-p2); }
+.calendar-priority-p3,
+.calendar-priority-p4 { background: var(--muted-foreground); }
+.calendar-priority-google { background: var(--color-provider-google); filter: saturate(0.4); }
+
+.calendar-conflict-event {
+  background-image: repeating-linear-gradient(-45deg, transparent 0, transparent 5px, color-mix(in oklch, currentColor 12%, transparent) 5px, color-mix(in oklch, currentColor 12%, transparent) 8px);
+  outline: 1px dashed currentColor;
+  outline-offset: -1px;
+}
+
+.calendar-task-event-completed { opacity: 0.55; }
+.calendar-task-event-completed strong { text-decoration: line-through; }
+
+.calendar-mobile-mode { display: none; }
+
+@media (max-width: 767px) {
+  .calendar-layout { display: block; height: calc(100dvh - 8.5rem); min-height: 36rem; }
+  .calendar-layout .calendar-canvas { height: 100%; }
+  .calendar-layout .calendar-panel { width: 100% !important; min-height: calc(100dvh - 10rem); }
+  .calendar-layout-plan-open .calendar-canvas { display: none; }
+  .calendar-view { padding: 0.75rem; }
+  .calendar-panel-toggle { display: none; }
+  .calendar-mobile-mode { display: inline-flex; margin-left: auto; overflow: hidden; border: 1px solid var(--border); border-radius: var(--radius-control); }
+  .calendar-mobile-mode button { min-height: 2.75rem; padding: 0 0.65rem; color: var(--muted-foreground); font-size: 0.75rem; }
+  .calendar-mobile-mode button[aria-pressed='true'] { background: var(--accent); color: var(--foreground); font-weight: 600; }
+  .calendar-toolbar-title { min-width: 100%; order: -1; }
+  .calendar-legend { width: 100%; flex-wrap: nowrap; overflow-x: auto; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .calendar-panel-toggle,
+  .calendar-toolbar-nav-btn,
+  .calendar-toolbar-today { transition: none; }
+}

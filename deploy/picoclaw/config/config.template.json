@@ -1,0 +1,71 @@
+{
+  "version": 3,
+  "agents": {
+    "defaults": {
+      "workspace": "/root/.picoclaw/workspace",
+      "restrict_to_workspace": true,
+      "model_name": "",
+      "max_tokens": 4096,
+      "max_tool_iterations": 1,
+      "summarize_message_threshold": 20,
+      "summarize_token_percent": 75
+    }
+  },
+  "model_list": [],
+  "session": {
+    "dimensions": ["chat", "sender"]
+  },
+  "channel_list": {
+    "telegram": {
+      "enabled": true,
+      "type": "telegram",
+      "allow_from": [],
+      "settings": {
+        "streaming": {
+          "enabled": false
+        }
+      }
+    }
+  },
+  "tools": {
+    "filter_sensitive_data": true,
+    "filter_min_length": 8,
+    "web": { "enabled": false },
+    "cron": { "enabled": false },
+    "exec": { "enabled": false, "allow_remote": false },
+    "skills": { "enabled": false },
+    "mcp": { "enabled": false },
+    "append_file": { "enabled": false },
+    "edit_file": { "enabled": false },
+    "find_skills": { "enabled": false },
+    "install_skill": { "enabled": false },
+    "list_dir": { "enabled": false },
+    "load_image": { "enabled": false },
+    "message": { "enabled": false },
+    "read_file": { "enabled": false },
+    "send_file": { "enabled": false },
+    "send_tts": { "enabled": false },
+    "spawn": { "enabled": false },
+    "spawn_status": { "enabled": false },
+    "subagent": { "enabled": false },
+    "web_fetch": { "enabled": false },
+    "write_file": { "enabled": false }
+  },
+  "heartbeat": { "enabled": false },
+  "evolution": { "enabled": false },
+  "devices": { "enabled": false },
+  "events": {
+    "logging": {
+      "enabled": true,
+      "include": ["agent.*"],
+      "include_payload": false,
+      "min_severity": "warn"
+    }
+  },
+  "gateway": {
+    "host": "127.0.0.1",
+    "port": 18790,
+    "hot_reload": false,
+    "log_level": "warn"
+  }
+}
