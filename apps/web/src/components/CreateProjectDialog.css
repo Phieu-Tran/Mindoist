@@ -1,0 +1,106 @@
+.create-project-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  background: hsl(220 25% 8% / .48);
+  padding: 1rem;
+  backdrop-filter: blur(3px);
+}
+
+.create-project-dialog {
+  width: min(42rem, 100%);
+  max-height: min(46rem, calc(100vh - 2rem));
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+  background: var(--card);
+  box-shadow: 0 16px 48px oklch(0 0 0 / .16);
+  padding: 1.1rem;
+}
+
+/* Mica-style frosted glass in dark mode — see .frosted-surface in index.css. */
+.dark .create-project-dialog {
+  backdrop-filter: blur(24px) saturate(1.4);
+  background: color-mix(in oklch, var(--card) 86%, transparent);
+  box-shadow: 0 16px 48px oklch(0 0 0 / .32);
+}
+
+.dark .create-project-backdrop {
+  backdrop-filter: blur(8px);
+}
+
+.create-project-dialog > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.create-project-dialog > header span {
+  color: var(--primary);
+  font-size: .68rem;
+  font-weight: 750;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+}
+
+.create-project-dialog h2 { margin: .18rem 0 0; color: var(--foreground); font-size: 1.35rem; letter-spacing: -.025em; }
+.create-project-dialog > header button { display: grid; width: 2rem; height: 2rem; place-items: center; border-radius: var(--radius-control); color: var(--muted-foreground); }
+.create-project-dialog > header button:hover { background: var(--accent); color: var(--foreground); }
+.create-project-dialog form { display: grid; gap: 1rem; }
+
+.create-project-field { display: grid; gap: .38rem; }
+.create-project-field > span,
+.create-project-templates legend,
+.create-project-colors legend { color: var(--foreground); font-size: .78rem; font-weight: 680; }
+.create-project-field input { width: 100%; border: 1px solid var(--input); border-radius: var(--radius-control); background: var(--background); color: var(--foreground); padding: .65rem .72rem; font-size: .86rem; outline: none; }
+.create-project-field input:focus { border-color: var(--ring); box-shadow: 0 0 0 2px var(--ring); }
+.create-project-field small { color: var(--muted-foreground); font-size: .68rem; }
+.create-project-templates,
+.create-project-colors { min-width: 0; border: 0; padding: 0; }
+.create-project-templates > div { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .55rem; margin-top: .45rem; }
+.create-project-templates button { display: grid; min-width: 0; grid-template-columns: auto 1fr; gap: .08rem .55rem; border: 1px solid var(--border); border-radius: var(--radius-panel); background: var(--card); padding: .68rem; text-align: left; transition: border-color var(--motion-quick) var(--ease-out), background var(--motion-quick) var(--ease-out), box-shadow var(--motion-quick) var(--ease-out); }
+.create-project-templates button:hover { border-color: color-mix(in oklch, var(--primary) 35%, transparent); background: color-mix(in oklch, var(--accent) 50%, transparent); }
+.create-project-templates button.is-selected { border-color: color-mix(in oklch, var(--primary) 62%, transparent); background: color-mix(in oklch, var(--primary) 6%, transparent); box-shadow: 0 0 0 2px color-mix(in oklch, var(--primary) 9%, transparent); }
+.create-project-template-icon { display: grid; grid-row: 1 / span 3; width: 2rem; height: 2rem; place-items: center; border-radius: var(--radius-control); background: var(--muted); color: var(--muted-foreground); }
+.create-project-templates button.is-selected .create-project-template-icon { background: color-mix(in oklch, var(--primary) 12%, transparent); color: var(--primary); }
+.create-project-templates strong { overflow: hidden; color: var(--foreground); font-size: .78rem; text-overflow: ellipsis; white-space: nowrap; }
+.create-project-templates small { overflow: hidden; color: var(--muted-foreground); font-size: .66rem; line-height: 1.35; text-overflow: ellipsis; white-space: nowrap; }
+.create-project-templates em { grid-column: 2; overflow: hidden; color: color-mix(in oklch, var(--muted-foreground) 80%, transparent); font-size: .61rem; font-style: normal; text-overflow: ellipsis; white-space: nowrap; }
+.create-project-colors > div { display: flex; gap: .55rem; margin-top: .45rem; }
+/* Flat filled dot, no border/ring — selection shown via the white checkmark
+   rendered inside (see CreateProjectDialog.tsx), matching the same idiom
+   used by AccentPicker/TaskDetail/CountdownList swatches elsewhere. */
+.create-project-colors button { display: grid; place-items: center; width: 1.55rem; height: 1.55rem; border-radius: 999px; color: white; transition: transform var(--motion-quick) var(--ease-out); }
+.create-project-colors button:hover { transform: scale(1.08); }
+/* Same hex values as .project-color-* in index.css, so the swatch you pick
+   here is exactly the dot color you'll see everywhere else afterward. */
+.create-project-colors .project-color-slate { background: var(--color-project-slate); }
+.create-project-colors .project-color-sky { background: var(--color-project-sky); }
+.create-project-colors .project-color-indigo { background: var(--color-project-indigo); }
+.create-project-colors .project-color-violet { background: var(--color-project-violet); }
+.create-project-colors .project-color-ocean { background: var(--color-project-ocean); }
+.create-project-colors .project-color-jade { background: var(--color-project-jade); }
+.create-project-colors .project-color-rose { background: var(--color-project-rose); }
+.create-project-colors .project-color-amber { background: var(--color-project-amber); }
+.create-project-colors .project-color-lime { background: var(--color-project-lime); }
+.create-project-error { margin: 0; border-radius: var(--radius-control); background: color-mix(in oklch, var(--destructive) 8%, transparent); color: var(--destructive); padding: .55rem .65rem; font-size: .75rem; }
+.create-project-dialog footer { display: flex; justify-content: flex-end; gap: .5rem; border-top: 1px solid var(--border); padding-top: .85rem; }
+.create-project-dialog footer button { min-height: 2.2rem; border-radius: var(--radius-control); color: var(--muted-foreground); padding: .45rem .8rem; font-size: .78rem; font-weight: 650; }
+.create-project-dialog footer button:hover { background: var(--accent); color: var(--foreground); }
+.create-project-dialog footer button.is-primary { background: var(--primary); color: var(--primary-foreground); }
+.create-project-dialog footer button:disabled { cursor: not-allowed; opacity: .5; }
+
+@media (max-width: 540px) {
+  .create-project-backdrop { align-items: end; padding: 0; }
+  .create-project-dialog { width: 100%; max-height: 92vh; border-radius: var(--radius-panel) var(--radius-panel) 0 0; padding: 1rem; }
+  .create-project-templates > div { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .create-project-templates button,
+  .create-project-colors button { transition: none; }
+}

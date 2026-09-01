@@ -1,0 +1,1010 @@
+@import "tailwindcss";
+@import "@mindoist/design-tokens/web.css";
+@plugin "tailwindcss-animate";
+
+/*
+ * Mindoist Design Tokens (shadcn/ui format)
+ * Accent: one active preset, persisted through data-accent on <html>
+ * Canvas: #f7f8fa; Sidebar: #f1f3f7; Ink: #1c2028
+ * Gray family: cool-neutral
+ * Source of truth: docs/design/DESIGN.md §3
+ *
+ * Values are oklch() — a lossless re-expression of the same locked hex
+ * palette (every value below round-trips to its original hex exactly, see
+ * docs/design/evidence/oklch-migration/ for the conversion table), not a
+ * re-tuned palette. Two real gains from the switch: it matches Tailwind v4 /
+ * shadcn's own default token format, and every color-mix() below now runs
+ * `in oklch` instead of `in srgb` — oklch interpolates hue-to-hue blends
+ * without the muddy/grayish midpoint sRGB mixing produces, which is what
+ * actually determines derived tones like task-color-bg/border/text.
+ */
+
+@theme inline {
+  --font-sans: "Geist Variable", "system-ui", -apple-system, "Segoe UI", Roboto, sans-serif;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--foreground);
+  --color-popover: var(--card);
+  --color-popover-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  /* D5 — one radius scale for the whole app (was 19 hand-picked rem values
+     + 4 one-off Tailwind arbitrary classes across index.css/CalendarView.css/
+     ProjectWorkspace.css/SummaryDashboard.css/CreateProjectDialog.css/
+     CreateTaskDialog.css/button.tsx, no shared logic between them). Literal
+     px, not rem — this app runs html{font-size:87.5%}, so a "0.5rem" in a
+     component file doesn't mean the same 8px it would in a default Tailwind
+     project. Exposed both as `var(--radius-chip|control|panel)` for plain
+     CSS and as the `rounded-chip|control|panel` utilities (Tailwind v4
+     turns every @theme entry into both). 9999px/50% (pills, avatars, dots)
+     are intentionally outside this scale — they're "fully round", not a
+     size choice. */
+  --radius-chip: 6px;
+  --radius-control: 8px;
+  --radius-panel: 12px;
+}
+
+:root {
+  --density-task-row: 36px;
+  --density-panel-gap: 12px;
+  --density-task-padding: 0.625rem;
+  color-scheme: light;
+  /* Motion tokens: keep interaction timing consistent across CSS and React.
+     Components may opt into a shorter/longer token, but should not invent a
+     new duration for ordinary feedback. */
+  --motion-instant: 90ms;
+  --motion-quick: 160ms;
+  --motion-base: 240ms;
+  --motion-slow: 360ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --radius: 0.5rem;
+  --background: var(--ds-surface-canvas);
+  --foreground: var(--ds-content-primary);
+  /* Elevated surface (card/popover) — DESIGN.md §3 locks light surface to
+     pure white, distinct from the --background canvas. */
+  --card: var(--ds-surface-raised);
+  --primary: oklch(0.5444 0.19 271.82);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.9638 0.0058 264.53);
+  --secondary-foreground: oklch(0.2430 0.0164 264.20);
+  --muted: oklch(0.9638 0.0058 264.53);
+  /* 0.5130→0.5070 (2026-07-26): re-verified against the real --accent value
+     (0.9210 — this token was a stale 0.9420 in the audit script's hand-copy,
+     not what actually ships) with a from-scratch OKLCH→linear-sRGB script;
+     0.5130 rounded to exactly the AA edge (~4.5:1) instead of clearing it. */
+  --muted-foreground: oklch(0.5070 0.0350 265.11);
+  --accent: oklch(0.9210 0.0058 264.53);
+  --accent-foreground: oklch(0.2430 0.0164 264.20);
+  --destructive: oklch(0.5771 0.2152 27.33);
+  --destructive-foreground: oklch(1 0 0);
+  --border: var(--ds-border-default);
+  --input: color-mix(in oklch, var(--muted-foreground) 75%, var(--background));
+  --ring: oklch(0.5444 0.19 271.82);
+  --sidebar: oklch(0.9380 0.0058 264.53);
+  /* Was 0.5444 — a dead/unused token before D2 wired --sidebar-foreground
+     up in real components; once live it measured 4.15-4.38:1 (below AA) on
+     every real surface. Matched to --muted-foreground's corrected value
+     since both play the same "secondary text" role. */
+  --sidebar-foreground: oklch(0.5070 0.0350 265.11);
+  --sidebar-accent: oklch(0.9424 0.0116 264.51);
+}
+
+.mindoist-time-grid {
+  position: relative;
+  min-height: var(--grid-height);
+  overflow: hidden;
+  background-color: var(--card);
+  background-image: repeating-linear-gradient(to bottom, color-mix(in oklch, var(--muted) 24%, transparent) 0, color-mix(in oklch, var(--muted) 24%, transparent) var(--calendar-hour-height, 88px), transparent var(--calendar-hour-height, 88px), transparent var(--calendar-two-hour-height, 176px));
+  cursor: crosshair;
+  user-select: none;
+}
+.mindoist-time-grid.is-today { background-color: color-mix(in oklch, var(--primary) 3.5%, transparent); }
+.mindoist-time-grid-lines { position: absolute; inset: 0; pointer-events: none; }
+.mindoist-time-grid-lines span { position: absolute; left: 0; right: 0; border-top: 1px solid color-mix(in oklch, var(--border) 28%, transparent); }
+.mindoist-time-grid-lines span:nth-child(2n + 1) { border-top-color: color-mix(in oklch, var(--border) 48%, transparent); }
+.mindoist-time-grid-lines span:nth-child(4n + 1) { border-top-color: color-mix(in oklch, var(--border) 78%, transparent); }
+.mindoist-time-grid-block { position: absolute; z-index: 2; overflow: hidden; border: 0; border-radius: var(--radius-control); background: oklch(from var(--calendar-identity-color) 0.945 calc(c * 0.20) h); color: var(--foreground); cursor: grab; transition: box-shadow var(--motion-instant) var(--ease-out), transform var(--motion-instant) var(--ease-out); }
+.mindoist-time-grid-block::before { position: absolute; top: .62rem; left: .48rem; z-index: 1; width: .45rem; height: .45rem; border-radius: 999px; background: var(--calendar-identity-color); content: ''; pointer-events: none; }
+.dark .mindoist-time-grid-block { background: oklch(from var(--calendar-identity-color) 0.285 calc(c * 0.42) h); }
+.mindoist-time-grid-block:hover { z-index: 4; box-shadow: 0 7px 18px color-mix(in oklch, var(--foreground) 12%, transparent); transform: translateY(-1px); }
+.mindoist-time-grid-block:active { cursor: grabbing; }
+.mindoist-calendar-selection { position: absolute; left: 3px; right: 3px; z-index: 1; border: 0; border-radius: var(--radius-control); background: color-mix(in oklch, var(--primary) 18%, transparent); pointer-events: none; }
+.mindoist-calendar-quick-create {
+  position: absolute;
+  left: 3px;
+  right: 3px;
+  z-index: 8;
+  display: flex;
+  min-height: 5.25rem;
+  flex-direction: column;
+  gap: .2rem;
+  overflow: visible;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: oklch(from var(--calendar-draft-identity-color, var(--calendar-time-block-accent)) 0.945 calc(c * 0.20) h);
+  box-shadow: 0 12px 30px color-mix(in oklch, var(--foreground) 16%, transparent), 0 1px 3px color-mix(in oklch, var(--foreground) 10%, transparent);
+  padding: .34rem .38rem;
+  color: var(--foreground);
+  cursor: text;
+}
+.dark .mindoist-calendar-quick-create { background: oklch(from var(--calendar-draft-identity-color, var(--calendar-time-block-accent)) 0.285 calc(c * 0.42) h); }
+.mindoist-calendar-quick-create-time {
+  overflow: hidden;
+  color: var(--muted-foreground);
+  font-size: .64rem;
+  font-weight: 600;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mindoist-calendar-quick-create-row { display: flex; min-width: 0; align-items: center; gap: .2rem; }
+.mindoist-calendar-quick-create-project { display: flex; min-width: 0; align-items: center; gap: .35rem; }
+.mindoist-calendar-quick-create-project > span { width: .55rem; height: .55rem; flex: 0 0 auto; border-radius: 999px; background: var(--calendar-draft-inherit-color, var(--calendar-time-block-accent)); }
+.mindoist-calendar-quick-create-project select { min-width: 0; min-height: 1.5rem; flex: 1; border: 0; border-radius: var(--radius-chip); background: transparent; padding: 0 .2rem; color: var(--muted-foreground); font: inherit; font-size: .68rem; font-weight: 550; outline: none; cursor: pointer; }
+.mindoist-calendar-quick-create-project select:focus-visible { box-shadow: 0 0 0 2px color-mix(in oklch, var(--ring) 34%, transparent); }
+.mindoist-calendar-quick-create-colors { display: flex; min-width: 0; align-items: center; gap: .12rem; overflow-x: auto; padding: .08rem 0 .02rem; scrollbar-width: none; }
+.mindoist-calendar-quick-create-colors::-webkit-scrollbar { display: none; }
+.mindoist-calendar-quick-create .mindoist-calendar-quick-create-swatch { display: inline-grid; width: .94rem; min-height: .94rem; flex: 0 0 .94rem; place-items: center; border: 0; border-radius: 999px; background: var(--task-color-accent); padding: 0; color: white; box-shadow: none; }
+.mindoist-calendar-quick-create .mindoist-calendar-quick-create-swatch.is-inherit { background: var(--calendar-draft-inherit-color, var(--calendar-time-block-accent)); }
+.mindoist-calendar-quick-create .mindoist-calendar-quick-create-swatch:hover:not(:disabled) { background: var(--task-color-accent); opacity: .82; transform: scale(1.08); }
+.mindoist-calendar-quick-create .mindoist-calendar-quick-create-swatch.is-inherit:hover:not(:disabled) { background: var(--calendar-draft-inherit-color, var(--calendar-time-block-accent)); }
+.mindoist-calendar-quick-create .mindoist-calendar-quick-create-swatch svg { width: .62rem; height: .62rem; stroke-width: 3; }
+.mindoist-calendar-quick-create input {
+  min-width: 0;
+  min-height: 1.7rem;
+  flex: 1;
+  border: 0;
+  background: transparent;
+  color: var(--foreground);
+  font: inherit;
+  font-size: .76rem;
+  font-weight: 600;
+  outline: none;
+  user-select: text;
+}
+.mindoist-calendar-quick-create input::placeholder { color: var(--muted-foreground); font-weight: 450; }
+.mindoist-calendar-quick-create:focus-within { box-shadow: 0 16px 34px color-mix(in oklch, var(--foreground) 18%, transparent), 0 2px 6px color-mix(in oklch, var(--foreground) 10%, transparent); }
+.mindoist-calendar-quick-create button {
+  display: inline-grid;
+  width: 1.7rem;
+  min-height: 1.7rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 0;
+  border-radius: var(--radius-chip);
+  background: transparent;
+  color: var(--muted-foreground);
+  cursor: pointer;
+}
+.mindoist-calendar-quick-create button[type="submit"] { border-radius: 999px; background: var(--calendar-draft-identity-color, var(--primary)); color: white; }
+.mindoist-calendar-quick-create-row > button[type="button"] { border-radius: 999px; background: color-mix(in oklch, var(--muted) 74%, transparent); }
+.mindoist-calendar-quick-create button:hover:not(:disabled) { background: var(--accent); color: var(--foreground); }
+.mindoist-calendar-quick-create button[type="submit"]:hover:not(:disabled) { background: var(--calendar-draft-identity-color, var(--primary)); color: white; opacity: .84; }
+.mindoist-calendar-quick-create button:disabled { cursor: default; opacity: .45; }
+.mindoist-calendar-quick-create button svg { width: .82rem; height: .82rem; }
+.mindoist-calendar-quick-create-error {
+  position: absolute;
+  top: calc(100% + .25rem);
+  left: 0;
+  width: max-content;
+  max-width: min(18rem, calc(100vw - 2rem));
+  border: 1px solid var(--destructive);
+  border-radius: var(--radius-control);
+  background: var(--card);
+  box-shadow: 0 8px 20px color-mix(in oklch, var(--foreground) 12%, transparent);
+  padding: .4rem .55rem;
+  color: var(--destructive);
+  font-size: .7rem;
+  line-height: 1.35;
+}
+.mindoist-calendar-keyboard-cursor { position: absolute; left: 0; right: 0; z-index: 1; display: none; border-top: 2px solid color-mix(in oklch, var(--ring) 70%, transparent); pointer-events: none; }
+.mindoist-time-grid:focus-visible .mindoist-calendar-keyboard-cursor { display: block; }
+.mindoist-calendar-now { position: absolute; left: 0; right: 0; z-index: 5; border-top: 2px solid var(--destructive); pointer-events: none; }
+.mindoist-calendar-now::before { position: absolute; top: -4px; left: -3px; width: 7px; height: 7px; border-radius: 999px; background: var(--destructive); content: ''; }
+.mindoist-calendar-resize-handle { position: absolute; right: 0; bottom: 0; left: 0; min-height: 7px; border: 0; background: transparent; opacity: 0; cursor: ns-resize; transition: opacity var(--motion-quick) var(--ease-out); }
+.mindoist-time-grid-block:hover .mindoist-calendar-resize-handle, .mindoist-time-grid-block:focus-within .mindoist-calendar-resize-handle { opacity: .55; }
+.mindoist-calendar-resize-handle::after { position: absolute; bottom: 2px; left: 50%; width: 18px; border-top: 2px solid color-mix(in oklch, currentColor 45%, transparent); content: ''; transform: translateX(-50%); }
+
+.mindoist-calendar-grid { --calendar-time-gutter: 4.25rem; display: flex; min-height: 0; flex: 1; flex-direction: column; overflow: auto; border: 1px solid var(--border); border-radius: var(--radius-control); background: var(--card); }
+.mindoist-calendar-grid-header, .mindoist-calendar-all-day-row { display: grid; min-width: var(--calendar-grid-min-width, 42rem); grid-template-columns: var(--calendar-time-gutter) repeat(var(--grid-days, 5), minmax(0, 1fr)); }
+.mindoist-calendar-grid-columns { display: grid; grid-template-columns: repeat(var(--grid-days, 5), minmax(0, 1fr)); }
+.mindoist-calendar-grid-header { position: sticky; top: 0; z-index: 7; border-bottom: 1px solid var(--border); background: color-mix(in oklch, var(--card) 92%, var(--muted)); }
+.mindoist-calendar-grid-corner { border-right: 1px solid var(--border); background: color-mix(in oklch, var(--muted) 65%, var(--card)); }
+.mindoist-calendar-grid-day-header { display: flex; min-height: 3.35rem; align-items: center; justify-content: center; gap: .45rem; border-right: 1px solid var(--border); padding: .5rem .4rem; color: var(--muted-foreground); }
+.mindoist-calendar-grid-day-header span { font-size: .68rem; font-weight: 600; letter-spacing: .045em; text-transform: uppercase; }
+.mindoist-calendar-grid-day-header strong { display: inline-grid; width: 2rem; height: 2rem; place-items: center; border-radius: 999px; color: var(--foreground); font-size: 1rem; font-weight: 650; }
+.mindoist-calendar-grid-day-header.is-weekend { background: color-mix(in oklch, var(--muted) 38%, transparent); }
+.mindoist-calendar-grid-day-header.is-today { color: var(--primary); }
+.mindoist-calendar-grid-day-header.is-today strong { background: var(--primary); color: var(--primary-foreground); }
+.mindoist-calendar-time-body { display: grid; min-width: var(--calendar-grid-min-width, 42rem); grid-template-columns: var(--calendar-time-gutter) minmax(0, 1fr); }
+.mindoist-calendar-grid-columns { min-width: 0; }
+.mindoist-calendar-grid-column { position: relative; min-width: 0; border-right: 1px solid var(--border); }
+.mindoist-calendar-grid-column.is-today { box-shadow: inset 1px 0 color-mix(in oklch, var(--primary) 18%, transparent), inset -1px 0 color-mix(in oklch, var(--primary) 18%, transparent); }
+.mindoist-calendar-hours { position: relative; z-index: 2; border-right: 1px solid var(--border); background: color-mix(in oklch, var(--muted) 42%, var(--card)); }
+.mindoist-calendar-hours span { position: absolute; right: .75rem; color: var(--muted-foreground); font-size: 12px; font-weight: 560; font-variant-numeric: tabular-nums; transform: translateY(-50%); }
+.mindoist-calendar-hours span:nth-child(1) { top: 0; }
+.mindoist-calendar-hours span:nth-child(2) { top: 5.882%; }
+.mindoist-calendar-hours span:nth-child(3) { top: 11.764%; }
+.mindoist-calendar-hours span:nth-child(4) { top: 17.647%; }
+.mindoist-calendar-hours span:nth-child(5) { top: 23.529%; }
+.mindoist-calendar-hours span:nth-child(6) { top: 29.411%; }
+.mindoist-calendar-hours span:nth-child(7) { top: 35.294%; }
+.mindoist-calendar-hours span:nth-child(8) { top: 41.176%; }
+.mindoist-calendar-hours span:nth-child(9) { top: 47.058%; }
+.mindoist-calendar-hours span:nth-child(10) { top: 52.941%; }
+.mindoist-calendar-hours span:nth-child(11) { top: 58.823%; }
+.mindoist-calendar-hours span:nth-child(12) { top: 64.705%; }
+.mindoist-calendar-hours span:nth-child(13) { top: 70.588%; }
+.mindoist-calendar-hours span:nth-child(14) { top: 76.470%; }
+.mindoist-calendar-hours span:nth-child(15) { top: 82.352%; }
+.mindoist-calendar-hours span:nth-child(16) { top: 88.235%; }
+.mindoist-calendar-hours span:nth-child(17) { top: 94.117%; }
+.mindoist-calendar-hours span:nth-child(18) { top: 100%; }
+.mindoist-calendar-all-day-row { border-bottom: 1px solid var(--border); background: var(--card); }
+.mindoist-calendar-all-day-label { display: flex; min-height: 2.75rem; align-items: flex-start; justify-content: flex-end; border-right: 1px solid var(--border); padding: .6rem .55rem 0 0; color: var(--muted-foreground); font-size: .62rem; font-weight: 600; letter-spacing: .03em; text-transform: uppercase; }
+.mindoist-calendar-grid-all-day { min-height: 2.75rem; border-right: 1px solid var(--border); padding: .3rem; }
+.mindoist-calendar-grid-all-day.is-today { background: color-mix(in oklch, var(--primary) 3.5%, transparent); }
+.mindoist-calendar-grid-chip { position: relative; display: block; width: 100%; min-height: 1.45rem; overflow: hidden; border: 0; border-radius: var(--radius-chip); background: oklch(from var(--calendar-identity-color) 0.945 calc(c * 0.20) h); padding: .2rem .4rem .2rem 1.15rem; color: var(--foreground); text-align: left; font-size: .7rem; font-weight: 550; white-space: nowrap; text-overflow: ellipsis; transition: background var(--motion-quick) var(--ease-out), transform var(--motion-quick) var(--ease-out); }
+.mindoist-calendar-grid-chip::before { position: absolute; top: 50%; left: .42rem; width: .38rem; height: .38rem; border-radius: 999px; background: var(--calendar-identity-color); content: ''; transform: translateY(-50%); }
+.mindoist-calendar-grid-chip + .mindoist-calendar-grid-chip { margin-top: .2rem; }
+.mindoist-calendar-grid-chip:hover { background: oklch(from var(--calendar-identity-color) 0.91 calc(c * 0.30) h); transform: translateY(-1px); }
+.mindoist-calendar-grid-chip.is-external { color: var(--muted-foreground); cursor: default; }
+.mindoist-calendar-grid-chip.is-external:hover { background: oklch(from var(--calendar-identity-color) 0.945 calc(c * 0.20) h); transform: none; }
+.dark .mindoist-calendar-grid-chip { background: oklch(from var(--calendar-identity-color) 0.285 calc(c * 0.42) h); }
+.dark .mindoist-calendar-grid-chip:hover { background: oklch(from var(--calendar-identity-color) 0.34 calc(c * 0.50) h); }
+.dark .mindoist-calendar-grid-chip.is-external:hover { background: oklch(from var(--calendar-identity-color) 0.285 calc(c * 0.42) h); }
+.mindoist-calendar-grid-block-button { display: flex; width: 100%; height: 100%; flex-direction: column; overflow: hidden; border: 0; background: transparent; padding: .45rem .6rem .45rem 1.28rem; color: inherit; text-align: left; }
+.mindoist-calendar-grid-block-button span { overflow: hidden; font-size: 12px; font-weight: 650; line-height: 1.35; text-overflow: ellipsis; white-space: nowrap; }
+.mindoist-calendar-grid-block-button small { margin-top: .12rem; font-size: 11px; font-weight: 520; font-variant-numeric: tabular-nums; opacity: .82; }
+.mindoist-deadline-layer { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
+.mindoist-deadline-marker { position: absolute; right: 3px; left: 3px; display: flex; min-height: 22px; align-items: center; gap: .35rem; overflow: hidden; border: 0; border-top: 2px solid var(--calendar-identity-color); background: color-mix(in oklch, var(--card) 88%, transparent); color: var(--foreground); font-size: 11px; text-align: left; transform: translateY(-1px); pointer-events: auto; }
+.mindoist-deadline-marker > span { width: 0; height: 0; border-top: 4px solid transparent; border-bottom: 4px solid transparent; border-left: 6px solid var(--calendar-identity-color); }
+.mindoist-deadline-marker strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mindoist-deadline-marker small { margin-left: auto; }
+
+.mindoist-month-grid { display: grid; min-height: 0; flex: 1; grid-template-columns: repeat(7, minmax(0, 1fr)); grid-template-rows: auto repeat(6, minmax(6.5rem, 1fr)); overflow: auto; border-top: 1px solid var(--border); border-left: 1px solid var(--border); background: var(--card); }
+.mindoist-month-weekday { position: sticky; top: 0; z-index: 3; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); background: color-mix(in oklch, var(--muted) 72%, var(--card)); padding: .5rem; color: var(--muted-foreground); font-size: .7rem; font-weight: 600; text-align: center; text-transform: uppercase; }
+.mindoist-month-day { min-width: 0; overflow: hidden; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: .35rem; background: var(--card); }
+.mindoist-month-day.is-outside { background: color-mix(in oklch, var(--muted) 38%, var(--card)); color: var(--muted-foreground); }
+.mindoist-month-day.is-today { box-shadow: inset 0 0 0 2px color-mix(in oklch, var(--primary) 60%, transparent); }
+.mindoist-month-day-number { display: inline-grid; width: 1.55rem; height: 1.55rem; place-items: center; border-radius: 999px; font-size: .72rem; }
+.mindoist-month-day.is-today .mindoist-month-day-number { background: var(--primary); color: var(--primary-foreground); font-weight: 700; }
+.mindoist-month-events { display: grid; gap: .2rem; margin-top: .25rem; }
+.mindoist-month-event { position: relative; display: flex; min-width: 0; align-items: center; gap: .25rem; overflow: hidden; border: 0; border-radius: var(--radius-chip); background: oklch(from var(--calendar-identity-color) 0.945 calc(c * 0.20) h); padding: .16rem .3rem .16rem 1.05rem; color: inherit; font-size: .65rem; text-align: left; }
+.mindoist-month-event::before { position: absolute; top: 50%; left: .38rem; width: .36rem; height: .36rem; border-radius: 999px; background: var(--calendar-identity-color); content: ''; transform: translateY(-50%); }
+.dark .mindoist-month-event { background: oklch(from var(--calendar-identity-color) 0.285 calc(c * 0.42) h); }
+.mindoist-month-event.is-range { border-radius: 0; }
+.mindoist-month-event.is-external { filter: saturate(.45); }
+.mindoist-month-event > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mindoist-month-deadline-shape { width: 0; height: 0; border-top: 4px solid transparent; border-bottom: 4px solid transparent; border-left: 6px solid var(--calendar-identity-color); }
+.mindoist-month-more { color: var(--muted-foreground); font-size: .65rem; }
+
+[data-density="compact"] { --density-task-row: 28px; --density-panel-gap: 8px; --density-task-padding: 0.25rem; }
+[data-density="cozy"] { --density-task-row: 36px; --density-panel-gap: 12px; --density-task-padding: 0.625rem; }
+[data-density="comfortable"] { --density-task-row: 44px; --density-panel-gap: 16px; --density-task-padding: 0.875rem; }
+
+.task-row-density { min-height: var(--density-task-row); }
+.task-row-density-has-meta { min-height: calc(var(--density-task-row) + 20px); }
+
+.dark {
+  color-scheme: dark;
+  --background: var(--ds-surface-canvas);
+  --foreground: var(--ds-content-primary);
+  /* Elevated surface one step above canvas, so cards/popovers stay
+     visually layered instead of blending into --background. */
+  --card: var(--ds-surface-raised);
+  /* Matches :root.dark[data-accent="indigo"] below (the default preset,
+     always applied by lib/appearance.ts before first paint) — this base
+     value is a pre-JS/no-JS fallback, not a value that renders in practice.
+     Previously it used a different, unverified pairing (L0.6368/white
+     foreground, ~3.5:1 contrast, below AA) left over from before the accent
+     preset system existed; aligned to the real preset's verified 7:1+ pair
+     so the fallback is never worse than what actually ships. */
+  --primary: oklch(0.7217 0.16 274.81);
+  --primary-foreground: oklch(0.1984 0.0270 270.68);
+  --secondary: oklch(0.2772 0.0154 269.12);
+  --secondary-foreground: oklch(0.8412 0.0077 260.73);
+  --muted: oklch(0.2450 0.0155 274.17);
+  /* 0.6496→0.6600 (2026-07-26): the only 2 real dark-theme AA failures
+     found once contrast-audit.mjs's double-gamma-decode bug was fixed (it
+     had made ~21 pairs look like failures when only these 2 vs --accent
+     actually were, at 4.43:1). See MASTERPLAN.md X3. */
+  --muted-foreground: oklch(0.6600 0.0141 266.65);
+  --accent: oklch(0.2850 0.0154 269.12);
+  --accent-foreground: oklch(0.8412 0.0077 260.73);
+  --destructive: oklch(0.7106 0.1661 22.22);
+  --destructive-foreground: oklch(1 0 0);
+  --border: var(--ds-border-default);
+  --input: color-mix(in oklch, var(--muted-foreground) 75%, var(--background));
+  --ring: oklch(0.7217 0.16 274.81);
+  --sidebar: oklch(0.1550 0.0104 268.19);
+  --sidebar-foreground: oklch(0.6600 0.0141 266.65);
+  --sidebar-accent: oklch(0.2772 0.0154 269.12);
+}
+
+/* One active accent at a time. Each preset controls only semantic accent slots.
+ *
+ * Chroma refresh (2026-07-24, "Quiet Focus" redesign pass): same hue/lightness
+ * as before (brand identity unchanged), chroma raised ~10-20% per preset for a
+ * more confident/premium feel — the "spend your boldness in one place" accent
+ * is now a little more assertive while the neutral chrome around it stays flat.
+ * Every pair below was verified against WCAG AA (>=4.5:1) with a from-scratch
+ * OKLCH->linear-sRGB->relative-luminance script (no library), not eyeballed;
+ * margins hex-noted here so a future re-tune can sanity-check against them:
+ * indigo/ocean/jade/rose/amber all ~5.83:1 (light, vs primary-foreground);
+ * dark pairs all >=7:1 (comfortable headroom, dark primaries sit
+ * on a near-black foreground already). Verify with
+ * `node apps/web/contrast-audit.mjs`, which now parses these tokens
+ * straight out of this file instead of a hand-copied snapshot.
+ */
+/* Accent presets own action/focus/sidebar-selection only. Priority, project
+ * identity and calendar provider colors come from @mindoist/design-tokens
+ * and intentionally do not appear in any data-accent selector.
+ */
+:root[data-accent="indigo"] {
+  --primary: oklch(0.5195 0.19 271.82);
+  --primary-foreground: oklch(1 0 0);
+  --ring: oklch(0.5195 0.19 271.82);
+  --sidebar-accent: oklch(0.9439 0.0180 272.31);
+}
+
+:root[data-accent="slate"] {
+  --primary: oklch(0.47 0.04 257.42);
+  --primary-foreground: oklch(1 0 0);
+  --ring: oklch(0.47 0.04 257.42);
+  --sidebar-accent: oklch(0.945 0.01 257.42);
+}
+
+:root[data-accent="violet"] {
+  --primary: oklch(0.50 0.17 292.72);
+  --primary-foreground: oklch(1 0 0);
+  --ring: oklch(0.50 0.17 292.72);
+  --sidebar-accent: oklch(0.945 0.02 292.72);
+}
+
+:root[data-accent="sky"] {
+  --primary: oklch(0.49 0.13 237.32);
+  --primary-foreground: oklch(1 0 0);
+  --ring: oklch(0.49 0.13 237.32);
+  --sidebar-accent: oklch(0.95 0.02 237.32);
+}
+
+:root[data-accent="lime"] {
+  --primary: oklch(0.46 0.12 130.85);
+  --primary-foreground: oklch(1 0 0);
+  --ring: oklch(0.46 0.12 130.85);
+  --sidebar-accent: oklch(0.95 0.025 130.85);
+}
+
+:root[data-accent="ocean"] {
+  --primary: oklch(0.5000 0.16 246.80);
+  --primary-foreground: oklch(1 0 0);
+  --ring: oklch(0.5000 0.16 246.80);
+  --sidebar-accent: oklch(0.9504 0.0192 235.73);
+}
+
+:root[data-accent="jade"] {
+  --primary: oklch(0.4855 0.115 171.82);
+  --primary-foreground: oklch(1 0 0);
+  --ring: oklch(0.4855 0.115 171.82);
+  --sidebar-accent: oklch(0.9486 0.0172 174.05);
+}
+
+:root[data-accent="rose"] {
+  --primary: oklch(0.5305 0.185 5.00);
+  --primary-foreground: oklch(1 0 0);
+  --ring: oklch(0.5305 0.185 5.00);
+  --sidebar-accent: oklch(0.9421 0.0186 356.44);
+}
+
+:root[data-accent="amber"] {
+  --primary: oklch(0.5110 0.135 74.30);
+  --primary-foreground: oklch(1 0 0);
+  --ring: oklch(0.5110 0.135 74.30);
+  --sidebar-accent: oklch(0.9478 0.0241 85.79);
+}
+
+:root.dark[data-accent="indigo"] {
+  --primary: oklch(0.7217 0.16 274.81);
+  --primary-foreground: oklch(0.1984 0.0270 270.68);
+  --ring: oklch(0.7217 0.16 274.81);
+  --sidebar-accent: oklch(0.2993 0.0588 273.03);
+}
+
+:root.dark[data-accent="slate"] {
+  --primary: oklch(0.74 0.04 257.42);
+  --primary-foreground: oklch(0.20 0.02 257.42);
+  --ring: oklch(0.74 0.04 257.42);
+  --sidebar-accent: oklch(0.30 0.02 257.42);
+}
+
+:root.dark[data-accent="violet"] {
+  --primary: oklch(0.74 0.14 292.72);
+  --primary-foreground: oklch(0.20 0.035 292.72);
+  --ring: oklch(0.74 0.14 292.72);
+  --sidebar-accent: oklch(0.30 0.045 292.72);
+}
+
+:root.dark[data-accent="sky"] {
+  --primary: oklch(0.76 0.12 237.32);
+  --primary-foreground: oklch(0.20 0.03 237.32);
+  --ring: oklch(0.76 0.12 237.32);
+  --sidebar-accent: oklch(0.31 0.04 237.32);
+}
+
+:root.dark[data-accent="lime"] {
+  --primary: oklch(0.78 0.14 130.85);
+  --primary-foreground: oklch(0.20 0.035 130.85);
+  --ring: oklch(0.78 0.14 130.85);
+  --sidebar-accent: oklch(0.31 0.04 130.85);
+}
+
+:root.dark[data-accent="ocean"] {
+  --primary: oklch(0.7512 0.125 235.73);
+  --primary-foreground: oklch(0.2133 0.0294 237.73);
+  --ring: oklch(0.7512 0.125 235.73);
+  --sidebar-accent: oklch(0.3098 0.0422 232.09);
+}
+
+:root.dark[data-accent="jade"] {
+  --primary: oklch(0.7613 0.13 171.20);
+  --primary-foreground: oklch(0.2257 0.0341 168.66);
+  --ring: oklch(0.7613 0.13 171.20);
+  --sidebar-accent: oklch(0.3098 0.0407 172.40);
+}
+
+:root.dark[data-accent="rose"] {
+  --primary: oklch(0.7501 0.14 0.43);
+  --primary-foreground: oklch(0.2181 0.0463 0.55);
+  --ring: oklch(0.7501 0.14 0.43);
+  --sidebar-accent: oklch(0.3004 0.0496 353.01);
+}
+
+:root.dark[data-accent="amber"] {
+  --primary: oklch(0.7842 0.155 78.81);
+  --primary-foreground: oklch(0.2174 0.0452 79.08);
+  --ring: oklch(0.7842 0.155 78.81);
+  --sidebar-accent: oklch(0.3164 0.0404 82.64);
+}
+
+.accent-swatch {
+  border: 1px solid color-mix(in oklch, currentColor 20%, transparent);
+}
+.accent-swatch-indigo { background-color: oklch(0.5444 0.19 271.82); }
+.accent-swatch-slate { background-color: oklch(0.5544 0.0407 257.42); }
+.accent-swatch-violet { background-color: oklch(0.6056 0.2189 292.72); }
+.accent-swatch-sky { background-color: oklch(0.6847 0.1479 237.32); }
+.accent-swatch-lime { background-color: oklch(0.7681 0.2044 130.85); }
+.accent-swatch-ocean { background-color: oklch(0.5297 0.16 246.80); }
+.accent-swatch-jade { background-color: oklch(0.5187 0.115 171.82); }
+.accent-swatch-rose { background-color: oklch(0.5467 0.185 5.00); }
+.accent-swatch-amber { background-color: oklch(0.5367 0.135 74.30); }
+
+/* Task color accents: controlled palette for calendar/task identity.
+   Flat filled dot, no border/inset ring — selection is shown with a
+   checkmark overlay instead (see TaskDetail/CountdownList), matching the
+   AccentPicker swatch idiom already used elsewhere in the app. */
+.task-color-swatch {
+  background: var(--task-color-accent);
+}
+
+.mindoist-detail-color-grid {
+  width: max-content;
+  grid-template-columns: repeat(5, 2rem);
+}
+
+.mindoist-detail-color-option {
+  width: 2rem;
+  min-height: 2rem;
+}
+
+.task-color-dot {
+  background: var(--task-color-accent);
+}
+
+/* Countdown gallery card (D6): was an inline `style={{...}}` in
+   CountdownList.tsx switching between two property sets by `hasImage` —
+   moved to CSS so task-color derived values aren't set via inline style
+   (DESIGN.md §7.2). */
+.countdown-card-flat {
+  background: var(--task-color-bg);
+  border-color: var(--task-color-border);
+  color: var(--task-color-text);
+}
+.countdown-card-image {
+  border-color: var(--task-color-border);
+}
+
+/* Each color defines only its accent — a proven, perceptually-vivid hue
+   (Tailwind's 500/400 shades) rather than a formula-generated one. An
+   earlier version derived every accent from the same raw HSL(H, 62%, 46%)
+   recipe, which looks fine for blues/purples but reads as a muddy
+   brown/olive for yellow-green hues (amber, lime) — hue and lightness
+   don't map to perceived brightness the same way, so a uniform HSL
+   formula produces an uneven-looking set. Picking tested hex values
+   (now expressed as their exact oklch equivalent, not re-derived) fixes
+   that without extra math — re-normalizing L/C by formula here would
+   reintroduce the same class of bug this comment already warns about.
+   bg/border/text are still derived automatically below, so the "pastel
+   family" consistency is kept — just anchored to a better accent. */
+.task-color-slate { --task-color-accent: oklch(0.5544 0.0407 257.42); }
+.task-color-sky { --task-color-accent: oklch(0.6847 0.1479 237.32); }
+.task-color-indigo { --task-color-accent: oklch(0.5854 0.2041 277.12); }
+.task-color-violet { --task-color-accent: oklch(0.6056 0.2189 292.72); }
+.task-color-rose { --task-color-accent: oklch(0.6450 0.2154 16.44); }
+.task-color-amber { --task-color-accent: oklch(0.7686 0.1647 70.08); }
+.task-color-jade { --task-color-accent: oklch(0.6959 0.1491 162.48); }
+.task-color-lime { --task-color-accent: oklch(0.7681 0.2044 130.85); }
+.task-color-none { --task-color-accent: var(--muted-foreground); }
+
+.dark .task-color-slate { --task-color-accent: oklch(0.7107 0.0351 256.79); }
+.dark .task-color-sky { --task-color-accent: oklch(0.7535 0.1390 232.66); }
+.dark .task-color-indigo { --task-color-accent: oklch(0.6801 0.1583 276.93); }
+.dark .task-color-violet { --task-color-accent: oklch(0.7090 0.1592 293.54); }
+.dark .task-color-rose { --task-color-accent: oklch(0.7192 0.1690 13.43); }
+.dark .task-color-amber { --task-color-accent: oklch(0.8369 0.1644 84.43); }
+.dark .task-color-jade { --task-color-accent: oklch(0.7729 0.1535 163.22); }
+.dark .task-color-lime { --task-color-accent: oklch(0.8493 0.2073 128.85); }
+
+/* bg/border/text derived from the accent via RELATIVE COLOR SYNTAX, not
+   color-mix(). D-design-overhaul-2026-07-25 §2.6: mixing an accent into a
+   near-zero-chroma neutral (--background/--border/--foreground all carry
+   the neutral hue ~264.5 even at chroma≈0) drags the result's hue toward
+   264.5 regardless of mix weight — lime→blue (+112°), amber→red (+221°),
+   measured live in Chromium, not guessed from the spec. `oklch(from X L C h)`
+   keeps the accent's own hue exact; only L/C move. Border keeps the old 45%
+   mix's effective weighting (L interpolated toward the theme border's L,
+   C scaled by the same 0.45) so it looks the same "temperature" as before,
+   just without the hue theft. */
+[class*="task-color-"] {
+  --task-color-bg: oklch(from var(--task-color-accent) 0.945 calc(c * 0.20) h);
+  --task-color-border: oklch(from var(--task-color-accent) calc(l * 0.45 + 0.4868) calc(c * 0.45) h);
+  --task-color-text: oklch(from var(--task-color-accent) calc(l * 0.86) c h);
+}
+
+.dark [class*="task-color-"] {
+  --task-color-bg: oklch(from var(--task-color-accent) 0.285 calc(c * 0.42) h);
+  --task-color-border: oklch(from var(--task-color-accent) calc(l * 0.45 + 0.17215) calc(c * 0.45) h);
+  --task-color-text: oklch(from var(--task-color-accent) 0.82 calc(c * 0.85) h);
+}
+
+/* Metadata chips (D3): same hue-safe relative-color-syntax recipe as
+   task-color above, applied to the semantic due/priority roles. Soft
+   pastel fill + saturated text — verified ≥4.5:1 AA in both themes
+   (docs/plan/D-design-overhaul-2026-07-25.md §4.4). */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.0625rem 0.4375rem;
+  border-radius: var(--radius-chip);
+  /* Literal px, not text-xs/rem: html{font-size:87.5%} (index.css above)
+     makes 0.75rem render at 10.5px, under the 11px floor D3 sets for
+     metadata legibility. px is immune to that root scaling. */
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+.chip-neutral { background: var(--muted); color: var(--muted-foreground); }
+.chip-overdue { background: oklch(from var(--destructive) 0.945 calc(c * 0.20) h); color: oklch(from var(--destructive) calc(l * 0.86) c h); }
+.chip-today   { background: oklch(from var(--primary) 0.945 calc(c * 0.20) h); color: oklch(from var(--primary) calc(l * 0.86) c h); }
+.chip-p1      { background: oklch(from var(--color-p1) 0.945 calc(c * 0.20) h); color: oklch(from var(--color-p1) calc(l * 0.86) c h); }
+.chip-p2      { background: oklch(from var(--color-p2) 0.945 calc(c * 0.20) h); color: oklch(from var(--color-p2) calc(l * 0.86) c h); }
+.chip-p3      { background: oklch(from var(--color-p3) 0.945 calc(c * 0.20) h); color: oklch(from var(--color-p3) calc(l * 0.86) c h); }
+.chip-p4      { background: oklch(from var(--color-p4) 0.945 calc(c * 0.20) h); color: oklch(from var(--color-p4) calc(l * 0.86) c h); }
+
+.dark .chip-overdue { background: oklch(from var(--destructive) 0.285 calc(c * 0.42) h); color: oklch(from var(--destructive) 0.82 calc(c * 0.85) h); }
+.dark .chip-today   { background: oklch(from var(--primary) 0.285 calc(c * 0.42) h); color: oklch(from var(--primary) 0.82 calc(c * 0.85) h); }
+.dark .chip-p1      { background: oklch(from var(--color-p1) 0.285 calc(c * 0.42) h); color: oklch(from var(--color-p1) 0.82 calc(c * 0.85) h); }
+.dark .chip-p2      { background: oklch(from var(--color-p2) 0.285 calc(c * 0.42) h); color: oklch(from var(--color-p2) 0.82 calc(c * 0.85) h); }
+.dark .chip-p3      { background: oklch(from var(--color-p3) 0.285 calc(c * 0.42) h); color: oklch(from var(--color-p3) 0.82 calc(c * 0.85) h); }
+.dark .chip-p4      { background: oklch(from var(--color-p4) 0.285 calc(c * 0.42) h); color: oklch(from var(--color-p4) 0.82 calc(c * 0.85) h); }
+
+/* Project color dots — same accents as the task colors above, so a
+   project and a task tagged with the same color name match everywhere. */
+.project-color-slate { background: var(--color-project-slate); }
+.project-color-sky { background: var(--color-project-sky); }
+.project-color-indigo { background: var(--color-project-indigo); }
+.project-color-violet { background: var(--color-project-violet); }
+.project-color-ocean { background: var(--color-project-ocean); }
+.project-color-jade { background: var(--color-project-jade); }
+.project-color-rose { background: var(--color-project-rose); }
+.project-color-amber { background: var(--color-project-amber); }
+.project-color-lime { background: var(--color-project-lime); }
+.project-color-default { background: var(--color-project-indigo); }
+
+html {
+  /* App-wide density default. Tailwind's spacing/typography scale is
+     entirely rem-based, so this uniformly tightens the whole UI (rows,
+     padding, text) without touching every component — the same effect
+     the user was getting by manually zooming the browser to ~80%, but
+     baked in as the default instead of a per-session workaround. */
+  font-size: 87.5%;
+}
+
+.skip-link {
+  position: fixed;
+  left: 1rem;
+  top: -4rem;
+  z-index: 100;
+  padding: .75rem 1rem;
+  border-radius: var(--radius-control);
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+.skip-link:focus { top: 1rem; }
+
+@media (pointer: coarse) {
+  button, [role="button"], input, select, textarea { min-height: 44px; }
+}
+
+/* Windows 11 "Mica"-style frosted glass, dark mode only: floating
+   popovers/dropdowns/dialogs get a translucent, blurred surface instead of
+   a flat opaque panel, so a hint of the content behind shows through. Kept
+   dark-only because the same translucency reads as muddy/low-contrast on
+   the light canvas — flat opaque stays correct there. */
+.dark .frosted-surface {
+  backdrop-filter: blur(24px) saturate(1.4);
+  background-color: color-mix(in oklch, var(--background) 80%, transparent);
+}
+
+/* Companion for modal backdrops — blurs whatever sits behind the dialog. */
+.dark .frosted-backdrop {
+  backdrop-filter: blur(8px);
+}
+
+/* Must be in @layer base: this file has no @layer blocks anywhere else, so
+   without this every rule below is "unlayered" - and per the CSS cascade
+   layers spec, unlayered rules always beat layered ones regardless of
+   specificity. Tailwind's own utilities (border-l-[...], etc.) live inside
+   its internal `utilities` layer, so this reset was silently overriding
+   every border-color utility class in the app - any element with a
+   specific border-left color utility still rendered the flat default
+   --border gray, no matter how specific its own class was. */
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+    border-color: var(--border);
+  }
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background-color: var(--background);
+  color: var(--foreground);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Micro-animation: task completion — spring-like fade + scale down */
+@keyframes task-complete {
+  0% { opacity: 1; transform: scale(1); }
+  30% { opacity: 0.85; transform: scale(1.02); }
+  100% { opacity: 0.55; transform: scale(0.97); }
+}
+.task-completing {
+  animation: task-complete var(--motion-slow) var(--ease-spring) forwards;
+}
+
+/* Reduced motion: every animation/transition becomes instant */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+.command-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  background: oklch(0 0 0 / 0.42);
+  backdrop-filter: blur(7px) saturate(0.8);
+  animation: command-overlay-in var(--motion-quick) var(--ease-out);
+}
+
+.command-dialog {
+  position: fixed;
+  top: clamp(5rem, 13vh, 8.5rem);
+  left: 50%;
+  z-index: 71;
+  width: min(46rem, calc(100vw - 2rem));
+  overflow: visible;
+  overscroll-behavior: contain;
+  border: 1px solid color-mix(in oklch, var(--border) 80%, var(--foreground));
+  border-radius: var(--radius-panel);
+  background: var(--card);
+  color: var(--foreground);
+  box-shadow: 0 28px 80px oklch(0 0 0 / 0.26), 0 4px 18px oklch(0 0 0 / 0.14);
+  transform: translateX(-50%);
+  animation: command-dialog-in var(--motion-base) var(--ease-out);
+}
+
+@keyframes command-overlay-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes command-dialog-in {
+  from { opacity: 0; transform: translate(-50%, -10px) scale(0.985); }
+  to { opacity: 1; transform: translate(-50%, 0) scale(1); }
+}
+
+.command-surface { display: flex; max-height: calc(100dvh - 7rem); overflow: hidden; flex-direction: column; border-radius: inherit; background: var(--card); }
+.command-input-row {
+  display: flex;
+  min-height: 4.75rem;
+  align-items: center;
+  gap: 0.75rem;
+  border-bottom: 1px solid var(--border);
+  padding: 0.7rem 1rem;
+  transition: box-shadow var(--motion-quick) var(--ease-out);
+}
+.command-input-row:focus-within { box-shadow: inset 3px 0 0 var(--primary); }
+.command-leading-icon,
+.command-item-icon {
+  display: inline-grid;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: var(--radius-control);
+  background: color-mix(in oklch, var(--primary) 12%, transparent);
+  color: var(--primary);
+}
+.command-leading-icon { width: 2.6rem; height: 2.6rem; }
+.command-input {
+  min-width: 0;
+  min-height: 3rem;
+  flex: 1;
+  border: 0;
+  background: transparent;
+  color: var(--foreground);
+  font: inherit;
+  font-size: 1.12rem;
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  outline: none;
+}
+.command-input::placeholder { color: var(--muted-foreground); font-weight: 450; }
+.command-input:focus-visible { outline: none; }
+.command-escape,
+.command-footer kbd,
+.command-item kbd {
+  display: inline-grid;
+  min-width: 1.75rem;
+  min-height: 1.55rem;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-chip);
+  background: var(--muted);
+  padding: 0 0.35rem;
+  color: var(--muted-foreground);
+  font-family: inherit;
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 1;
+}
+.command-submit { min-height: 2.6rem; padding-inline: 1rem; white-space: nowrap; }
+.command-context-row {
+  display: flex;
+  min-height: 2.7rem;
+  align-items: center;
+  gap: 0.65rem;
+  border-bottom: 1px solid color-mix(in oklch, var(--border) 72%, transparent);
+  padding: 0.45rem 1rem;
+  color: var(--muted-foreground);
+  font-size: 0.74rem;
+}
+.command-mode { display: inline-flex; min-height: 1.75rem; align-items: center; gap: 0.35rem; border-radius: var(--radius-chip); background: color-mix(in oklch, var(--primary) 10%, transparent); padding: 0.2rem 0.5rem; color: var(--primary); font-weight: 650; }
+.command-context-divider { width: 1px; height: 1rem; background: var(--border); }
+.command-selected-task { min-width: 0; max-width: 18rem; overflow: hidden; border-radius: var(--radius-chip); background: var(--muted); padding: 0.25rem 0.5rem; color: var(--foreground); text-overflow: ellipsis; white-space: nowrap; }
+.command-quick-fields { border-bottom: 1px solid var(--border); background: color-mix(in oklch, var(--muted) 78%, var(--card)); padding: 0.7rem 1rem 0.8rem; }
+.command-quick-fields-inner { display: grid; min-width: 0; grid-template-columns: minmax(8.5rem, 1.2fr) auto minmax(8.75rem, 1fr) minmax(6.75rem, 0.72fr) minmax(6.75rem, 0.72fr); align-items: center; gap: 0.5rem; }
+.command-quick-caption { grid-column: 1 / -1; color: var(--muted-foreground); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.06em; line-height: 1; text-transform: uppercase; }
+.command-quick-control { display: inline-flex; min-width: 0; min-height: 2.5rem; align-items: center; gap: 0.45rem; border: 1px solid color-mix(in oklch, var(--border) 86%, var(--foreground)); border-radius: var(--radius-control); background: var(--card); padding: 0.35rem 0.6rem; color: var(--muted-foreground); font-size: 0.75rem; box-shadow: var(--shadow-xs); transition: border-color var(--motion-instant) var(--ease-out), background-color var(--motion-instant) var(--ease-out), box-shadow var(--motion-instant) var(--ease-out); }
+.command-quick-control:hover { border-color: color-mix(in oklch, var(--border) 58%, var(--foreground)); background: color-mix(in oklch, var(--card) 90%, var(--muted)); }
+.command-quick-control:focus-within { border-color: var(--ring); background: var(--card); box-shadow: 0 0 0 2px color-mix(in oklch, var(--ring) 22%, transparent); }
+.command-quick-control input,
+.command-quick-control select { width: 100%; min-width: 0; max-width: none; border: 0; background: transparent; color: var(--foreground); font: inherit; outline: none; }
+.command-quick-control.is-project select,
+.command-quick-control.is-priority select { max-width: none; }
+.command-quick-control input[type='number'] { width: 3.25rem; }
+.command-date-shortcuts { display: inline-flex; min-height: 2.5rem; align-items: center; gap: 0.15rem; border: 1px solid color-mix(in oklch, var(--border) 86%, var(--foreground)); border-radius: var(--radius-control); background: color-mix(in oklch, var(--muted) 62%, var(--card)); padding: 0.18rem; box-shadow: var(--shadow-xs); }
+.command-date-shortcuts button { min-height: 2rem; border: 0; border-radius: var(--radius-control); background: transparent; padding: 0.25rem 0.55rem; color: var(--muted-foreground); font: inherit; font-size: 0.72rem; font-weight: 650; white-space: nowrap; cursor: pointer; transition: background-color var(--motion-instant) var(--ease-out), color var(--motion-instant) var(--ease-out), box-shadow var(--motion-instant) var(--ease-out); }
+.command-date-shortcuts button:hover { background: color-mix(in oklch, var(--card) 70%, transparent); color: var(--foreground); }
+.command-date-shortcuts button:focus-visible { outline: 2px solid var(--ring); outline-offset: 1px; }
+.command-date-shortcuts button.is-active { background: var(--card); color: var(--primary); box-shadow: var(--shadow-xs); }
+.command-picker { min-width: 0; }
+.command-picker > button { min-height: 2.5rem; height: 2.5rem; border-color: color-mix(in oklch, var(--border) 86%, var(--foreground)); padding-inline: 0.6rem; font-size: 0.75rem; box-shadow: var(--shadow-xs); }
+.command-picker > button:hover { border-color: color-mix(in oklch, var(--border) 58%, var(--foreground)); }
+.command-results { min-height: 0; max-height: min(27rem, 52vh); overflow-y: auto; padding: 0.55rem; }
+.command-welcome-copy { display: grid; gap: 0.3rem; margin: 0.15rem 0.25rem 0.5rem; border-radius: var(--radius-control); background: color-mix(in oklch, var(--muted) 55%, var(--card)); padding: 0.85rem 1rem; }
+.command-welcome-copy strong { font-size: 0.95rem; font-weight: 650; letter-spacing: -0.01em; }
+.command-welcome-copy span { color: var(--muted-foreground); font-size: 0.78rem; line-height: 1.5; }
+.command-empty { padding: 2.5rem 1.25rem; color: var(--muted-foreground); font-size: 0.82rem; line-height: 1.5; text-align: center; }
+
+.command-group [cmdk-group-heading] {
+  padding: 0.55rem 0.75rem 0.35rem;
+  color: var(--muted-foreground);
+  font-size: 0.66rem;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.command-item {
+  display: flex;
+  min-height: 3rem;
+  cursor: pointer;
+  align-items: center;
+  gap: 0.625rem;
+  border-radius: var(--radius-control);
+  padding: 0.55rem 0.75rem;
+  font-size: 0.86rem;
+  outline: none;
+  transition: background var(--motion-instant) var(--ease-out), transform var(--motion-instant) var(--ease-out);
+}
+.command-item + .command-item { margin-top: 0.15rem; }
+.command-item:hover { background: color-mix(in oklch, var(--accent) 65%, transparent); }
+.command-item:active { transform: scale(0.995); }
+
+.command-item[aria-selected='true'] {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+.command-item-icon { width: 2rem; height: 2rem; }
+.command-item[aria-selected='true'] .command-item-icon { background: var(--primary); color: var(--primary-foreground); }
+.command-item-copy { display: grid; min-width: 0; flex: 1; gap: 0.12rem; }
+.command-item-copy strong { overflow: hidden; font-size: 0.84rem; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.command-item-copy small { overflow: hidden; color: var(--muted-foreground); font-size: 0.72rem; line-height: 1.35; text-overflow: ellipsis; white-space: nowrap; }
+
+.command-item kbd {
+  margin-left: auto;
+}
+.command-footer { display: flex; min-height: 2.9rem; flex-wrap: wrap; align-items: center; gap: 0.8rem; border-top: 1px solid var(--border); background: color-mix(in oklch, var(--muted) 45%, var(--card)); padding: 0.5rem 1rem; color: var(--muted-foreground); font-size: 0.68rem; }
+.command-footer span { display: inline-flex; align-items: center; gap: 0.35rem; }
+.command-footer-close { margin-left: auto; }
+
+@media (max-width: 640px) {
+  .command-dialog { top: max(1rem, env(safe-area-inset-top)); width: calc(100vw - 1rem); max-height: calc(100dvh - 2rem); }
+  .command-surface { max-height: calc(100dvh - 2rem); }
+  .command-input-row { min-height: 4.25rem; gap: 0.5rem; padding-inline: 0.75rem; }
+  .command-leading-icon { width: 2.35rem; height: 2.35rem; }
+  .command-input { font-size: 1rem; }
+  .command-escape { display: none; }
+  .command-context-row { padding-inline: 0.75rem; }
+  .command-quick-fields { padding-inline: 0.75rem; }
+  .command-quick-fields-inner { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .command-quick-caption,
+  .command-quick-control.is-project,
+  .command-date-shortcuts { grid-column: 1 / -1; }
+  .command-quick-control,
+  .command-picker > button { min-height: 2.75rem; height: 2.75rem; }
+  .command-date-shortcuts { min-height: 2.75rem; }
+  .command-date-shortcuts button { min-height: 2.25rem; flex: 1; }
+  .command-results { max-height: none; flex: 1; }
+  .command-footer { gap: 0.55rem; padding-inline: 0.75rem; }
+  .command-footer-close { display: none !important; }
+}
+
+@media (max-width: 640px) {
+  .mindoist-date-picker-popup button,
+  .mindoist-time-picker-popup [role='option'] { min-height: 2.75rem; }
+}
+
+.mindoist-calendar-drag-preview {
+  position: absolute;
+  left: 0.25rem;
+  right: 0.25rem;
+  z-index: 6;
+  min-height: 1.25rem;
+  pointer-events: none;
+  border: 1px dashed var(--primary);
+  border-radius: var(--radius-control);
+  background: color-mix(in oklab, var(--primary) 18%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--primary) 12%, transparent);
+}
+
+.mindoist-calendar-drag-preview.is-conflict {
+  border-color: var(--destructive);
+  background: color-mix(in oklab, var(--destructive) 18%, transparent);
+}
+
+/* Focus-visible ring utility */
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* Soft focus for large editable text surfaces (inspector title/description):
+   a hairline edge plus a diffuse glow instead of the hard 2px ring, which
+   reads as a heavy box around what is really just body text. */
+/* Programmatic focus target: the modal inspector takes focus on open so screen
+   readers announce the dialog, but it must not draw a ring around the panel.
+   Needs to live here, unlayered, to beat the global :focus-visible outline —
+   a `focus-visible:outline-none` utility sits in @layer utilities and loses. */
+.focus-silent:focus-visible {
+  outline: none;
+}
+
+.focus-soft:focus-visible {
+  outline: none;
+  border-color: color-mix(in oklch, var(--ring) 40%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in oklch, var(--ring) 22%, transparent),
+    0 1px 10px -2px color-mix(in oklch, var(--ring) 30%, transparent);
+}
+
+/* Shell layout constants */
+:root {
+  --shell-sidebar-width: 15rem;
+  --shell-appbar-height: 3.5rem;
+  --shell-bottomnav-height: 3.75rem;
+  --shell-content-max: 55rem;
+}
+
+/* Tablet drawer overlay */
+.drawer-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: oklch(0 0 0 / 0.4);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--motion-quick) var(--ease-out);
+}
+.drawer-overlay[data-open="true"] {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ── Custom scrollbar ── */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklch, var(--border) 60%, transparent) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: color-mix(in oklch, var(--border) 60%, transparent);
+  border-radius: 999px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in oklch, var(--border) 80%, transparent);
+}

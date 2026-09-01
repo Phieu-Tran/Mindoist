@@ -1,0 +1,320 @@
+.summary-dashboard { display: grid; gap: 1.25rem; }
+.summary-header { display: flex; align-items: end; justify-content: space-between; gap: 1rem; }
+.summary-eyebrow { margin: 0 0 0.2rem; color: var(--primary); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+.summary-title { margin: 0; font-size: 1.75rem; font-weight: 700; letter-spacing: -0.035em; }
+.summary-subtitle { margin: 0.35rem 0 0; color: var(--muted-foreground); font-size: 0.875rem; }
+.summary-project-filter { display: grid; gap: 0.3rem; color: var(--muted-foreground); font-size: 0.75rem; font-weight: 600; }
+.summary-project-filter select { min-width: 11rem; height: 2.25rem; border: 1px solid var(--input); border-radius: var(--radius-control); background: var(--background); color: var(--foreground); padding: 0 2rem 0 0.65rem; font: inherit; }
+.summary-stats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); border: 1px solid var(--border); border-radius: var(--radius-panel); overflow: hidden; }
+.summary-review-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.summary-review-list { max-width: 44rem; }
+.summary-stat { min-width: 0; display: flex; align-items: center; gap: 0.75rem; padding: 1rem; border-right: 1px solid var(--border); }
+.summary-stat:last-child { border-right: 0; }
+.summary-stat > svg { width: 1.1rem; height: 1.1rem; color: var(--primary); flex: none; }
+.summary-stat-success > svg { color: var(--color-p3); }
+.summary-stat-danger > svg { color: var(--color-p1); }
+.summary-stat div { min-width: 0; display: grid; grid-template-columns: auto auto; align-items: baseline; gap: 0 0.4rem; }
+.summary-stat span { grid-column: 1 / -1; color: var(--muted-foreground); font-size: 0.75rem; }
+.summary-stat strong { font-size: 1.6rem; line-height: 1.1; letter-spacing: -0.04em; }
+.summary-stat small { color: var(--muted-foreground); font-size: 0.7rem; }
+.summary-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.summary-panel { min-width: 0; border: 1px solid var(--border); border-radius: var(--radius-panel); padding: 1rem; }
+.summary-trend-panel { grid-column: 1 / -1; }
+.summary-panel-heading { display: flex; align-items: start; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
+.summary-panel-heading h3 { margin: 0; font-size: 0.95rem; font-weight: 650; }
+.summary-panel-heading p { margin: 0.2rem 0 0; color: var(--muted-foreground); font-size: 0.75rem; }
+.summary-range { display: inline-flex; border: 1px solid var(--border); border-radius: var(--radius-control); overflow: hidden; }
+.summary-range button { border: 0; border-right: 1px solid var(--border); background: transparent; color: var(--muted-foreground); padding: 0.4rem 0.6rem; font: inherit; font-size: 0.75rem; font-weight: 600; cursor: pointer; }
+.summary-range button:last-child { border-right: 0; }
+.summary-range button:hover { background: var(--muted); color: var(--foreground); }
+.summary-range button[aria-pressed="true"] { background: var(--primary); color: var(--primary-foreground); }
+.summary-trend { height: 11rem; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); align-items: end; gap: 0.5rem; padding-top: 1rem; }
+.summary-trend-month { grid-template-columns: repeat(30, minmax(0, 1fr)); gap: 0.2rem; }
+.summary-trend-year { grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 0.35rem; }
+.summary-trend-column { height: 100%; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: end; gap: 0.25rem; }
+.summary-trend-value { height: 1rem; color: var(--muted-foreground); font-size: 0.65rem; }
+.summary-trend-bar { width: min(1.5rem, 75%); min-height: 0.2rem; border-radius: var(--radius-chip) var(--radius-chip) 0 0; background: var(--primary); opacity: 0.9; transition: height var(--motion-base) var(--ease-out), opacity var(--motion-quick) var(--ease-out); }
+.summary-trend-bar:hover { opacity: 1; }
+.summary-trend-label { color: var(--muted-foreground); font-size: 0.65rem; white-space: nowrap; }
+.summary-trend-month .summary-trend-label { font-size: 0.55rem; }
+.summary-trend-month .summary-trend-column:not(:nth-child(5n + 1)) .summary-trend-label { visibility: hidden; }
+.summary-trend-year .summary-trend-label { font-size: 0.58rem; }
+.summary-bars { display: grid; gap: 0.75rem; }
+.summary-bar-row { display: grid; grid-template-columns: auto 2.8rem minmax(0, 1fr) 1.5rem; align-items: center; gap: 0.5rem; font-size: 0.75rem; }
+.summary-bar-row strong { text-align: right; }
+.summary-priority-marker { width: 0.5rem; height: 0.5rem; border-radius: 9999px; }
+.summary-bar-label { color: var(--muted-foreground); }
+.summary-project-label { grid-column: 1 / 3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.summary-bar-track { height: 0.45rem; overflow: hidden; border-radius: 9999px; background: var(--muted); }
+.summary-bar-fill { display: block; height: 100%; border-radius: inherit; background: var(--primary); transition: width var(--motion-base) var(--ease-out); }
+.summary-project-fill { background: var(--primary); }
+.summary-priority-1 { background: var(--color-p1); }
+.summary-priority-2 { background: var(--color-p2); }
+.summary-priority-3 { background: var(--color-p3); }
+.summary-priority-4 { background: var(--color-p4); }
+.summary-priority-none { background: var(--muted-foreground); }
+.summary-bar-fill.summary-level-0 { width: 0; }
+.summary-bar-fill.summary-level-1 { width: 10%; }
+.summary-bar-fill.summary-level-2 { width: 20%; }
+.summary-bar-fill.summary-level-3 { width: 30%; }
+.summary-bar-fill.summary-level-4 { width: 40%; }
+.summary-bar-fill.summary-level-5 { width: 50%; }
+.summary-bar-fill.summary-level-6 { width: 60%; }
+.summary-bar-fill.summary-level-7 { width: 70%; }
+.summary-bar-fill.summary-level-8 { width: 80%; }
+.summary-bar-fill.summary-level-9 { width: 90%; }
+.summary-bar-fill.summary-level-10 { width: 100%; }
+.summary-trend-bar.summary-level-0 { height: 0.2rem; background: var(--muted); }
+.summary-trend-bar.summary-level-1 { height: 10%; }
+.summary-trend-bar.summary-level-2 { height: 20%; }
+.summary-trend-bar.summary-level-3 { height: 30%; }
+.summary-trend-bar.summary-level-4 { height: 40%; }
+.summary-trend-bar.summary-level-5 { height: 50%; }
+.summary-trend-bar.summary-level-6 { height: 60%; }
+.summary-trend-bar.summary-level-7 { height: 70%; }
+.summary-trend-bar.summary-level-8 { height: 80%; }
+.summary-trend-bar.summary-level-9 { height: 90%; }
+.summary-trend-bar.summary-level-10 { height: 100%; }
+.summary-empty { min-height: 20rem; display: grid; place-items: center; align-content: center; gap: 0.5rem; text-align: center; color: var(--muted-foreground); }
+.summary-empty svg { width: 2rem; height: 2rem; color: var(--primary); }
+.summary-empty h3 { margin: 0.25rem 0 0; color: var(--foreground); font-size: 1rem; }
+.summary-empty p { margin: 0; max-width: 28rem; font-size: 0.875rem; }
+.summary-calendar-panel { grid-column: 1 / -1; }
+.summary-calendar-heading { display: flex; align-items: start; justify-content: space-between; gap: 1rem; margin-bottom: 1.1rem; }
+.summary-calendar-heading h3 { margin: 0; font-size: 1rem; font-weight: 700; letter-spacing: -0.02em; }
+.summary-calendar-heading p { margin: 0.25rem 0 0; color: var(--muted-foreground); font-size: 0.75rem; }
+.summary-calendar-actions { display: flex; align-items: center; justify-content: flex-end; gap: 0.6rem; flex-wrap: wrap; }
+.summary-calendar-controls { display: flex; gap: 0.3rem; align-items: center; }
+.summary-calendar-controls > button { min-height: 44px; }
+.summary-view-switch button { min-height: 44px; display: inline-flex; align-items: center; gap: 0.35rem; }
+.summary-view-switch svg { width: 0.9rem; height: 0.9rem; }
+.summary-view-switch button:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; }
+.summary-calendar-layout { display: grid; grid-template-columns: minmax(0, 1fr) 17rem; gap: 1.25rem; }
+.summary-month { min-width: 0; }
+.summary-month > h4 { margin: 0 0 0.75rem; font-size: 1.05rem; font-weight: 700; text-transform: capitalize; letter-spacing: -0.02em; }
+.summary-weekdays, .summary-month-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.summary-weekdays { color: var(--muted-foreground); font-size: 0.65rem; font-weight: 650; letter-spacing: 0.05em; text-align: center; text-transform: uppercase; }
+.summary-weekdays span { padding: 0.4rem 0; }
+.summary-month-grid { overflow: hidden; border: 1px solid color-mix(in oklch, var(--border) 65%, transparent); border-radius: var(--radius-panel); box-shadow: none; }
+.summary-calendar-day {
+  position: relative;
+  min-width: 0;
+  min-height: 3.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  border: 0;
+  border-right: 1px solid color-mix(in oklch, var(--border) 45%, transparent);
+  border-bottom: 1px solid color-mix(in oklch, var(--border) 45%, transparent);
+  background: transparent;
+  color: var(--foreground);
+  padding: 0.35rem 0.25rem;
+  font: inherit;
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: background var(--motion-base) var(--ease-out), color var(--motion-base) var(--ease-out), box-shadow var(--motion-base) var(--ease-out);
+}
+.summary-calendar-day:nth-child(7n) { border-right: 0; }
+.summary-calendar-day:nth-last-child(-n + 7) { border-bottom: 0; }
+.summary-calendar-day:hover {
+  background: color-mix(in oklch, var(--primary) 5%, transparent);
+}
+.summary-calendar-day[data-selected="true"] {
+  background: color-mix(in oklch, var(--primary) 8%, transparent);
+  color: var(--primary);
+  box-shadow: inset 0 0 0 1.5px color-mix(in oklch, var(--primary) 25%, transparent);
+  border-radius: var(--radius-chip);
+  margin: 0.1rem;
+}
+.summary-calendar-day-outside { color: color-mix(in oklch, var(--muted-foreground) 35%, transparent); }
+.summary-calendar-day-today > span:first-child {
+  display: grid;
+  width: 1.4rem;
+  height: 1.4rem;
+  place-items: center;
+  border-radius: 9999px;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  font-weight: 700;
+  font-size: 0.68rem;
+  box-shadow: 0 1px 5px color-mix(in oklch, var(--primary) 25%, transparent);
+}
+.summary-calendar-dots { display: flex; gap: 0.18rem; align-self: center; }
+.summary-calendar-dots span {
+  width: 0.32rem;
+  height: 0.32rem;
+  border-radius: 9999px;
+  box-shadow: 0 0 0 1.5px color-mix(in oklch, currentColor 15%, transparent);
+}
+/* Completed tasks still show a dot (so a day's full history stays
+   visible at a glance) but dimmed, matching the agenda list's
+   .summary-agenda-completed treatment. */
+.summary-calendar-dots span.summary-dot-completed { opacity: 0.4; }
+.summary-day-agenda {
+  min-width: 0;
+  border-left: 1px solid color-mix(in oklch, var(--border) 50%, transparent);
+  padding-left: 1.1rem;
+  display: flex;
+  flex-direction: column;
+}
+.summary-day-heading {
+  display: flex;
+  align-items: start;
+  gap: 0.6rem;
+  padding-bottom: 0.8rem;
+  border-bottom: 1px solid color-mix(in oklch, var(--border) 50%, transparent);
+}
+.summary-day-heading > svg {
+  width: 1rem;
+  height: 1rem;
+  color: var(--primary);
+  margin-top: 0.15rem;
+}
+.summary-day-heading h4 { margin: 0; font-size: 0.82rem; font-weight: 700; text-transform: capitalize; letter-spacing: -0.01em; }
+.summary-day-heading p { margin: 0.2rem 0 0; color: var(--muted-foreground); font-size: 0.7rem; }
+.summary-day-empty { margin: auto 0; color: var(--muted-foreground); font-size: 0.75rem; text-align: center; padding: 2rem 0; }
+/* Bounded so a project/day with many tasks scrolls internally instead of
+   stretching this panel (and the whole grid row it shares) past every
+   sibling chart panel, which otherwise have a fixed height regardless of
+   data volume. */
+.summary-day-tasks { display: grid; align-content: start; gap: 0.25rem; margin: 0.85rem 0 0; padding: 0; list-style: none; flex: 1; max-height: 18rem; overflow-y: auto; }
+.summary-day-tasks button {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.25rem 0.55rem;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--foreground);
+  padding: 0.55rem 0.6rem;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--motion-quick) var(--ease-out), box-shadow var(--motion-quick) var(--ease-out);
+}
+.summary-day-tasks button:hover {
+  background: color-mix(in oklch, var(--primary) 5%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in oklch, var(--primary) 10%, transparent);
+}
+.summary-agenda-priority {
+  grid-row: 1 / 3;
+  width: 0.35rem;
+  height: 100%;
+  min-height: 2rem;
+  border-radius: 9999px;
+  opacity: 0.85;
+}
+.summary-agenda-title { overflow: hidden; font-size: 0.76rem; font-weight: 580; text-overflow: ellipsis; white-space: nowrap; }
+.summary-agenda-completed { color: var(--muted-foreground); text-decoration: line-through; }
+.summary-agenda-meta { grid-column: 2; color: var(--muted-foreground); font-size: 0.65rem; font-weight: 500; }
+.summary-day-tasks svg { grid-column: 3; grid-row: 1 / 3; width: 0.85rem; height: 0.85rem; color: var(--primary); opacity: 0.6; }
+.summary-monthly-list { display: grid; gap: 1rem; }
+.summary-monthly-list-heading { display: flex; align-items: start; justify-content: space-between; gap: 1rem; }
+.summary-monthly-list-heading h4 { margin: 0; font-size: 1.05rem; font-weight: 700; text-transform: capitalize; letter-spacing: -0.02em; }
+.summary-monthly-list-heading p { margin: 0.25rem 0 0; color: var(--muted-foreground); font-size: 0.75rem; }
+.summary-monthly-list-heading button { min-height: 44px; flex: none; }
+.summary-monthly-list-heading button svg { width: 0.9rem; height: 0.9rem; }
+.summary-ledger-actions { display: flex; align-items: center; justify-content: flex-end; gap: 0.5rem; flex-wrap: wrap; }
+.summary-monthly-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border-block: 1px solid color-mix(in oklch, var(--border) 65%, transparent);
+}
+.summary-monthly-stats > div { display: grid; gap: 0.1rem; padding: 0.75rem 1rem; border-right: 1px solid color-mix(in oklch, var(--border) 65%, transparent); }
+.summary-monthly-stats > div:last-child { border-right: 0; }
+.summary-monthly-stats strong { font-size: 1.25rem; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -0.035em; }
+.summary-monthly-stats span { color: var(--muted-foreground); font-size: 0.75rem; font-weight: 600; }
+.summary-obsidian-status { margin: -0.25rem 0 0; color: var(--color-p3); font-size: 0.75rem; }
+.summary-obsidian-error { color: var(--destructive); }
+.summary-markdown-preview {
+  min-width: 0;
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.85rem;
+  border: 1px solid color-mix(in oklch, var(--border) 75%, transparent);
+  border-radius: var(--radius-panel);
+  background: color-mix(in oklch, var(--muted) 42%, transparent);
+}
+.summary-markdown-preview > header { display: flex; align-items: start; justify-content: space-between; gap: 1rem; }
+.summary-markdown-preview h5 { margin: 0; font-size: 0.875rem; }
+.summary-markdown-preview header p { margin: 0.2rem 0 0; color: var(--muted-foreground); font-size: 0.75rem; }
+.summary-markdown-preview pre {
+  max-width: 100%;
+  max-height: 22rem;
+  margin: 0;
+  overflow: auto;
+  padding: 0.85rem;
+  border-radius: var(--radius-control);
+  background: var(--background);
+  color: var(--foreground);
+  font: 500 0.75rem/1.65 ui-monospace, SFMono-Regular, Consolas, monospace;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.summary-month-groups { display: grid; margin: 0; padding: 0; list-style: none; border-top: 1px solid color-mix(in oklch, var(--border) 65%, transparent); }
+.summary-month-group { min-width: 0; display: grid; grid-template-columns: 4.25rem minmax(0, 1fr); border-bottom: 1px solid color-mix(in oklch, var(--border) 65%, transparent); }
+.summary-month-group > h5 { margin: 0; border-right: 1px solid color-mix(in oklch, var(--border) 65%, transparent); }
+.summary-month-group time { min-height: 100%; display: grid; place-content: start center; justify-items: center; gap: 0.05rem; padding: 0.8rem 0.5rem; color: var(--muted-foreground); text-transform: uppercase; }
+.summary-month-group time span { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.06em; }
+.summary-month-group time strong { color: var(--foreground); font-size: 1.4rem; line-height: 1.05; font-variant-numeric: tabular-nums; letter-spacing: -0.05em; }
+.summary-month-group > ul { min-width: 0; display: grid; align-content: start; margin: 0; padding: 0.35rem 0; list-style: none; }
+.summary-month-group > ul > li + li { border-top: 1px solid color-mix(in oklch, var(--border) 40%, transparent); }
+.summary-month-group button {
+  width: 100%;
+  min-height: 3.25rem;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.2rem 0.65rem;
+  border: 0;
+  background: transparent;
+  color: var(--foreground);
+  padding: 0.6rem 0.8rem;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--motion-quick) var(--ease-out), box-shadow var(--motion-quick) var(--ease-out);
+}
+.summary-month-group button:hover { background: color-mix(in oklch, var(--primary) 5%, transparent); }
+.summary-month-group button:active { background: color-mix(in oklch, var(--primary) 9%, transparent); }
+.summary-month-group button:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; }
+.summary-month-group button .summary-agenda-priority { grid-row: 1 / 3; }
+.summary-month-task-title { min-width: 0; overflow-wrap: anywhere; font-size: 0.8rem; font-weight: 620; }
+.summary-month-task-meta { grid-column: 2; color: var(--muted-foreground); font-size: 0.75rem; }
+.summary-month-group button > svg { grid-column: 3; grid-row: 1 / 3; width: 0.95rem; height: 0.95rem; color: var(--muted-foreground); }
+.summary-month-group button > svg[aria-label] { color: var(--color-p3); }
+@media (max-width: 767px) {
+  .summary-header { align-items: stretch; flex-direction: column; }
+  .summary-project-filter select { width: 100%; }
+  .summary-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .summary-stat { border-bottom: 1px solid var(--border); }
+  .summary-stat:nth-child(2), .summary-stat:nth-child(4) { border-right: 0; }
+  .summary-stat:nth-child(n + 5) { border-bottom: 0; }
+  .summary-stat:last-child { grid-column: 1 / -1; }
+  .summary-review-stats .summary-stat:nth-child(n + 3) { border-bottom: 0; }
+  .summary-review-stats .summary-stat:last-child { grid-column: auto; }
+  .summary-grid { grid-template-columns: 1fr; }
+  .summary-trend-panel { grid-column: auto; }
+  .summary-panel-heading { flex-direction: column; }
+  .summary-trend { gap: 0.25rem; }
+  .summary-trend-month { gap: 0.1rem; }
+  .summary-calendar-heading { flex-direction: column; }
+  .summary-calendar-actions { width: 100%; align-items: stretch; flex-direction: column; justify-content: space-between; }
+  .summary-view-switch { flex: 1; }
+  .summary-view-switch button { flex: 1; justify-content: center; }
+  .summary-calendar-controls { justify-content: space-between; }
+  .summary-calendar-layout { grid-template-columns: 1fr; }
+  .summary-calendar-day { min-height: 2.9rem; padding: 0.25rem; }
+  .summary-day-agenda { border-top: 1px solid color-mix(in oklch, var(--border) 50%, transparent); border-left: 0; padding-top: 1rem; padding-left: 0; }
+  .summary-monthly-list-heading { align-items: stretch; flex-direction: column; }
+  .summary-ledger-actions { align-items: stretch; flex-direction: column; }
+  .summary-monthly-list-heading button { width: 100%; justify-content: center; }
+  .summary-markdown-preview > header { align-items: stretch; flex-direction: column; }
+  .summary-markdown-preview > header button { width: 100%; justify-content: center; }
+  .summary-monthly-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .summary-monthly-stats > div:nth-child(2) { border-right: 0; }
+  .summary-monthly-stats > div:nth-child(-n + 2) { border-bottom: 1px solid color-mix(in oklch, var(--border) 65%, transparent); }
+  .summary-month-group { grid-template-columns: 3.4rem minmax(0, 1fr); }
+  .summary-month-group button { padding-inline: 0.6rem; }
+}

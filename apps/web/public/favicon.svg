@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="100" y2="100">
+      <stop offset="0%" stop-color="#6f82e6"/>
+      <stop offset="100%" stop-color="#3f4fa8"/>
+    </linearGradient>
+    <radialGradient id="sheen" cx="30%" cy="22%" r="65%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.30"/>
+      <stop offset="55%" stop-color="#ffffff" stop-opacity="0.06"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="vig" x1="0" y1="0" x2="0" y2="100" gradientUnits="userSpaceOnUse">
+      <stop offset="55%" stop-color="#0f1433" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#0f1433" stop-opacity="0.22"/>
+    </linearGradient>
+    <filter id="shadow" x="-40%" y="-40%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="2.2" stdDeviation="2" flood-color="#141a3d" flood-opacity="0.45"/>
+    </filter>
+    <filter id="dotGlow" x="-100%" y="-100%" width="300%" height="300%">
+      <feDropShadow dx="0" dy="0" stdDeviation="2.4" flood-color="#ffb020" flood-opacity="0.55"/>
+    </filter>
+  </defs>
+  <rect width="100" height="100" rx="22" fill="url(#bgGrad)"/>
+  <rect width="100" height="100" rx="22" fill="url(#sheen)"/>
+  <rect width="100" height="100" rx="22" fill="url(#vig)"/>
+  <g filter="url(#shadow)">
+    <polygon points="54,16 24,44 46,88" fill="#ffffff" fill-opacity="0.4"/>
+    <polygon points="54,16 78,50 46,88" fill="#ffffff" fill-opacity="0.85"/>
+    <polygon points="54,16 24,44 46,88 78,50" fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linejoin="round"/>
+    <line x1="54" y1="16" x2="46" y2="88" stroke="#141a3d" stroke-opacity="0.35" stroke-width="1.6"/>
+  </g>
+  <polygon points="54,16 78,50 64,32" fill="#ffae00" filter="url(#dotGlow)"/>
+</svg>
