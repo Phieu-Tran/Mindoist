@@ -136,7 +136,13 @@ Deno.serve(async request => {
     if (path === '/tasks' && request.method === 'GET') {
       const auth = await requireAuth(request, 'tasks:read');
       if (auth instanceof Response) return auth;
-      return json({ success: true, data: await listTasks(auth.user.id) });
+      const params = new URL(request.url).searchParams;
+      return json({ success: true, data: await listTasks(auth.user.id, {
+        filter: params.get('filter') || undefined,
+        projectId: params.get('projectId') || undefined,
+        tagId: params.get('tagId') || undefined,
+        q: params.get('q') || undefined,
+      }) });
     }
     if (path === '/tasks' && request.method === 'POST') {
       const auth = await requireAuth(request, 'tasks:write');

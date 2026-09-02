@@ -1,6 +1,25 @@
 import bcrypt from 'npm:bcryptjs@2.4.3';
+import rrulePkg from 'npm:rrule@2.8.1';
 import { sql } from './db.ts';
 import { json } from './http.ts';
+
+const { RRule } = rrulePkg;
+
+function validRrule(value: unknown) {
+  if (value === undefined || value === null || value === '') return true;
+  if (typeof value !== 'string') return false;
+  try { RRule.fromString(value); return true; } catch { return false; }
+}
+
+function validDeadline(value: unknown) {
+  if (value === undefined || value === null) return true;
+  if (!value || typeof value !== 'object') return false;
+  const input = value as Record<string, unknown>;
+  if (typeof input.date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(input.date)) return false;
+  if (input.time !== undefined && input.time !== null && (typeof input.time !== 'string' || !/^([01]\d|2[0-3]):[0-5]\d$/.test(input.time))) return false;
+  if (input.time && (typeof input.timeZone !== 'string' || !input.timeZone.trim())) return false;
+  return input.timeZone === undefined || input.timeZone === null || (typeof input.timeZone === 'string' && Boolean(input.timeZone.trim()));
+}
 
 const textEncoder = new TextEncoder();
 const textDecoder = new TextDecoder();
@@ -225,7 +244,43 @@ function dateOrNull(value: unknown) {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
-export async function listTasks(userId: string) {
+export async function listTasks(userId: string, query: { filter?: string; projectId?: string; tagId?: string; q?: string } = {}) {
+  const clauses: any[] = [sql`t.user_id = ${userId}`];
+  const filter = query.filter;
+
+  if (filter === 'trashed') clauses.push(sql`t.deleted_at is not null`);
+  else clauses.push(sql`t.deleted_at is null`);
+
+  if (query.projectId) {
+    clauses.push(sql`t.project_id in (
+      with recursive descendants as (
+        select id from projects where id = ${query.projectId} and user_id = ${userId} and deleted_at is null
+        union all
+        select p.id from projects p join descendants d on p.parent_id = d.id
+        where p.user_id = ${userId} and p.deleted_at is null
+      ) select id from descendants
+    )`);
+  }
+  if (query.tagId) clauses.push(sql`exists (
+    select 1 from task_tags tt where tt.task_id = t.id and tt.tag_id = ${query.tagId}
+  )`);
+  if (query.q?.trim()) {
+    const term = `%${query.q.trim()}%`;
+    clauses.push(sql`(t.title ilike ${term} or coalesce(t.description, '') ilike ${term})`);
+  }
+
+  if (filter && filter !== 'completed' && filter !== 'trashed') {
+    const today = new Date().toISOString().slice(0, 10);
+    const next7 = new Date(Date.now() + 7 * 86_400_000).toISOString().slice(0, 10);
+    const viewClauses: any[] = [sql`t.completed_at is null`, sql`(t.snoozed_until is null or t.snoozed_until <= now())`];
+    if (filter === 'today') viewClauses.push(sql`t.deadline_date = ${today}::date`);
+    else if (filter === 'upcoming') viewClauses.push(sql`t.deadline_date > ${today}::date and t.deadline_date <= ${next7}::date`);
+    else if (filter === 'overdue') viewClauses.push(sql`t.deadline_date < ${today}::date`);
+    clauses.push(sql`(t.parent_id is not null or (${joinAnd(viewClauses)}))`);
+  } else if (filter === 'completed') {
+    clauses.push(sql`t.completed_at is not null`);
+  }
+
   const rows = await sql<TaskRow[]>`
     select id, user_id as "userId", project_id as "projectId", project_column_id as "projectColumnId",
            section_id as "sectionId", parent_id as "parentId", title, description, color, priority,
@@ -237,7 +292,7 @@ export async function listTasks(userId: string) {
            due_notification_sent_at as "dueNotificationSentAt", completed_at as "completedAt",
            sort_order as "sortOrder", created_at as "createdAt", updated_at as "updatedAt", deleted_at as "deletedAt",
            snoozed_until as "snoozedUntil", field_versions as "fieldVersions"
-    from tasks where user_id = ${userId} and deleted_at is null order by sort_order asc, created_at desc
+    from tasks t where ${joinAnd(clauses)} order by sort_order asc, created_at desc
   `;
   if (!rows.length) return [];
   const tags = await sql<{ taskId: string; tagId: string }[]>`
@@ -246,6 +301,12 @@ export async function listTasks(userId: string) {
   const tagsByTask = new Map<string, { tagId: string }[]>();
   for (const tag of tags) tagsByTask.set(tag.taskId, [...(tagsByTask.get(tag.taskId) ?? []), { tagId: tag.tagId }]);
   return rows.map(row => mapTask({ ...row, taskTags: tagsByTask.get(row.id) ?? [] }));
+}
+
+function joinAnd(parts: any[]) {
+  let joined = parts[0];
+  for (let index = 1; index < parts.length; index += 1) joined = sql`${joined} and ${parts[index]}`;
+  return joined;
 }
 
 export async function getTaskCounts(userId: string) {
@@ -266,6 +327,8 @@ export async function getTaskCounts(userId: string) {
 
 export async function createTask(userId: string, input: Record<string, unknown>) {
   if (typeof input.title !== 'string' || !input.title.trim()) return { status: 400, body: { success: false, error: 'Title is required' } };
+  if (input.rrule !== undefined && (typeof input.rrule !== 'string' || !validRrule(input.rrule))) return { status: 400, body: { success: false, error: 'Invalid RRULE' } };
+  if (!validDeadline(input.deadline)) return { status: 400, body: { success: false, error: 'Invalid deadline' } };
   const id = crypto.randomUUID();
   const now = new Date();
   const deadline = input.deadline && typeof input.deadline === 'object' ? input.deadline as { date?: unknown; time?: unknown; timeZone?: unknown } : null;
@@ -273,6 +336,10 @@ export async function createTask(userId: string, input: Record<string, unknown>)
   const deadlineTime = deadline?.time ? String(deadline.time) : null;
   const deadlineTimeZone = deadline?.timeZone ? String(deadline.timeZone) : null;
   const startDate = dateOrNull(input.startDate);
+  if (startDate && deadlineDate && startDate.toISOString().slice(0, 10) > deadlineDate) return { status: 400, body: { success: false, error: 'Start date must be before or equal to deadline' } };
+  if (input.startDate !== undefined && input.startDate !== null && !startDate) return { status: 400, body: { success: false, error: 'Invalid startDate' } };
+  const snoozedUntil = input.snoozedUntil === undefined || input.snoozedUntil === null ? null : dateOrNull(input.snoozedUntil);
+  if (input.snoozedUntil !== undefined && input.snoozedUntil !== null && !snoozedUntil) return { status: 400, body: { success: false, error: 'Invalid snoozedUntil' } };
   const estimateMin = typeof input.estimateMin === 'number' && Number.isInteger(input.estimateMin) && input.estimateMin > 0 ? input.estimateMin : null;
   const priority = typeof input.priority === 'number' && Number.isInteger(input.priority) && input.priority >= 1 && input.priority <= 4 ? input.priority : null;
   const color = input.color === null ? null : typeof input.color === 'string' ? input.color : null;
@@ -301,15 +368,21 @@ export async function createTask(userId: string, input: Record<string, unknown>)
     if (!parent[0]) return { status: 400, body: { success: false, error: 'Parent task not found' } };
     if (parent[0].parentId) return { status: 400, body: { success: false, error: 'Cannot nest subtask under another subtask' } };
   }
+  const tagIds = input.tagIds === undefined ? [] : input.tagIds;
+  if (!Array.isArray(tagIds) || tagIds.some(tag => typeof tag !== 'string')) return { status: 400, body: { success: false, error: 'Invalid tagIds' } };
+  if (tagIds.length) {
+    const owned = await sql<{ count: number }[]>`select count(*)::int as count from tags where id in ${sql(tagIds as string[])} and user_id = ${userId} and deleted_at is null`;
+    if ((owned[0]?.count ?? 0) !== new Set(tagIds as string[]).size) return { status: 400, body: { success: false, error: 'One or more tags not found' } };
+  }
   const rows = await sql<TaskRow[]>`
     insert into tasks (id, user_id, project_id, project_column_id, section_id, parent_id, title, description, color, priority,
                        deadline_date, deadline_time, deadline_time_zone, start_date, estimate_min, rrule,
-                       recurring_reset_mode, recurrence_basis, created_at, updated_at)
+                       recurring_reset_mode, recurrence_basis, snoozed_until, created_at, updated_at)
     values (${id}, ${userId}, ${projectId}, ${projectColumnId}, ${sectionId}, ${parentId}, ${input.title.trim()},
             ${typeof input.description === 'string' ? input.description : null}, ${color}, ${priority}, ${deadlineDate},
             ${deadlineTime}, ${deadlineTimeZone}, ${startDate}, ${estimateMin}, ${typeof input.rrule === 'string' ? input.rrule : null},
-            ${typeof input.recurringResetMode === 'string' ? input.recurringResetMode : null}::"RecurringResetMode",
-            ${typeof input.recurrenceBasis === 'string' ? input.recurrenceBasis : null}::"RecurrenceBasis", ${now}, ${now})
+            ${typeof input.recurringResetMode === 'string' ? input.recurringResetMode : 'RESET'}::"RecurringResetMode",
+            ${typeof input.recurrenceBasis === 'string' ? input.recurrenceBasis : 'DUE_DATE'}::"RecurrenceBasis", ${snoozedUntil}, ${now}, ${now})
     returning id, user_id as "userId", project_id as "projectId", project_column_id as "projectColumnId",
       section_id as "sectionId", parent_id as "parentId", title, description, color, priority,
       due_date as "dueDate", due_time as "dueTime", deadline_date as "deadlineDate", deadline_time as "deadlineTime",
@@ -320,7 +393,10 @@ export async function createTask(userId: string, input: Record<string, unknown>)
       completed_at as "completedAt", sort_order as "sortOrder", created_at as "createdAt",
       updated_at as "updatedAt", deleted_at as "deletedAt", snoozed_until as "snoozedUntil", field_versions as "fieldVersions"
   `;
-  return { status: 201, body: { success: true, data: mapTask(rows[0]) } };
+  for (const tagId of new Set(tagIds as string[])) {
+    await sql`insert into task_tags (task_id, tag_id, created_at, updated_at) values (${id}, ${tagId}, now(), now())`;
+  }
+  return { status: 201, body: { success: true, data: mapTask({ ...rows[0], taskTags: (tagIds as string[]).map(tagId => ({ tagId })) }) } };
 }
 
 export async function createReminder(userId: string, taskId: string, input: Record<string, unknown>) {
