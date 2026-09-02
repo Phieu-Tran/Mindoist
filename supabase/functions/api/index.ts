@@ -1,4 +1,4 @@
-import { json, methodNotAllowed, notFound } from '../_shared/http.ts';
+import { json, jsonHeaders, methodNotAllowed, notFound } from '../_shared/http.ts';
 
 /**
  * SF0 Edge API shell.
@@ -8,7 +8,7 @@ import { json, methodNotAllowed, notFound } from '../_shared/http.ts';
  * after its contract test can compare it with Fastify.
  */
 Deno.serve(async request => {
-  if (request.method === 'OPTIONS') return new Response(null, { status: 204 });
+  if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: jsonHeaders });
 
   const url = new URL(request.url);
   const path = url.pathname.replace(/^\/api/, '') || '/';
