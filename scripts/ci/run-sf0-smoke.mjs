@@ -53,7 +53,7 @@ assert.equal(createdTask.payload.data.deadline.date, '2099-01-01');
 const reminder = await request(`/api/tasks/${taskId}/reminders`, {
   method: 'POST',
   token: accessToken,
-  body: { remindAt: new Date(Date.now() + 1000).toISOString(), type: 'push' },
+  body: { remindAt: new Date(Date.now() + 60_000).toISOString(), type: 'push' },
 });
 assert.equal(reminder.response.status, 201);
 
