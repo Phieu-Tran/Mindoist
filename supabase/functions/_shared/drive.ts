@@ -84,11 +84,13 @@ export async function routeDrive(path: string, request: Request): Promise<Respon
     if (!token) return fail('Google account not connected. Please connect Google first.');
     try { const parent = await folderId(token); const data = await exportData(auth.user.id); const content = JSON.stringify(data, null, 2); const fileName = `backup-${data.exportedAt.replace(/[:.]/g, '-')}.json`; const boundary = `mindoist_${crypto.randomUUID()}`; const body = `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify({ name: fileName, parents: [parent], mimeType: 'application/json' })}\r\n--${boundary}\r\nContent-Type: application/json\r\n\r\n${content}\r\n--${boundary}--`; const response = await driveFetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id', token, { method: 'POST', headers: { 'content-type': `multipart/related; boundary=${boundary}` }, body }); const result = await response.json() as { id?: string }; return json({ success: true, data: { fileId: result.id, fileName, sizeBytes: new TextEncoder().encode(content).byteLength, exportedAt: data.exportedAt } }); } catch (cause) { return fail(cause instanceof Error ? cause.message : 'Backup failed', 500); }
   }
-  const match = path.match(/^\/drive\/backup\/([^/]+)$/); if (!match) return null;
+  const restoreMatch = path.match(/^\/drive\/restore\/([^/]+)$/);
+  const backupMatch = path.match(/^\/drive\/backup\/([^/]+)$/);
+  const match = restoreMatch ?? backupMatch; if (!match) return null;
   if (!token) return fail('Google account not connected.');
   try { const parent = await folderId(token); const owned = await backupFileInFolder(token, parent, match[1]); if (!owned) return fail('Backup file not found', 404);
-    if (request.method === 'DELETE') { await driveFetch(`/files/${encodeURIComponent(match[1])}`, token, { method: 'DELETE' }); return json({ success: true }); }
-    if (request.method === 'POST') { const response = await driveFetch(`/files/${encodeURIComponent(match[1])}?alt=media`, token); const data = await response.json() as Row; if (data.schema !== 1 || !data.exportedAt) return fail('Invalid backup file format'); return json({ success: true, data: await restore(auth.user.id, data) }); }
+    if (backupMatch && request.method === 'DELETE') { await driveFetch(`/files/${encodeURIComponent(match[1])}`, token, { method: 'DELETE' }); return json({ success: true }); }
+    if (restoreMatch && request.method === 'POST') { const response = await driveFetch(`/files/${encodeURIComponent(match[1])}?alt=media`, token); const data = await response.json() as Row; if (data.schema !== 1 || !data.exportedAt) return fail('Invalid backup file format'); return json({ success: true, data: await restore(auth.user.id, data) }); }
   } catch (cause) { return fail(cause instanceof Error ? cause.message : 'Drive operation failed', 500); }
   return fail('Method not allowed', 405);
 }
