@@ -1,4 +1,4 @@
-import { json } from '../_shared/http.ts';
+import { json, jsonHeaders } from '../_shared/http.ts';
 import { sql } from '../_shared/db.ts';
 
 const BATCH_SIZE = 50;
@@ -204,7 +204,7 @@ function merge(...stats: Stats[]): Stats {
 }
 
 Deno.serve(async request => {
-  if (request.method === 'OPTIONS') return new Response(null, { status: 204 });
+  if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: jsonHeaders });
   if (request.method !== 'POST') return json({ success: false, error: 'Method not allowed' }, { status: 405 });
   const expectedSecret = Deno.env.get('JOBS_SECRET');
   if (!expectedSecret || request.headers.get('x-job-secret') !== expectedSecret) return json({ success: false, error: 'Unauthorized' }, { status: 401 });
