@@ -129,6 +129,7 @@ async function syncTimeBlocks(userId: string) {
   const blocks = await sql<Row[]>`
     select b.id, b.start_at as "startAt", b.end_at as "endAt", b.time_zone as "timeZone", t.id as "taskId", t.title
     from time_blocks b join tasks t on t.id=b.task_id
+      join projects p on p.id=t.project_id and p.user_id=${userId} and p.deleted_at is null and p.calendar_sync_enabled=true
     where b.user_id=${userId} and b.deleted_at is null and t.deleted_at is null
     order by b.start_at asc
   `;

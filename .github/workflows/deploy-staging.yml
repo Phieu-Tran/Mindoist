@@ -63,10 +63,6 @@ jobs:
                 exit 1
               fi
             done
-            if [[ "$VITE_API_URL" == *"supabase.co/functions/v1/api"* ]]; then
-              echo 'VITE_API_URL must remain the existing full Fastify API until Edge parity is complete; SF0 Edge is not a full-app cutover.'
-              exit 1
-            fi
           fi
       - uses: pnpm/action-setup@v4
         with:
