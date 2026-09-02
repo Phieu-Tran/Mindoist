@@ -134,7 +134,10 @@ jobs:
             > "$RUNNER_TEMP/supabase-functions.log" 2>&1 &
           echo $! > "$RUNNER_TEMP/supabase-functions.pid"
           for attempt in $(seq 1 30); do
-            if curl --silent --fail http://127.0.0.1:55421/functions/v1/api/health >/dev/null; then
+            if curl --silent --fail http://127.0.0.1:55421/functions/v1/api/health >/dev/null \
+              && curl --silent --fail --request POST \
+                --header "x-job-secret: $SF0_JOB_SECRET" \
+                http://127.0.0.1:55421/functions/v1/jobs-reminders >/dev/null; then
               exit 0
             fi
             sleep 2
