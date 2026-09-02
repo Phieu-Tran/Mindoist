@@ -143,6 +143,12 @@
     "label": "Primary navigation"
   },
   "import": {
+    "mindoist": {
+      "title": "Import from Mindoist JSON",
+      "description": "Import a Mindoist JSON export. Tasks, projects, tags, columns, and notes are added to the current account.",
+      "chooseFile": "Choose JSON file",
+      "hint": "Import is additive and does not delete existing data. Older files without taskTags cannot restore task–tag links."
+    },
     "sourcePicker": {
       "title": "Import tasks",
       "description": "Choose where to import your tasks from.",

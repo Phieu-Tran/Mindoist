@@ -4,9 +4,10 @@ import { Upload, FileText, CheckCircle, AlertCircle, ArrowRight, FolderOpen, Tag
 
 const API = import.meta.env.VITE_API_URL || '';
 
-type ImportSource = 'ticktick' | 'todoist' | 'anydo' | 'google-tasks';
+type ImportSource = 'mindoist-json' | 'ticktick' | 'todoist' | 'anydo' | 'google-tasks';
 
 const IMPORT_SOURCES: { id: ImportSource; label: string; available: boolean }[] = [
+  { id: 'mindoist-json', label: 'Mindoist JSON', available: true },
   { id: 'ticktick', label: 'TickTick', available: true },
   { id: 'todoist', label: 'Todoist', available: false },
   { id: 'anydo', label: 'Any.do', available: false },
@@ -79,17 +80,18 @@ export function ImportView({ onImportComplete }: Props) {
       const formData = new FormData();
       formData.append('file', file);
 
-      const res = await fetch(`${API}/import/ticktick/preview`, {
+      const path = source === 'mindoist-json' ? 'mindoist' : 'ticktick';
+      const res = await fetch(`${API}/import/${path}/preview`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
       });
 
-      if (!res.ok) throw new Error('Failed to parse CSV');
+      if (!res.ok) throw new Error(source === 'mindoist-json' ? 'Failed to parse JSON' : 'Failed to parse CSV');
       const data: ImportPreview = await res.json();
       setPreview(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to parse CSV');
+      setError(err instanceof Error ? err.message : source === 'mindoist-json' ? 'Failed to parse JSON' : 'Failed to parse CSV');
     } finally {
       setLoading(false);
     }
@@ -104,7 +106,8 @@ export function ImportView({ onImportComplete }: Props) {
       const formData = new FormData();
       formData.append('file', file);
 
-      const res = await fetch(`${API}/import/ticktick/confirm`, {
+      const path = source === 'mindoist-json' ? 'mindoist' : 'ticktick';
+      const res = await fetch(`${API}/import/${path}/confirm`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
@@ -174,7 +177,7 @@ export function ImportView({ onImportComplete }: Props) {
     );
   }
 
-  if (source !== 'ticktick') {
+  if (source !== 'ticktick' && source !== 'mindoist-json') {
     const sourceLabel = IMPORT_SOURCES.find((s) => s.id === source)?.label ?? source;
     return (
       <div className="flex flex-col items-center justify-center h-full gap-6 p-8">
@@ -381,17 +384,17 @@ export function ImportView({ onImportComplete }: Props) {
       </div>
       <div className="text-center">
         <h2 className="text-xl font-semibold text-[var(--color-foreground)]">
-          {t('import.title')}
+          {t(source === 'mindoist-json' ? 'import.mindoist.title' : 'import.title')}
         </h2>
         <p className="text-[var(--color-muted-foreground)] mt-2 max-w-md">
-          {t('import.description')}
+          {t(source === 'mindoist-json' ? 'import.mindoist.description' : 'import.description')}
         </p>
       </div>
 
       <input
         ref={fileRef}
         type="file"
-        accept=".csv"
+        accept={source === 'mindoist-json' ? '.json,application/json' : '.csv'}
         onChange={handleFileChange}
         className="hidden"
         data-testid="import-file-input"
@@ -401,7 +404,7 @@ export function ImportView({ onImportComplete }: Props) {
         onClick={() => fileRef.current?.click()}
         className="rounded-control border border-input px-4 py-2 text-foreground transition-colors hover:border-muted-foreground hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       >
-        {file ? file.name : t('import.chooseFile')}
+        {file ? file.name : t(source === 'mindoist-json' ? 'import.mindoist.chooseFile' : 'import.chooseFile')}
       </button>
 
       {file && (
@@ -419,7 +422,7 @@ export function ImportView({ onImportComplete }: Props) {
       )}
 
       <div className="text-xs text-[var(--color-muted-foreground)] mt-4 max-w-md text-center">
-        {t('import.hint')}
+        {t(source === 'mindoist-json' ? 'import.mindoist.hint' : 'import.hint')}
       </div>
     </div>
   );
