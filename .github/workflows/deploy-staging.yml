@@ -1,0 +1,132 @@
+name: Deploy staging
+
+on:
+  workflow_run:
+    workflows: [Mindoist CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      source_sha:
+        description: 'Commit SHA to deploy (defaults to main)'
+        required: false
+        default: main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: '22.x'
+  PNPM_VERSION: '10.30.0'
+  SUPABASE_CLI_VERSION: '2.116.0'
+  SOURCE_SHA: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || inputs.source_sha || github.sha }}
+
+jobs:
+  deploy:
+    name: staging
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-24.04
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.SOURCE_SHA }}
+      - name: Validate staging configuration
+        shell: bash
+        env:
+          SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+          SUPABASE_API_URL: ${{ vars.SUPABASE_API_URL }}
+          STAGING_PAGES_ENABLED: ${{ vars.STAGING_PAGES_ENABLED }}
+          VITE_API_URL: ${{ vars.VITE_API_URL }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_PAGES_PROJECT: ${{ vars.CLOUDFLARE_PAGES_PROJECT }}
+          PAGES_URL: ${{ vars.PAGES_URL }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          MIGRATION_DATABASE_URL: ${{ secrets.MIGRATION_DATABASE_URL }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          STAGING_SF0_JOB_SECRET: ${{ secrets.STAGING_SF0_JOB_SECRET }}
+        run: |
+          set -euo pipefail
+          for name in SUPABASE_PROJECT_REF SUPABASE_API_URL SUPABASE_ACCESS_TOKEN MIGRATION_DATABASE_URL STAGING_SF0_JOB_SECRET; do
+            if [ -z "${!name:-}" ]; then
+              echo "Missing staging variable/secret: $name"
+              exit 1
+            fi
+          done
+          if [ "$STAGING_PAGES_ENABLED" = true ]; then
+            for name in VITE_API_URL CLOUDFLARE_ACCOUNT_ID CLOUDFLARE_PAGES_PROJECT CLOUDFLARE_API_TOKEN PAGES_URL; do
+              if [ -z "${!name:-}" ]; then
+                echo "Missing staging Pages variable/secret: $name"
+                exit 1
+              fi
+            done
+            if [[ "$VITE_API_URL" == *"supabase.co/functions/v1/api"* ]]; then
+              echo 'VITE_API_URL must remain the existing full Fastify API until Edge parity is complete; SF0 Edge is not a full-app cutover.'
+              exit 1
+            fi
+          fi
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Install Supabase CLI
+        run: npm install --global supabase@${{ env.SUPABASE_CLI_VERSION }}
+      - name: Apply additive migrations through the session pooler
+        env:
+          DATABASE_URL: ${{ secrets.MIGRATION_DATABASE_URL }}
+        run: pnpm --filter api prisma migrate deploy
+      - name: Deploy Edge Functions (Cron is not changed here)
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+        run: |
+          supabase functions deploy api --project-ref "$SUPABASE_PROJECT_REF" --no-verify-jwt
+          supabase functions deploy jobs-reminders --project-ref "$SUPABASE_PROJECT_REF" --no-verify-jwt
+      - name: Remote synthetic SF0 smoke
+        env:
+          SUPABASE_FUNCTIONS_URL: ${{ vars.SUPABASE_API_URL }}/functions/v1
+          SF0_JOB_SECRET: ${{ secrets.STAGING_SF0_JOB_SECRET }}
+        run: pnpm supabase:smoke-local
+      - name: Build web for staging (optional until Pages cutover)
+        if: vars.STAGING_PAGES_ENABLED == 'true'
+        env:
+          VITE_API_URL: ${{ vars.VITE_API_URL }}
+        run: |
+          pnpm --filter @mindoist/design-tokens build
+          pnpm --filter @mindoist/shared build
+          pnpm --filter @mindoist/web build
+      - name: Deploy web to Cloudflare Pages staging
+        if: vars.STAGING_PAGES_ENABLED == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_PAGES_PROJECT: ${{ vars.CLOUDFLARE_PAGES_PROJECT }}
+        run: npx --yes wrangler@4.49.1 pages deploy apps/web/dist --project-name "$CLOUDFLARE_PAGES_PROJECT" --branch staging
+      - name: Pages smoke
+        if: vars.STAGING_PAGES_ENABLED == 'true'
+        env:
+          PAGES_URL: ${{ vars.PAGES_URL }}
+        run: curl --fail --retry 3 --retry-delay 2 --connect-timeout 10 "$PAGES_URL"
+      - name: Write deployment manifest
+        shell: bash
+        env:
+          STAGING_PAGES_ENABLED: ${{ vars.STAGING_PAGES_ENABLED }}
+          PAGES_URL: ${{ vars.PAGES_URL }}
+        run: |
+          cat > deployment-manifest.json <<EOF
+          {"environment":"staging","sourceSha":"${SOURCE_SHA}","workflowRun":"${GITHUB_RUN_ID}","pagesEnabled":"${STAGING_PAGES_ENABLED:-false}","pagesUrl":"${PAGES_URL:-}","migration":"prisma migrate deploy","syntheticSmoke":"passed"}
+          EOF
+      - uses: actions/upload-artifact@v4
+        with:
+          name: staging-deployment-manifest-${{ github.run_id }}
+          path: deployment-manifest.json
+          retention-days: 14

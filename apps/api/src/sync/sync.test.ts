@@ -788,7 +788,7 @@ describe('countdown sync', () => {
             table: 'countdown',
             id: countdown.id,
             data: { deletedAt: new Date().toISOString() },
-            updatedAt: new Date().toISOString(),
+            updatedAt: new Date(countdown.updatedAt.getTime() + 60_000).toISOString(),
           },
         ],
       },

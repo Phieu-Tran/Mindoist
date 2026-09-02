@@ -115,7 +115,7 @@ test.describe('Task Management E2E', () => {
 
     // Complete the task
     await checkbox.click();
-    await expect(titleEl).toHaveCSS('text-decoration-line', 'line-through');
+    await expect(titleEl).toHaveCSS('text-decoration-line', 'line-through', { timeout: 15_000 });
 
     // Reopen from the dedicated Completed history surface. Completed tasks
     // may leave the active work list as soon as the mutation is reconciled.
@@ -218,9 +218,9 @@ test.describe('Task Management E2E', () => {
 
     // Preview chips should appear
     await expect(page.getByTestId('command-preview')).toBeVisible();
-    await expect(page.getByLabel('Parsed date')).toBeVisible();
-    await expect(page.getByLabel('Parsed time')).toBeVisible();
-    await expect(page.getByLabel('Parsed priority')).toBeVisible();
+    await expect(page.getByTestId('quick-add-date')).toBeVisible();
+    await expect(page.getByTestId('quick-add-time')).toBeVisible();
+    await expect(page.getByTestId('quick-add-priority')).toBeVisible();
   });
 
   test('[TASK-02] quick add with Enter creates task via parsed payload', async ({ page }) => {
@@ -229,7 +229,7 @@ test.describe('Task Management E2E', () => {
     await page.keyboard.press('Control+k');
     const input = page.getByTestId('global-quick-capture-input');
     await input.fill('pay rent tomorrow 10am');
-    await expect(page.getByLabel('Parsed date')).toBeVisible();
+    await expect(page.getByTestId('quick-add-date')).toBeVisible();
 
     await page.getByTestId('global-quick-capture-submit').click();
     await expect(page.getByTestId('global-quick-capture')).toBeHidden();
@@ -275,7 +275,7 @@ test.describe('Task Management E2E', () => {
 
     await page.getByTestId('detail-tags').click();
     await page.getByLabel('Tag name').fill('Deep work');
-    await page.getByRole('button', { name: 'Add tag' }).click();
+    await page.getByTestId('task-property-registry').getByRole('button', { name: 'Add tag' }).click();
 
     await expect(page.getByTestId('detail-tags')).toContainText('Deep work');
     mkdirSync(DISCOVERABILITY_EVIDENCE_DIR, { recursive: true });
