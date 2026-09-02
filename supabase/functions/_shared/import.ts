@@ -9,6 +9,11 @@ type ParsedTask = {
   rrule: string | null; priority: number | null; isCompleted: boolean; completedAt: string | null; listName: string; columnName: string | null;
   tags: string[]; tickTickTaskId: string; tickTickParentId: string; checklistItems: string[];
 };
+type JsonRow = Record<string, unknown>;
+type MindoistData = {
+  tasks: JsonRow[]; projects: JsonRow[]; notes: JsonRow[]; tags: JsonRow[];
+  sections: JsonRow[]; projectColumns: JsonRow[]; taskTags: JsonRow[];
+};
 
 function priority(value: string) {
   const number = Number.parseInt((value || '').replace(/^p/i, ''), 10);
@@ -55,6 +60,105 @@ function parseTickTick(csv: string) {
 }
 
 function dateOnly(value: string | null) { return value ? new Date(`${value}T00:00:00.000Z`) : null; }
+
+function jsonRow(value: unknown): JsonRow | null {
+  return value && typeof value === 'object' && !Array.isArray(value) ? value as JsonRow : null;
+}
+
+function jsonRows(value: unknown, optional = false) {
+  if (value === undefined && optional) return [] as JsonRow[];
+  if (!Array.isArray(value) || value.length > 100_000) return null;
+  const rows: JsonRow[] = [];
+  for (const item of value) {
+    const row = jsonRow(item);
+    if (!row) return null;
+    rows.push(row);
+  }
+  return rows;
+}
+
+function field(row: JsonRow, ...names: string[]) {
+  for (const name of names) if (row[name] !== undefined) return row[name];
+  return null;
+}
+
+function stringField(row: JsonRow, ...names: string[]) {
+  const value = field(row, ...names);
+  return value === null || value === undefined || value === '' ? null : String(value);
+}
+
+function numberField(row: JsonRow, ...names: string[]) {
+  const value = field(row, ...names);
+  const number = typeof value === 'number' ? value : Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+function booleanField(row: JsonRow, ...names: string[]) {
+  const value = field(row, ...names);
+  return typeof value === 'boolean' ? value : value === 'true' || value === 1;
+}
+
+function dateField(row: JsonRow, ...names: string[]) {
+  const value = stringField(row, ...names);
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function enumField<T extends string>(row: JsonRow, allowed: readonly T[], ...names: string[]) {
+  const value = stringField(row, ...names);
+  return value && (allowed as readonly string[]).includes(value) ? value : null;
+}
+
+function parseMindoistJson(content: string): MindoistData | null {
+  let root: JsonRow;
+  try {
+    const parsed = JSON.parse(content);
+    const object = jsonRow(parsed);
+    if (!object) return null;
+    root = object;
+  } catch { return null; }
+  const tasks = jsonRows(root.tasks);
+  const projects = jsonRows(root.projects);
+  const tags = jsonRows(root.tags);
+  const notes = jsonRows(root.notes, true);
+  const sections = jsonRows(root.sections, true);
+  const projectColumns = jsonRows(root.projectColumns, true);
+  const taskTags = jsonRows(root.taskTags, true);
+  if (!tasks || !projects || !tags || !notes || !sections || !projectColumns || !taskTags) return null;
+  return { tasks, projects, notes, tags, sections, projectColumns, taskTags };
+}
+
+function mindoistPreview(data: MindoistData) {
+  const projectNames = new Map(data.projects.map(project => [String(field(project, 'id') ?? ''), stringField(project, 'name') || 'Untitled']));
+  const tasks = data.tasks.map(task => {
+    const deadline = dateField(task, 'deadlineDate', 'deadline_date', 'dueDate', 'due_date');
+    const completedAt = dateField(task, 'completedAt', 'completed_at');
+    const projectId = stringField(task, 'projectId', 'project_id');
+    return {
+      title: stringField(task, 'title') || 'Untitled',
+      content: stringField(task, 'description') || '',
+      isChecklist: false,
+      startDate: dateField(task, 'startDate', 'start_date')?.toISOString() || null,
+      dueDate: deadline?.toISOString().slice(0, 10) || null,
+      dueTime: stringField(task, 'deadlineTime', 'deadline_time', 'dueTime', 'due_time'),
+      rrule: stringField(task, 'rrule'),
+      priority: numberField(task, 'priority'),
+      isCompleted: Boolean(completedAt),
+      listName: projectNames.get(projectId || '') || 'Inbox',
+      tags: [],
+    };
+  });
+  const completed = tasks.filter(task => task.isCompleted).length;
+  const recurring = tasks.filter(task => Boolean(task.rrule)).length;
+  const withDueDate = tasks.filter(task => Boolean(task.dueDate)).length;
+  return {
+    tasks,
+    projects: [...new Set([...projectNames.values()])].sort(),
+    tags: data.tags.map(tag => stringField(tag, 'name')).filter((tag): tag is string => Boolean(tag)).sort(),
+    stats: { total: tasks.length, completed, recurring, checklists: 0, withDueDate },
+  };
+}
 
 async function importData(userId: string, preview: NonNullable<ReturnType<typeof parseTickTick>>) {
   return sql.begin(async tx => {
@@ -104,6 +208,115 @@ async function importData(userId: string, preview: NonNullable<ReturnType<typeof
   });
 }
 
+async function importMindoistData(userId: string, data: MindoistData) {
+  return sql.begin(async tx => {
+    const existingProjects = await tx<JsonRow[]>`select id,name from projects where user_id=${userId} and deleted_at is null`;
+    const projectsByName = new Map(existingProjects.map(project => [String(project.name), String(project.id)]));
+    const projectIds = new Map<string, string>();
+    let projectsCreated = 0;
+    for (const project of data.projects) {
+      const oldId = stringField(project, 'id');
+      const name = stringField(project, 'name') || 'Untitled';
+      let id = projectsByName.get(name);
+      if (!id) {
+        const type = enumField(project, ['DAILY_LOG', 'JOB', 'PERSONAL', 'CUSTOM'] as const, 'type') || 'CUSTOM';
+        const rows = await tx<JsonRow[]>`insert into projects (id,user_id,name,color,type,is_archived,calendar_sync_enabled,sort_order,created_at,updated_at) values (${crypto.randomUUID()},${userId},${name},${stringField(project, 'color')},${type},${booleanField(project, 'isArchived', 'is_archived')},${booleanField(project, 'calendarSyncEnabled', 'calendar_sync_enabled')},${numberField(project, 'sortOrder', 'sort_order') ?? 0},now(),now()) returning id`;
+        id = String(rows[0].id); projectsByName.set(name, id); projectsCreated++;
+      }
+      if (oldId) projectIds.set(oldId, id);
+    }
+    for (const project of data.projects) {
+      const id = projectIds.get(stringField(project, 'id') || '');
+      const parentId = projectIds.get(stringField(project, 'parentId', 'parent_id') || '');
+      if (id && parentId && id !== parentId) await tx`update projects set parent_id=${parentId},updated_at=now() where id=${id} and user_id=${userId}`;
+    }
+
+    const projectColumnIds = new Map<string, string>();
+    for (const column of data.projectColumns) {
+      const projectId = projectIds.get(stringField(column, 'projectId', 'project_id') || '');
+      if (!projectId) continue;
+      const name = stringField(column, 'name') || 'Untitled';
+      const existing = await tx<JsonRow[]>`select id from project_columns where project_id=${projectId} and name=${name} and deleted_at is null limit 1`;
+      const id = existing[0]?.id ? String(existing[0].id) : String((await tx<JsonRow[]>`insert into project_columns (id,project_id,name,color,is_done,sort_order,created_at,updated_at) values (${crypto.randomUUID()},${projectId},${name},${stringField(column, 'color') || 'slate'},${booleanField(column, 'isDone', 'is_done')},${numberField(column, 'sortOrder', 'sort_order') ?? 0},now(),now()) returning id`)[0].id);
+      const oldId = stringField(column, 'id'); if (oldId) projectColumnIds.set(oldId, id);
+    }
+
+    const sectionIds = new Map<string, string>();
+    for (const section of data.sections) {
+      const projectId = projectIds.get(stringField(section, 'projectId', 'project_id') || '');
+      if (!projectId) continue;
+      const name = stringField(section, 'name') || 'Untitled';
+      const existing = await tx<JsonRow[]>`select id from sections where project_id=${projectId} and name=${name} and deleted_at is null limit 1`;
+      const id = existing[0]?.id ? String(existing[0].id) : String((await tx<JsonRow[]>`insert into sections (id,project_id,name,sort_order,created_at,updated_at) values (${crypto.randomUUID()},${projectId},${name},${numberField(section, 'sortOrder', 'sort_order') ?? 0},now(),now()) returning id`)[0].id);
+      const oldId = stringField(section, 'id'); if (oldId) sectionIds.set(oldId, id);
+    }
+
+    const existingTags = await tx<JsonRow[]>`select id,name from tags where user_id=${userId} and deleted_at is null`;
+    const tagsByName = new Map(existingTags.map(tag => [String(tag.name), String(tag.id)]));
+    const tagIds = new Map<string, string>();
+    let tagsCreated = 0;
+    for (const tag of data.tags) {
+      const name = stringField(tag, 'name'); if (!name) continue;
+      let id = tagsByName.get(name);
+      if (!id) {
+        const rows = await tx<JsonRow[]>`insert into tags (id,user_id,name,color,created_at,updated_at) values (${crypto.randomUUID()},${userId},${name},${stringField(tag, 'color')},now(),now()) returning id`;
+        id = String(rows[0].id); tagsByName.set(name, id); tagsCreated++;
+      }
+      const oldId = stringField(tag, 'id'); if (oldId) tagIds.set(oldId, id);
+    }
+
+    const existingTasks = await tx<JsonRow[]>`select id,external_id from tasks where user_id=${userId} and import_source='mindoist-json'`;
+    const taskIds = new Map<string, string>(existingTasks.filter(task => task.external_id).map(task => [String(task.external_id), String(task.id)]));
+    let imported = 0;
+    for (const task of data.tasks) {
+      const oldId = stringField(task, 'id');
+      const existingId = oldId ? taskIds.get(oldId) : undefined;
+      const id = existingId || crypto.randomUUID();
+      const projectId = projectIds.get(stringField(task, 'projectId', 'project_id') || '') || null;
+      const projectColumnId = projectColumnIds.get(stringField(task, 'projectColumnId', 'project_column_id') || '') || null;
+      const sectionId = sectionIds.get(stringField(task, 'sectionId', 'section_id') || '') || null;
+      const dueDate = dateField(task, 'dueDate', 'due_date');
+      const deadlineDate = dateField(task, 'deadlineDate', 'deadline_date') || dueDate;
+      const completedAt = dateField(task, 'completedAt', 'completed_at');
+      const values = {
+        title: stringField(task, 'title') || 'Untitled', description: stringField(task, 'description', 'content'),
+        color: stringField(task, 'color'), priority: numberField(task, 'priority'), dueDate, dueTime: stringField(task, 'dueTime', 'due_time'),
+        deadlineDate, deadlineTime: stringField(task, 'deadlineTime', 'deadline_time', 'dueTime', 'due_time'), deadlineTimeZone: stringField(task, 'deadlineTimeZone', 'deadline_time_zone'),
+        startDate: dateField(task, 'startDate', 'start_date'), durationMin: numberField(task, 'durationMin', 'duration_min'), estimateMin: numberField(task, 'estimateMin', 'estimate_min'),
+        rrule: stringField(task, 'rrule'), recurringResetMode: enumField(task, ['RESET', 'KEEP'] as const, 'recurringResetMode', 'recurring_reset_mode') || 'RESET',
+        recurrenceBasis: enumField(task, ['DUE_DATE', 'COMPLETION_DATE'] as const, 'recurrenceBasis', 'recurrence_basis') || 'DUE_DATE',
+        pomodoroCount: Math.max(0, Math.trunc(numberField(task, 'pomodoroCount', 'pomodoro_count') ?? 0)), completedAt,
+        sortOrder: numberField(task, 'sortOrder', 'sort_order') ?? 0, snoozedUntil: dateField(task, 'snoozedUntil', 'snoozed_until'),
+      };
+      if (existingId) await tx`update tasks set title=${values.title},description=${values.description},color=${values.color},priority=${values.priority},due_date=${values.dueDate},due_time=${values.dueTime},deadline_date=${values.deadlineDate},deadline_time=${values.deadlineTime},deadline_time_zone=${values.deadlineTimeZone},start_date=${values.startDate},duration_min=${values.durationMin},estimate_min=${values.estimateMin},rrule=${values.rrule},recurring_reset_mode=${values.recurringResetMode},recurrence_basis=${values.recurrenceBasis},pomodoro_count=${values.pomodoroCount},completed_at=${values.completedAt},sort_order=${values.sortOrder},snoozed_until=${values.snoozedUntil},project_id=${projectId},project_column_id=${projectColumnId},section_id=${sectionId},updated_at=now(),deleted_at=null where id=${id} and user_id=${userId}`;
+      else await tx`insert into tasks (id,user_id,project_id,project_column_id,section_id,title,description,color,priority,due_date,due_time,deadline_date,deadline_time,deadline_time_zone,start_date,duration_min,estimate_min,rrule,recurring_reset_mode,recurrence_basis,pomodoro_count,completed_at,sort_order,import_source,external_id,created_at,updated_at) values (${id},${userId},${projectId},${projectColumnId},${sectionId},${values.title},${values.description},${values.color},${values.priority},${values.dueDate},${values.dueTime},${values.deadlineDate},${values.deadlineTime},${values.deadlineTimeZone},${values.startDate},${values.durationMin},${values.estimateMin},${values.rrule},${values.recurringResetMode},${values.recurrenceBasis},${values.pomodoroCount},${values.completedAt},${values.sortOrder},'mindoist-json',${oldId},now(),now())`;
+      if (oldId) taskIds.set(oldId, id);
+      imported++;
+    }
+    for (const task of data.tasks) {
+      const id = taskIds.get(stringField(task, 'id') || '');
+      const parentId = taskIds.get(stringField(task, 'parentId', 'parent_id') || '');
+      if (id) await tx`update tasks set parent_id=${parentId || null},updated_at=now() where id=${id} and user_id=${userId}`;
+    }
+
+    let taskTagsLinked = 0;
+    for (const link of data.taskTags) {
+      const taskId = taskIds.get(stringField(link, 'taskId', 'task_id') || '');
+      const tagId = tagIds.get(stringField(link, 'tagId', 'tag_id') || '');
+      if (!taskId || !tagId) continue;
+      await tx`insert into task_tags (task_id,tag_id,created_at,updated_at) values (${taskId},${tagId},now(),now()) on conflict (task_id,tag_id) do update set deleted_at=null,updated_at=now()`;
+      taskTagsLinked++;
+    }
+    let notesImported = 0;
+    for (const note of data.notes) {
+      const taskId = taskIds.get(stringField(note, 'taskId', 'task_id') || '') || null;
+      await tx`insert into notes (id,user_id,task_id,title,content,created_at,updated_at) values (${crypto.randomUUID()},${userId},${taskId},${stringField(note, 'title')},${stringField(note, 'content')},now(),now())`;
+      notesImported++;
+    }
+    return { imported, projectsCreated, tagsCreated, taskTagsLinked, notesImported };
+  });
+}
+
 async function fileFrom(request: Request) {
   try {
     const form = await request.formData();
@@ -113,13 +326,21 @@ async function fileFrom(request: Request) {
 }
 
 export async function routeImport(path: string, request: Request): Promise<Response | null> {
-  if (path !== '/import/ticktick/preview' && path !== '/import/ticktick/confirm') return null;
+  const isTickTick = path === '/import/ticktick/preview' || path === '/import/ticktick/confirm';
+  const isMindoist = path === '/import/mindoist/preview' || path === '/import/mindoist/confirm';
+  if (!isTickTick && !isMindoist) return null;
   if (request.method !== 'POST') return json({ success: false, error: 'Method not allowed' }, { status: 405 });
   const auth = await requireAuth(request); if (auth instanceof Response) return auth;
-  const csv = await fileFrom(request);
-  if (csv === null) return json({ error: 'No file uploaded' }, { status: 400 });
-  if (csv.length > 25 * 1024 * 1024) return json({ error: 'File is too large' }, { status: 413 });
-  const preview = parseTickTick(csv);
+  const content = await fileFrom(request);
+  if (content === null) return json({ error: 'No file uploaded' }, { status: 400 });
+  if (content.length > 25 * 1024 * 1024) return json({ error: 'File is too large' }, { status: 413 });
+  if (isMindoist) {
+    const data = parseMindoistJson(content);
+    if (!data) return json({ error: 'Invalid Mindoist JSON' }, { status: 400 });
+    if (path.endsWith('/preview')) return json(mindoistPreview(data));
+    try { return json(await importMindoistData(auth.user.id, data)); } catch { return json({ error: 'Import failed' }, { status: 400 }); }
+  }
+  const preview = parseTickTick(content);
   if (!preview) return json({ error: 'Invalid TickTick CSV' }, { status: 400 });
   if (path.endsWith('/preview')) return json(preview);
   try { return json(await importData(auth.user.id, preview)); } catch { return json({ error: 'Import failed' }, { status: 400 }); }

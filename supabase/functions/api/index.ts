@@ -238,7 +238,7 @@ Deno.serve(async request => {
       if (exportResponse) return exportResponse;
     }
 
-    if (path === '/import/ticktick/preview' || path === '/import/ticktick/confirm') {
+    if (path === '/import/ticktick/preview' || path === '/import/ticktick/confirm' || path === '/import/mindoist/preview' || path === '/import/mindoist/confirm') {
       const importResponse = await routeImport(path, request);
       if (importResponse) return importResponse;
     }

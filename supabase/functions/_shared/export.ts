@@ -31,15 +31,16 @@ export async function routeExport(path: string, request: Request): Promise<Respo
   const userId = auth.user.id;
   const stamp = new Date().toISOString().slice(0, 10);
   if (path === '/export/json') {
-    const [tasks, projects, notes, tags, sections, projectColumns] = await Promise.all([
+    const [tasks, projects, notes, tags, sections, projectColumns, taskTags] = await Promise.all([
       sql<Row[]>`select * from tasks where user_id=${userId} and deleted_at is null order by created_at asc`,
       sql<Row[]>`select * from projects where user_id=${userId} and deleted_at is null order by created_at asc`,
       sql<Row[]>`select * from notes where user_id=${userId} and deleted_at is null order by created_at asc`,
       sql<Row[]>`select * from tags where user_id=${userId} and deleted_at is null order by created_at asc`,
       sql<Row[]>`select s.* from sections s join projects p on p.id=s.project_id where p.user_id=${userId} and s.deleted_at is null order by s.created_at asc`,
       sql<Row[]>`select pc.* from project_columns pc join projects p on p.id=pc.project_id where p.user_id=${userId} and pc.deleted_at is null order by pc.created_at asc`,
+      sql<Row[]>`select tt.* from task_tags tt join tasks t on t.id=tt.task_id where t.user_id=${userId} and tt.deleted_at is null and t.deleted_at is null order by tt.created_at asc`,
     ]);
-    return download(JSON.stringify({ exportedAt: new Date().toISOString(), tasks, projects, notes, tags, sections, projectColumns }, null, 2), 'application/json; charset=utf-8', `mindoist-export-${stamp}.json`);
+    return download(JSON.stringify({ schema: 1, exportedAt: new Date().toISOString(), tasks, projects, notes, tags, sections, projectColumns, taskTags }, null, 2), 'application/json; charset=utf-8', `mindoist-export-${stamp}.json`);
   }
   const tasks = await sql<Row[]>`
     select t.id,t.title,t.description,t.priority,t.deadline_date as "deadlineDate",t.deadline_time as "deadlineTime",

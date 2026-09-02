@@ -141,6 +141,12 @@
     "label": "Điều hướng chính"
   },
   "import": {
+    "mindoist": {
+      "title": "Nhập từ Mindoist JSON",
+      "description": "Nhập file JSON đã xuất từ Mindoist. Task, dự án, thẻ, cột và ghi chú sẽ được thêm vào tài khoản hiện tại.",
+      "chooseFile": "Chọn file JSON",
+      "hint": "Dữ liệu được nhập cộng dồn và không xoá dữ liệu hiện có. File cũ không có taskTags sẽ không khôi phục liên kết task–thẻ."
+    },
     "sourcePicker": {
       "title": "Nhập dữ liệu",
       "description": "Chọn nguồn bạn muốn nhập task vào.",
