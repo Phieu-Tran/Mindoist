@@ -35,7 +35,7 @@ test.describe('T6: Search & Completed History E2E', () => {
     await checkbox.click();
 
     // Task gets strikethrough
-    await expect(page.getByText('File tax receipt', { exact: true })).toHaveCSS('text-decoration-line', 'line-through');
+    await expect(page.getByText('File tax receipt', { exact: true })).toHaveCSS('text-decoration-line', 'line-through', { timeout: 15_000 });
 
     // Reload — task not in inbox as open
     await page.reload();

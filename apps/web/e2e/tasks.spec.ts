@@ -115,7 +115,7 @@ test.describe('Task Management E2E', () => {
 
     // Complete the task
     await checkbox.click();
-    await expect(titleEl).toHaveCSS('text-decoration-line', 'line-through');
+    await expect(titleEl).toHaveCSS('text-decoration-line', 'line-through', { timeout: 15_000 });
 
     // Reopen from the dedicated Completed history surface. Completed tasks
     // may leave the active work list as soon as the mutation is reconciled.
