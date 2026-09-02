@@ -44,7 +44,6 @@ jobs:
           VITE_API_URL: ${{ vars.VITE_API_URL }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_PAGES_PROJECT: ${{ vars.CLOUDFLARE_PAGES_PROJECT }}
-          PAGES_URL: ${{ vars.PAGES_URL }}
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           MIGRATION_DATABASE_URL: ${{ secrets.MIGRATION_DATABASE_URL }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -58,7 +57,7 @@ jobs:
             fi
           done
           if [ "$STAGING_PAGES_ENABLED" = true ]; then
-            for name in VITE_API_URL CLOUDFLARE_ACCOUNT_ID CLOUDFLARE_PAGES_PROJECT CLOUDFLARE_API_TOKEN PAGES_URL; do
+            for name in VITE_API_URL CLOUDFLARE_ACCOUNT_ID CLOUDFLARE_PAGES_PROJECT CLOUDFLARE_API_TOKEN; do
               if [ -z "${!name:-}" ]; then
                 echo "Missing staging Pages variable/secret: $name"
                 exit 1
@@ -106,21 +105,32 @@ jobs:
           pnpm --filter @mindoist/web build
       - name: Deploy web to Cloudflare Pages staging
         if: vars.STAGING_PAGES_ENABLED == 'true'
+        shell: bash
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_PAGES_PROJECT: ${{ vars.CLOUDFLARE_PAGES_PROJECT }}
-        run: npx --yes wrangler@4.49.1 pages deploy apps/web/dist --project-name "$CLOUDFLARE_PAGES_PROJECT" --branch staging
+          PAGES_URL: ${{ vars.PAGES_URL }}
+        run: |
+          set -euo pipefail
+          output="$(npx --yes wrangler@4.49.1 pages deploy apps/web/dist --project-name "$CLOUDFLARE_PAGES_PROJECT" --branch staging 2>&1 | tee /dev/stderr)"
+          pages_url="${PAGES_URL:-}"
+          if [ -z "$pages_url" ]; then
+            pages_url="$(printf '%s\n' "$output" | grep -Eo 'https://[^[:space:]]+\.pages\.dev' | tail -n 1 || true)"
+          fi
+          if [ -z "$pages_url" ]; then
+            echo 'Unable to determine the Pages deployment URL.'
+            exit 1
+          fi
+          printf 'PAGES_URL=%s\n' "$pages_url" >> "$GITHUB_ENV"
+          echo "Resolved Pages URL: $pages_url"
       - name: Pages smoke
         if: vars.STAGING_PAGES_ENABLED == 'true'
-        env:
-          PAGES_URL: ${{ vars.PAGES_URL }}
         run: curl --fail --retry 3 --retry-delay 2 --connect-timeout 10 "$PAGES_URL"
       - name: Write deployment manifest
         shell: bash
         env:
           STAGING_PAGES_ENABLED: ${{ vars.STAGING_PAGES_ENABLED }}
-          PAGES_URL: ${{ vars.PAGES_URL }}
         run: |
           cat > deployment-manifest.json <<EOF
           {"environment":"staging","sourceSha":"${SOURCE_SHA}","workflowRun":"${GITHUB_RUN_ID}","pagesEnabled":"${STAGING_PAGES_ENABLED:-false}","pagesUrl":"${PAGES_URL:-}","migration":"prisma migrate deploy","syntheticSmoke":"passed"}
