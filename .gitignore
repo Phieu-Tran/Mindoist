@@ -77,4 +77,6 @@ apps/web/result.txt
 # Internal packages excluded from the public product snapshot
 /apps/mobile/
 /mcp/
-/scripts/
+/scripts/*
+!/scripts/ci/
+!/scripts/ci/**
