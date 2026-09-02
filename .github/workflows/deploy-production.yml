@@ -117,6 +117,36 @@ jobs:
           else
             echo "$domain is already attached to Pages production."
           fi
+      - name: Point production domain at Pages
+        shell: bash
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          zone='workspacesbeat.site'
+          hostname='mindoist.workspacesbeat.site'
+          target='mindoist.pages.dev'
+          api="https://api.cloudflare.com/client/v4"
+          auth=(-H "Authorization: Bearer $CLOUDFLARE_API_TOKEN")
+          if ! zone_json="$(curl --fail --silent --show-error "${auth[@]}" "$api/zones?name=$zone&status=active")"; then
+            echo 'Cloudflare token cannot read DNS zone; add Zone DNS Edit permission to CLOUDFLARE_API_TOKEN.'
+            exit 1
+          fi
+          zone_id="$(jq -r '.result[0].id // empty' <<<"$zone_json")"
+          [[ -n "$zone_id" ]] || { echo "Zone $zone was not found in this Cloudflare account."; exit 1; }
+          records_url="$api/zones/$zone_id/dns_records?name=$hostname"
+          records_json="$(curl --fail --silent --show-error "${auth[@]}" "$records_url")"
+          count="$(jq '.result | length' <<<"$records_json")"
+          [[ "$count" -le 1 ]] || { echo "Multiple DNS records exist for $hostname; resolve them in Cloudflare before deploy."; exit 1; }
+          record_id="$(jq -r '.result[0].id // empty' <<<"$records_json")"
+          body="{\"type\":\"CNAME\",\"name\":\"$hostname\",\"content\":\"$target\",\"ttl\":1,\"proxied\":true}"
+          if [[ -n "$record_id" ]]; then
+            curl --fail --silent --show-error -X PUT "${auth[@]}" -H 'Content-Type: application/json' --data "$body" "$api/zones/$zone_id/dns_records/$record_id" >/dev/null
+            echo "Updated $hostname to $target."
+          else
+            curl --fail --silent --show-error -X POST "${auth[@]}" -H 'Content-Type: application/json' --data "$body" "$api/zones/$zone_id/dns_records" >/dev/null
+            echo "Created $hostname pointing to $target."
+          fi
       - name: Production Pages smoke
         env:
           PAGES_URL: ${{ vars.PAGES_URL }}
