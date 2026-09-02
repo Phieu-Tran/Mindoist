@@ -120,6 +120,10 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Start local Supabase
         run: pnpm supabase:start
+      - name: Apply Prisma migrations to local Supabase
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:55432/postgres
+        run: pnpm --filter @mindoist/api prisma migrate deploy
       - name: Serve Edge Functions with synthetic-only secrets
         shell: bash
         run: |
