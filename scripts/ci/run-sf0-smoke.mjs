@@ -57,7 +57,7 @@ const reminder = await request(`/api/tasks/${taskId}/reminders`, {
 });
 assert.equal(reminder.response.status, 201);
 
-await new Promise(resolve => setTimeout(resolve, 1500));
+await new Promise(resolve => setTimeout(resolve, 61_000));
 const firstClaim = await request('/jobs-reminders', { method: 'POST' });
 assert.equal(firstClaim.response.status, 200);
 assert.equal(firstClaim.payload.data.processed, 1);
