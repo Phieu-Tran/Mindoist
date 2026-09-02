@@ -34,6 +34,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @mindoist/api prisma generate
       - run: pnpm --filter @mindoist/design-tokens build
       - run: pnpm --filter @mindoist/shared build
       - run: pnpm --filter @mindoist/api lint
@@ -67,6 +68,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @mindoist/api prisma generate
       - run: pnpm --filter @mindoist/design-tokens test
       - run: pnpm --filter @mindoist/shared test
       - run: pnpm --filter @mindoist/api test
@@ -101,6 +103,8 @@ jobs:
   edge-db:
     name: edge-db
     runs-on: ubuntu-24.04
+    env:
+      SF0_JOB_SECRET: ci-sf0-job-secret
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -185,6 +189,10 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @mindoist/design-tokens build
+      - run: pnpm --filter @mindoist/shared build
+      - run: pnpm --filter @mindoist/api build
+      - run: pnpm --filter @mindoist/web build
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm e2e
       - name: Upload Playwright report on failure
