@@ -123,7 +123,7 @@ jobs:
       - name: Serve Edge Functions with synthetic-only secrets
         shell: bash
         run: |
-          cat > "$RUNNER_TEMP/supabase-functions.env" <<'EOF'
+          cat > supabase/functions/.env <<'EOF'
           SF0_FEATURES=1
           SF0_DIAGNOSTICS=1
           JWT_SECRET=ci-sf0-jwt-secret
@@ -131,7 +131,6 @@ jobs:
           DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:55432/postgres
           EOF
           nohup npx --yes supabase@${SUPABASE_CLI_VERSION} functions serve --no-verify-jwt \
-            --env-file "$RUNNER_TEMP/supabase-functions.env" \
             > "$RUNNER_TEMP/supabase-functions.log" 2>&1 &
           echo $! > "$RUNNER_TEMP/supabase-functions.pid"
           for attempt in $(seq 1 30); do
