@@ -64,6 +64,16 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Install Supabase CLI
         run: npm install --global supabase@${{ env.SUPABASE_CLI_VERSION }}
+      - name: Normalize production OAuth redirects
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+        run: |
+          supabase secrets set \
+            "GOOGLE_AUTH_REDIRECT_URI=https://${SUPABASE_PROJECT_REF}.supabase.co/functions/v1/api/auth/google/callback" \
+            "GOOGLE_REDIRECT_URI=https://${SUPABASE_PROJECT_REF}.supabase.co/functions/v1/api/gcal/callback" \
+            'FRONTEND_URL=https://mindoist.workspacesbeat.site' \
+            --project-ref "$SUPABASE_PROJECT_REF"
       - name: Apply additive migrations
         env:
           DATABASE_URL: ${{ secrets.MIGRATION_DATABASE_URL }}
