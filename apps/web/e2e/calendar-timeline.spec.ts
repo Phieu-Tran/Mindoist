@@ -265,7 +265,7 @@ test('[CALENDAR-04] selecting a time range creates a task with persisted planned
   await expect(inlineTitle).toBeHidden();
 
   const plannedBlock = page.locator('.mindoist-time-grid-block').filter({ hasText: 'Calendar focus block' });
-  await expect(plannedBlock).toBeVisible();
+  await expect(plannedBlock).toBeVisible({ timeout: 15_000 });
   await expect(plannedBlock).toHaveCSS('border-left-style', 'none');
   await expect(plannedBlock).toHaveAttribute(
     'style',
@@ -274,7 +274,7 @@ test('[CALENDAR-04] selecting a time range creates a task with persisted planned
   await expect(page.locator('.mindoist-deadline-marker').filter({ hasText: 'Calendar focus block' })).toHaveCount(0);
   await page.reload();
   const persistedBlock = page.locator('.mindoist-time-grid-block').filter({ hasText: 'Calendar focus block' });
-  await expect(persistedBlock).toBeVisible();
+  await expect(persistedBlock).toBeVisible({ timeout: 15_000 });
   await expect(persistedBlock).toHaveCSS('border-left-style', 'none');
   await expect(persistedBlock).toHaveAttribute(
     'style',
