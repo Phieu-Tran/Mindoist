@@ -61,7 +61,8 @@ Required secret placement:
 - Supabase project secrets: runtime `JWT_SECRET`, `JOBS_SECRET`, VAPID keys,
   Google/Telegram credentials and other server-only values;
 - GitHub Environment variables (not secrets): project refs/API URLs, Pages
-  project/account IDs, `PAGES_URL`, `VITE_API_URL`, and enable flags.
+  project/account IDs, `PAGES_URL`, `VITE_API_URL`, optional
+  `VITE_STATUS_PAGE_URL`, and enable flags.
 
 ## CI lanes
 
@@ -140,6 +141,24 @@ The web push subscription flow is in
 `apps/web/src/lib/push-notifications.ts` and
 `apps/web/src/components/NotificationPermissionPrompt.tsx`. Browser permission
 and a configured VAPID key are required before a user can receive web alerts.
+
+## External uptime and public status
+
+Better Stack Uptime is an optional external monitor. The free personal plan
+currently includes up to 10 monitors, 10 heartbeats, and one public status
+page; verify the current limits before relying on them for production.
+
+Create two HTTP status monitors:
+
+1. `https://mindoist.workspacesbeat.site/` — production web;
+2. `https://<production-project-ref>.supabase.co/functions/v1/api/health` —
+   the public Edge API health endpoint.
+
+Create one public Better Stack status page and add those monitors as displayed
+components. Set its exact public URL as the GitHub Environment variable
+`VITE_STATUS_PAGE_URL` in both `staging` and `production` only after the page
+exists. The landing page then exposes a live “Service status” link; no Better
+Stack API token is shipped to the browser or stored in the repository.
 
 ## Push, PR, and release checklist
 

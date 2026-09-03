@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { I18nextProvider } from 'react-i18next';
 import i18n from 'i18next';
@@ -13,6 +13,10 @@ function renderPublicPage(page: React.ReactNode) {
 describe('public pages', () => {
   beforeEach(async () => {
     await i18n.changeLanguage('en');
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
   });
 
   it('introduces Mindoist and links to GitHub and the auth flow', () => {
@@ -31,6 +35,14 @@ describe('public pages', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'Privacy Policy' })).toBeInTheDocument();
     expect(screen.getByText(/Google-origin events are read-only inside Mindoist/i)).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /Google API Services User Data Policy/i })).toBeInTheDocument();
+  });
+
+  it('shows the public status page when configured', () => {
+    vi.stubEnv('VITE_STATUS_PAGE_URL', 'https://status.example.test');
+    renderPublicPage(<LandingPage />);
+
+    expect(screen.getByRole('link', { name: /view live status/i })).toHaveAttribute('href', 'https://status.example.test');
+    expect(screen.getByRole('link', { name: /service status/i })).toHaveAttribute('href', 'https://status.example.test');
   });
 
   it('publishes service terms for the optional Google integration', () => {

@@ -95,6 +95,7 @@ jobs:
         if: vars.STAGING_PAGES_ENABLED == 'true'
         env:
           VITE_API_URL: ${{ vars.VITE_API_URL }}
+          VITE_STATUS_PAGE_URL: ${{ vars.VITE_STATUS_PAGE_URL }}
         run: |
           pnpm --filter @mindoist/design-tokens build
           pnpm --filter @mindoist/shared build

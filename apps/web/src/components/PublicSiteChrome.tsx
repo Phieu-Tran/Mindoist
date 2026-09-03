@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LanguageSwitcher } from './LanguageSwitcher';
-import { GITHUB_URL, getPublicLocale, publicCopy } from '../lib/publicContent';
+import { GITHUB_URL, getPublicLocale, getStatusPageUrl, publicCopy } from '../lib/publicContent';
 import { cn } from '../lib/utils';
 
 export function PublicHeader() {
@@ -38,6 +38,7 @@ export function PublicHeader() {
 export function PublicFooter({ className }: { className?: string }) {
   const { i18n } = useTranslation();
   const copy = publicCopy[getPublicLocale(i18n.resolvedLanguage)].nav;
+  const statusPageUrl = getStatusPageUrl();
 
   return (
     <footer className={cn('border-t border-border', className)}>
@@ -48,6 +49,7 @@ export function PublicFooter({ className }: { className?: string }) {
           <a href="/privacy" className="hover:text-foreground">{copy.privacy}</a>
           <a href="/terms" className="hover:text-foreground">{copy.terms}</a>
           <a href={GITHUB_URL} target="_blank" rel="noreferrer" className="hover:text-foreground">{copy.github}</a>
+          {statusPageUrl ? <a href={statusPageUrl} target="_blank" rel="noreferrer" className="hover:text-foreground">{copy.status}</a> : null}
         </nav>
       </div>
     </footer>
