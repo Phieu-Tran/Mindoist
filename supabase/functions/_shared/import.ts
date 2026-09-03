@@ -13,6 +13,7 @@ type JsonRow = Record<string, unknown>;
 type MindoistData = {
   tasks: JsonRow[]; projects: JsonRow[]; notes: JsonRow[]; tags: JsonRow[];
   sections: JsonRow[]; projectColumns: JsonRow[]; taskTags: JsonRow[]; countdowns: JsonRow[];
+  settings: JsonRow | null; clientSettings: JsonRow | null;
 };
 
 function priority(value: string) {
@@ -110,6 +111,10 @@ function enumField<T extends string>(row: JsonRow, allowed: readonly T[], ...nam
   return value && (allowed as readonly string[]).includes(value) ? value : null;
 }
 
+function validTimeZone(value: string) {
+  try { Intl.DateTimeFormat(undefined, { timeZone: value }); return true; } catch { return false; }
+}
+
 function parseMindoistJson(content: string): MindoistData | null {
   let root: JsonRow;
   try {
@@ -126,8 +131,10 @@ function parseMindoistJson(content: string): MindoistData | null {
   const projectColumns = jsonRows(root.projectColumns, true);
   const taskTags = jsonRows(root.taskTags, true);
   const countdowns = jsonRows(root.countdowns, true);
-  if (!tasks || !projects || !tags || !notes || !sections || !projectColumns || !taskTags || !countdowns) return null;
-  return { tasks, projects, notes, tags, sections, projectColumns, taskTags, countdowns };
+  const settings = root.settings === undefined || root.settings === null ? null : jsonRow(root.settings);
+  const clientSettings = root.clientSettings === undefined || root.clientSettings === null ? null : jsonRow(root.clientSettings);
+  if (!tasks || !projects || !tags || !notes || !sections || !projectColumns || !taskTags || !countdowns || (root.settings !== undefined && root.settings !== null && !settings) || (root.clientSettings !== undefined && root.clientSettings !== null && !clientSettings)) return null;
+  return { tasks, projects, notes, tags, sections, projectColumns, taskTags, countdowns, settings, clientSettings };
 }
 
 function mindoistPreview(data: MindoistData) {
@@ -332,7 +339,23 @@ async function importMindoistData(userId: string, data: MindoistData) {
       }
       countdownsImported++;
     }
-    return { imported, projectsCreated, tagsCreated, taskTagsLinked, notesImported, countdownsImported };
+    let settingsImported = false;
+    if (data.settings) {
+      const currentRows = await tx<JsonRow[]>`select pomodoro_work_minutes as "pomodoroWorkMinutes", pomodoro_break_minutes as "pomodoroBreakMinutes", work_hours_per_day as "workHoursPerDay", time_zone as "timeZone" from users where id=${userId} limit 1`;
+      const current = currentRows[0] ?? {};
+      const work = Math.max(1, Math.min(120, Math.round(numberField(data.settings, 'pomodoroWorkMinutes', 'pomodoro_work_minutes') ?? (Number(current.pomodoroWorkMinutes) || 25))));
+      const breakMinutes = Math.max(1, Math.min(60, Math.round(numberField(data.settings, 'pomodoroBreakMinutes', 'pomodoro_break_minutes') ?? (Number(current.pomodoroBreakMinutes) || 5))));
+      const workHours = Math.max(1, Math.min(24, Math.round(numberField(data.settings, 'workHoursPerDay', 'work_hours_per_day') ?? (Number(current.workHoursPerDay) || 8))));
+      let timeZone = current.timeZone ?? null;
+      if (Object.prototype.hasOwnProperty.call(data.settings, 'timeZone') || Object.prototype.hasOwnProperty.call(data.settings, 'time_zone')) {
+        const rawTimeZone = field(data.settings, 'timeZone', 'time_zone');
+        if (rawTimeZone === null) timeZone = null;
+        else if (typeof rawTimeZone === 'string' && validTimeZone(rawTimeZone)) timeZone = rawTimeZone;
+      }
+      await tx`update users set pomodoro_work_minutes=${work},pomodoro_break_minutes=${breakMinutes},work_hours_per_day=${workHours},time_zone=${timeZone},updated_at=now() where id=${userId}`;
+      settingsImported = true;
+    }
+    return { imported, projectsCreated, tagsCreated, taskTagsLinked, notesImported, countdownsImported, settingsImported, clientSettings: data.clientSettings };
   });
 }
 
