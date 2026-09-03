@@ -78,9 +78,6 @@
 
 ## Getting Started
 
-For branch hygiene, CI lanes, build/deploy routes, secrets, and the reminder
-worker contract, read the [CI/CD runbook](docs/deploy/CI-CD-RUNBOOK.md).
-
 ### Prerequisites
 
 - [Node.js](https://nodejs.org/) ≥ 20
