@@ -119,8 +119,9 @@ export function TagsField({ taskId, value, tags, save, onChange, onCreateTag, on
                 maxLength={60}
                 className="min-w-0 flex-1 rounded-md border-0 bg-transparent px-2 py-1.5 text-xs outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
               />
-              <button type="button" onClick={() => { void create(); }} disabled={!newTagName.trim() || creating} aria-label={t('tags.addTag')} aria-busy={creating} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground transition-[opacity,transform] hover:opacity-90 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+              <button type="button" onClick={() => { void create(); }} disabled={!newTagName.trim() || creating} aria-label={t('tags.addTag')} aria-busy={creating} className="flex h-8 shrink-0 items-center justify-center gap-1 rounded-md bg-primary px-2 text-[0.68rem] font-semibold text-primary-foreground transition-[opacity,transform] hover:opacity-90 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                 <Plus className="h-3.5 w-3.5" aria-hidden="true" />
+                <span>{t('tags.addTag')}</span>
               </button>
             </div>
           )}
@@ -137,8 +138,9 @@ export function TagsField({ taskId, value, tags, save, onChange, onCreateTag, on
                       <span className="truncate">#{tag.name}</span>
                     </button>
                     {onDeleteTag && (
-                      <button type="button" aria-label={t('tags.deleteTag', { name: tag.name })} onClick={() => { setDeleteError(''); setDeleteConfirmId(confirming ? null : tag.id); }} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                      <button type="button" aria-label={t('tags.deleteTag', { name: tag.name })} onClick={() => { setDeleteError(''); setDeleteConfirmId(confirming ? null : tag.id); }} className="flex h-8 shrink-0 items-center justify-center gap-1 rounded-md px-2 text-[0.68rem] text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                         <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                        <span>{t('tags.delete')}</span>
                       </button>
                     )}
                   </div>

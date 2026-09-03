@@ -23,10 +23,19 @@ describe('TaskInspector', () => {
 
   beforeEach(async () => {
     await i18n.changeLanguage('en');
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ success: true, data: [] }),
+    }));
     onSave = vi.fn().mockResolvedValue(undefined);
     onClose = vi.fn();
     onDelete = vi.fn();
     onCompletePomodoro = vi.fn().mockImplementation(async () => makeTask('1', { pomodoroCount: 1 }));
+  });
+
+  afterEach(() => {
+    localStorage.removeItem('token');
+    vi.unstubAllGlobals();
   });
 
   const renderInspector = (task?: LegacyTaskOverrides, onToggleComplete?: (task: Task) => Promise<void> | void) =>
@@ -36,6 +45,8 @@ describe('TaskInspector', () => {
           task={makeTask('1', task)}
           projects={[{ id: 'p1', name: 'Personal' }]}
           tags={[{ id: 't1', userId: 'u1', name: 'urgent', color: null, createdAt: '', updatedAt: '', deletedAt: null }]}
+          onCreateTag={async name => ({ id: 'new-tag', userId: 'u1', name, color: null, createdAt: '', updatedAt: '', deletedAt: null })}
+          onDeleteTag={async () => {}}
           onSave={onSave}
           onCompletePomodoro={onCompletePomodoro}
           onToggleComplete={onToggleComplete}
@@ -211,6 +222,26 @@ describe('TaskInspector', () => {
     expect(screen.getByTestId('detail-project')).toHaveTextContent('Personal');
   });
 
+  it('shows and updates the task Kanban column', async () => {
+    vi.mocked(fetch).mockImplementation(async input => ({
+      ok: true,
+      json: async () => ({
+        success: true,
+        data: String(input).endsWith('/columns') ? [
+          { id: 'c1', projectId: 'p1', name: 'Backlog', color: 'slate', isDone: false, sortOrder: 0 },
+          { id: 'c2', projectId: 'p1', name: 'Doing', color: 'ocean', isDone: false, sortOrder: 1 },
+        ] : [],
+      }),
+    } as Response));
+
+    renderInspector({ projectId: 'p1', projectColumnId: 'c1' });
+    await waitFor(() => expect(screen.getByTestId('detail-project-column')).toHaveTextContent('Backlog'));
+    fireEvent.click(screen.getByTestId('detail-project-column'));
+    fireEvent.click(screen.getByRole('option', { name: 'Doing' }));
+
+    await waitFor(() => expect(onSave).toHaveBeenCalledWith('1', { projectColumnId: 'c2' }));
+  });
+
   it('saves a selected task color', async () => {
     renderInspector({ color: null });
     fireEvent.click(screen.getByTestId('detail-color'));
@@ -235,6 +266,13 @@ describe('TaskInspector', () => {
   it('shows the selected tag name in the compact trigger', () => {
     renderInspector({ tagIds: ['t1'] });
     expect(screen.getByTestId('detail-tags')).toHaveTextContent('urgent');
+  });
+
+  it('shows clear create and delete actions in the tag picker', () => {
+    renderInspector({ tagIds: ['t1'] });
+    fireEvent.click(screen.getByTestId('detail-tags'));
+    expect(screen.getByRole('button', { name: 'Add tag' })).toHaveTextContent('Add tag');
+    expect(screen.getByRole('button', { name: 'Delete tag urgent' })).toHaveTextContent('Delete tag');
   });
 
   it('removes an already-assigned tag when clicked again', async () => {

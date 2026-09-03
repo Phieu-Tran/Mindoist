@@ -12,7 +12,7 @@ import {
   Settings2,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import type { Project, Task } from '@mindoist/shared/types';
+import type { Project, ProjectColumn, Tag, Task } from '@mindoist/shared/types';
 import { Button } from './ui/button';
 import { cn } from '@/lib/utils';
 import {
@@ -27,6 +27,8 @@ import './SummaryDashboard.css';
 interface Props {
   tasks: Task[];
   projects?: Project[];
+  projectColumns?: ProjectColumn[];
+  tags?: Tag[];
   onSelectTask?: (task: Task) => void;
   obsidianSettings?: ObsidianSettings;
   onConfigureObsidian?: () => void;
@@ -90,6 +92,8 @@ function addDays(date: Date, amount: number) {
 export function SummaryCalendar({
   tasks,
   projects = [],
+  projectColumns = [],
+  tags = [],
   onSelectTask,
   obsidianSettings,
   onConfigureObsidian,
@@ -154,6 +158,14 @@ export function SummaryCalendar({
   const projectNames = useMemo(
     () => new Map(projects.map(project => [project.id, project.name])),
     [projects],
+  );
+  const projectColumnNames = useMemo(
+    () => new Map(projectColumns.map(column => [column.id, column.name])),
+    [projectColumns],
+  );
+  const tagNames = useMemo(
+    () => new Map(tags.map(tag => [tag.id, tag.name])),
+    [tags],
   );
   const selectedTasks = tasksByDay.get(selectedKey) || [];
   const selectedDate = new Date(`${selectedKey}T12:00:00`);
@@ -239,6 +251,11 @@ export function SummaryCalendar({
       lines.push(`## ${date.toLocaleDateString(i18n.language, { weekday: 'long', day: 'numeric', month: 'long' })}`);
       group.entries.forEach(({ source, task }) => {
         const project = task.projectId ? projectNames.get(task.projectId) : null;
+        const projectColumn = task.projectColumnId ? projectColumnNames.get(task.projectColumnId) : null;
+        const taskTags = task.tagIds.flatMap(tagId => {
+          const name = tagNames.get(tagId);
+          return name ? [`#${inlineMarkdown(name).replace(/\s+/g, '-')}`] : [];
+        }).join(' ');
         const status = source === 'completed'
           ? t('summary.completed')
           : source === 'deadline'
@@ -246,7 +263,7 @@ export function SummaryCalendar({
               ? t('summary.dueAt', { time: task.deadline.time })
               : t('summary.due')
             : t('summary.added');
-        const meta = [project, task.priority != null ? `P${task.priority}` : null, status].filter(Boolean).join(' · ');
+        const meta = [project, projectColumn, taskTags, task.priority != null ? `P${task.priority}` : null, status].filter(Boolean).join(' · ');
         lines.push(`- [${task.completedAt ? 'x' : ' '}] ${inlineMarkdown(task.title)}${meta ? ` — ${meta}` : ''}`);
       });
       lines.push('');
@@ -257,6 +274,7 @@ export function SummaryCalendar({
     return lines.join('\n').trim();
   }, [
     i18n.language,
+    projectColumnNames,
     projectNames,
     reviewEndKey,
     reviewGroups,
@@ -264,6 +282,7 @@ export function SummaryCalendar({
     reviewLabel,
     reviewStartKey,
     reviewStats,
+    tagNames,
     t,
     todayKey,
     visibleMonthKey,
@@ -618,6 +637,11 @@ export function SummaryCalendar({
                     <ul>
                       {group.entries.map(({ source, task }) => {
                         const projectName = task.projectId ? projectNames.get(task.projectId) : null;
+                        const projectColumnName = task.projectColumnId ? projectColumnNames.get(task.projectColumnId) : null;
+                        const taskTags = task.tagIds.flatMap(tagId => {
+                          const name = tagNames.get(tagId);
+                          return name ? [`#${name}`] : [];
+                        }).join(' ');
                         const sourceLabel = source === 'completed'
                           ? t('summary.completed')
                           : source === 'deadline'
@@ -631,7 +655,7 @@ export function SummaryCalendar({
                               <span className={`summary-agenda-priority summary-priority-${task.priority != null && task.priority >= 1 && task.priority <= 4 ? task.priority : 'none'}`} aria-hidden="true" />
                               <span className={cn('summary-month-task-title', task.completedAt && 'summary-agenda-completed')}>{task.title}</span>
                               <span className="summary-month-task-meta">
-                                {[projectName, task.priority != null ? `P${task.priority}` : null, sourceLabel].filter(Boolean).join(' · ')}
+                                {[projectName, projectColumnName, taskTags, task.priority != null ? `P${task.priority}` : null, sourceLabel].filter(Boolean).join(' · ')}
                               </span>
                               {task.completedAt
                                 ? <CheckCircle2 aria-label={t('summary.completed')} />

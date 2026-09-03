@@ -158,9 +158,10 @@ function AuthenticatedWorkspace({ user, setPassword, logout }: AuthenticatedWork
   const [inboxProcessOpen, setInboxProcessOpen] = useState(false);
   const [currentTagId, setCurrentTagId] = useState<string | undefined>();
   const [searchQuery, setSearchQuery] = useState('');
+  const [quickCaptureOpen, setQuickCaptureOpen] = useState(false);
   const { tasks, loading: tasksLoading, error: taskError, addTask, updateTask, moveTask, completeTask, completePomodoro, reopenTask, deleteTask, restoreTask, refetch: refetchTasks } = useTasksQuery(sidebarView, Boolean(user), currentProjectId, currentTagId);
   const inboxQuery = useTasksQuery('inbox', Boolean(user) && sidebarView === 'today');
-  const allTasksQuery = useTasksQuery('all', Boolean(user));
+  const allTasksQuery = useTasksQuery('all', Boolean(user) && quickCaptureOpen);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [keyboardTaskId, setKeyboardTaskId] = useState<string | null>(null);
   const [bulkSelectedTaskIds, setBulkSelectedTaskIds] = useState<Set<string>>(new Set());
@@ -786,7 +787,7 @@ function AuthenticatedWorkspace({ user, setPassword, logout }: AuthenticatedWork
   const usesTaskRail = !isSummaryView && !currentProject && !isCalendarView && !isNotesView && !isCountdownView && !isImportView && !isSettingsView && !isTrashedView && !isExportView && !isAdminView;
   const { events: gcalEvents } = useGCalEvents(Boolean(user) && isCalendarView);
   const { countdowns, loading: countdownsLoading, error: countdownsError, addCountdown, updateCountdown, deleteCountdown } = useCountdowns(Boolean(user) && (isCountdownView || isCalendarView || sidebarView === 'today'));
-  const { pomodoroWorkMinutes, pomodoroBreakMinutes, updatePomodoroDurations, workHoursPerDay, updateWorkHoursPerDay } = useSettings(Boolean(user));
+  const { pomodoroWorkMinutes, pomodoroBreakMinutes, updatePomodoroDurations, workHoursPerDay, updateWorkHoursPerDay } = useSettings(Boolean(user) && (isSettingsView || isCalendarView || sidebarView === 'today'));
 
   const handleConnectGoogle = useCallback(async () => {
     const token = localStorage.getItem('token');
@@ -798,7 +799,7 @@ function AuthenticatedWorkspace({ user, setPassword, logout }: AuthenticatedWork
     if (body.success) window.open(body.data.url, '_blank');
   }, []);
 
-  const { connected: gcalConnected } = useGoogleCalendarStatus(Boolean(user));
+  const { connected: gcalConnected } = useGoogleCalendarStatus(Boolean(user) && isSettingsView);
 
   return (
     <>
@@ -826,6 +827,7 @@ function AuthenticatedWorkspace({ user, setPassword, logout }: AuthenticatedWork
       onAssignTag={async (task, tagId) => {
         if (!task.tagIds.includes(tagId)) await updateTask(task.id, { tagIds: [...task.tagIds, tagId] });
       }}
+      onOpenChange={setQuickCaptureOpen}
       onDismiss={() => setCalendarDraft(null)}
     />
     <AppShell
@@ -893,6 +895,8 @@ function AuthenticatedWorkspace({ user, setPassword, logout }: AuthenticatedWork
             <SummaryDashboard
               tasks={summary.tasks}
               projects={projects}
+              projectColumns={summary.projectColumns}
+              tags={tags}
               loading={summary.loading}
               error={summary.error}
               onRetry={summary.refetch}

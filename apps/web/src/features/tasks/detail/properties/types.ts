@@ -1,4 +1,4 @@
-import type { Tag, UpdateTaskRequest } from '@mindoist/shared/types';
+import type { ProjectColumn, Tag, UpdateTaskRequest } from '@mindoist/shared/types';
 import type { RecurrencePreset } from '@mindoist/shared/recurrence/utils';
 
 export type PropertySave = (patch: UpdateTaskRequest) => Promise<void> | void;
@@ -16,6 +16,7 @@ export interface TaskPropertyDraft {
   startDate: string;
   priority: number | null;
   projectId: string;
+  projectColumnId: string;
   tagIds: string[];
   estimateMin: number | '';
   recurrencePreset: RecurrencePreset;
@@ -30,6 +31,7 @@ export interface TaskPropertyEditorProps {
   deadlineTimeZone?: string | null;
   draft: TaskPropertyDraft;
   projects: ProjectOption[];
+  projectColumns: ProjectColumn[];
   tags: Tag[];
   onCreateTag?: (name: string) => Promise<Tag>;
   onDeleteTag?: (id: string) => Promise<void>;

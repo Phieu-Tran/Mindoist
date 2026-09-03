@@ -287,6 +287,8 @@
     "priority": "Ưu tiên",
     "noPriority": "Không có",
     "project": "Dự án",
+    "kanbanColumn": "Cột Kanban",
+    "noKanbanColumn": "Chưa chọn cột",
     "recurrence": "Lặp lại",
     "save": "Lưu",
     "cancel": "Hủy",

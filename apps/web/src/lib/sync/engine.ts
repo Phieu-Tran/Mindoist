@@ -521,6 +521,7 @@ function handleVisibility() {
 // --- Lifecycle ---
 
 let initialized = false;
+let initialSyncTimer: number | null = null;
 
 export function initSync(): void {
   if (initialized) return;
@@ -538,7 +539,12 @@ export function initSync(): void {
 
   // Initial sync
   if (navigator.onLine) {
-    void syncOnce();
+    // Let the first screen's critical queries start before sync uses the
+    // same API connection. Sync remains automatic, just one task later.
+    initialSyncTimer = window.setTimeout(() => {
+      initialSyncTimer = null;
+      if (initialized && navigator.onLine) void syncOnce();
+    }, 0);
   }
 }
 
@@ -546,6 +552,10 @@ export function destroySync(): void {
   window.removeEventListener('online', handleOnline);
   window.removeEventListener('offline', handleOffline);
   document.removeEventListener('visibilitychange', handleVisibility);
+  if (initialSyncTimer !== null) {
+    window.clearTimeout(initialSyncTimer);
+    initialSyncTimer = null;
+  }
   if (mutationSyncTimer !== null) {
     window.clearTimeout(mutationSyncTimer);
     mutationSyncTimer = null;

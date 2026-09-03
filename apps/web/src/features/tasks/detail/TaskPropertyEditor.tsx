@@ -14,7 +14,7 @@ const sections: TaskPropertySectionId[] = ['organize', 'schedule', 'automation']
 function PropertyField({ definition, editor }: { definition: TaskPropertyDefinition; editor: TaskPropertyEditorProps }) {
   const { draft } = editor;
   switch (definition.id) {
-    case 'project': return <ProjectField taskId={editor.taskId} value={draft.projectId} projects={editor.projects} save={editor.save} onChange={(value) => editor.onDraftChange('projectId', value)} />;
+    case 'project': return <ProjectField taskId={editor.taskId} value={draft.projectId} projectColumnId={draft.projectColumnId} projects={editor.projects} projectColumns={editor.projectColumns} save={editor.save} onChange={(value) => editor.onDraftChange('projectId', value)} onColumnChange={(value) => editor.onDraftChange('projectColumnId', value)} />;
     case 'tags': return <TagsField taskId={editor.taskId} value={draft.tagIds} tags={editor.tags} save={editor.save} onChange={(value) => editor.onDraftChange('tagIds', value)} onCreateTag={editor.onCreateTag} onDeleteTag={editor.onDeleteTag} />;
     case 'priority': return <PriorityField taskId={editor.taskId} value={draft.priority} save={editor.save} onChange={(value) => editor.onDraftChange('priority', value)} />;
     case 'color': return <ColorField taskId={editor.taskId} value={draft.color} save={editor.save} onChange={(value) => editor.onDraftChange('color', value)} onPreview={editor.onColorPreview} />;

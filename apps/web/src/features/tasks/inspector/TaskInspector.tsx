@@ -18,6 +18,7 @@ import { TaskRemindersSection } from '@/features/tasks/detail/TaskRemindersSecti
 import { TaskRelatedSections } from '@/features/tasks/detail/TaskRelatedSections';
 import { TaskPropertyEditor } from '@/features/tasks/detail/TaskPropertyEditor';
 import type { TaskPropertyDraft } from '@/features/tasks/detail/properties/types';
+import { useProjectColumns } from '@/hooks/useApi';
 import { useTaskInspectorState } from './use-task-inspector-state';
 
 export interface TaskInspectorProps {
@@ -56,7 +57,7 @@ export function TaskInspector({
   const titleRef = useRef<HTMLTextAreaElement>(null);
   const {
     title, setTitle, description, setDescription, color, setColor, dueDate, setDueDate,
-    dueTime, setDueTime, startDate, setStartDate, priority, setPriority, projectId, setProjectId,
+    dueTime, setDueTime, startDate, setStartDate, priority, setPriority, projectId, setProjectId, projectColumnId, setProjectColumnId,
     tagIds, setTagIds, dirty, setDirty, saving, setSaving, error, setError,
     pomodoroOpen, setPomodoroOpen, taskMenuOpen, setTaskMenuOpen,
     showDeleteConfirm, setShowDeleteConfirm, showDiscardConfirm, setShowDiscardConfirm,
@@ -70,6 +71,7 @@ export function TaskInspector({
     recurrenceBasis, setRecurrenceBasis, recurringResetMode, setRecurringResetMode,
     resetInspectorState,
   } = useTaskInspectorState(task);
+  const { columns: projectColumns } = useProjectColumns(projectId || undefined);
   const isDueOverdue = useMemo(() => {
     if (!dueDate || task.completedAt) return false;
     const target = new Date(`${dueDate}T${dueTime || '23:59'}:00`).getTime();
@@ -479,6 +481,7 @@ export function TaskInspector({
     dueTime !== (task.deadline?.time || '') ||
     startDate !== (task.startDate?.slice(0, 10) || '') ||
     priority !== task.priority || projectId !== (task.projectId || '') ||
+    projectColumnId !== (task.projectColumnId || '') ||
     [...tagIds].sort().join(',') !== [...task.tagIds].sort().join(',') ||
     estimateMin !== (task.estimateMin ?? '') ||
     buildRrule(recurrencePreset, customRrule) !== (task.rrule || null) ||
@@ -495,6 +498,7 @@ export function TaskInspector({
       case 'startDate': setStartDate(value as string); break;
       case 'priority': setPriority(value as number | null); break;
       case 'projectId': setProjectId(value as string); break;
+      case 'projectColumnId': setProjectColumnId(value as string); break;
       case 'tagIds': setTagIds(value as string[]); break;
       case 'estimateMin': setEstimateMin(value as number | ''); break;
       case 'recurrencePreset': setRecurrencePreset(value as RecurrencePreset); break;
@@ -525,6 +529,7 @@ export function TaskInspector({
     startDate: startDate || null,
     priority,
     projectId: projectId || null,
+    projectColumnId: projectColumnId || null,
     tagIds,
     estimateMin: estimateMin !== '' ? Number(estimateMin) : null,
     // Keep the legacy field in the write payload until all clients have
@@ -540,6 +545,7 @@ export function TaskInspector({
     estimateMin,
     priority,
     projectId,
+    projectColumnId,
     recurrenceBasis,
     recurrencePreset,
     recurringResetMode,
@@ -766,6 +772,7 @@ export function TaskInspector({
                 startDate,
                 priority,
                 projectId,
+                projectColumnId,
                 tagIds,
                 estimateMin,
                 recurrencePreset,
@@ -774,6 +781,7 @@ export function TaskInspector({
                 recurringResetMode,
               }}
               projects={projects}
+              projectColumns={projectColumns}
               tags={tags}
               onCreateTag={onCreateTag}
               onDeleteTag={onDeleteTag}

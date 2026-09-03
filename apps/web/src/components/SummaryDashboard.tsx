@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { AlertTriangle, BarChart3, CheckCircle2, Circle, Target } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import type { Project, Task, TimeBlock } from '@mindoist/shared/types';
+import type { Project, ProjectColumn, Tag, Task, TimeBlock } from '@mindoist/shared/types';
 import { Button } from './ui/button';
 import { cn } from '@/lib/utils';
 import { SummaryCalendar } from './SummaryCalendar';
@@ -12,6 +12,8 @@ import './SummaryDashboard.css';
 interface Props {
   tasks: Task[];
   projects: Project[];
+  projectColumns?: ProjectColumn[];
+  tags?: Tag[];
   loading: boolean;
   error: string | null;
   onRetry: () => void;
@@ -58,6 +60,8 @@ function rangeStart(range: TrendRange, now: Date) {
 export function SummaryDashboard({
   tasks,
   projects,
+  projectColumns = [],
+  tags = [],
   loading,
   error,
   onRetry,
@@ -345,6 +349,8 @@ export function SummaryDashboard({
             <SummaryCalendar
               tasks={filteredTasks}
               projects={projects}
+              projectColumns={projectColumns}
+              tags={tags}
               onSelectTask={onSelectTask}
               obsidianSettings={obsidianSettings}
               onConfigureObsidian={onConfigureObsidian}

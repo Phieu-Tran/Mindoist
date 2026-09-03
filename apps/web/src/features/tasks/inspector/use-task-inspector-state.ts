@@ -11,6 +11,7 @@ interface DraftState {
   startDate: string;
   priority: number | null;
   projectId: string;
+  projectColumnId: string;
   tagIds: string[];
   estimateMin: number | '';
   recurrencePreset: RecurrencePreset;
@@ -56,6 +57,7 @@ function stateFromTask(task: Task): DetailState {
       startDate: task.startDate?.slice(0, 10) || '',
       priority: task.priority,
       projectId: task.projectId || '',
+      projectColumnId: task.projectColumnId || '',
       tagIds: task.tagIds,
       estimateMin: task.estimateMin ?? '',
       recurrencePreset,
@@ -104,7 +106,7 @@ export function useTaskInspectorState(task: Task) {
     return {
       setTitle: draft('title'), setDescription: draft('description'), setColor: draft('color'),
       setDueDate: draft('dueDate'), setDueTime: draft('dueTime'), setStartDate: draft('startDate'),
-      setPriority: draft('priority'), setProjectId: draft('projectId'), setTagIds: draft('tagIds'),
+      setPriority: draft('priority'), setProjectId: draft('projectId'), setProjectColumnId: draft('projectColumnId'), setTagIds: draft('tagIds'),
       setEstimateMin: draft('estimateMin'), setRecurrencePreset: draft('recurrencePreset'),
       setCustomRrule: draft('customRrule'), setRecurrenceBasis: draft('recurrenceBasis'),
       setRecurringResetMode: draft('recurringResetMode'),

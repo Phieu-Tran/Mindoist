@@ -56,9 +56,12 @@ describe('SummaryCalendar', () => {
     <I18nextProvider i18n={i18n}>
       <SummaryCalendar
         tasks={[
-          makeTask('1', 'Today task', '2026-07-20', { priority: 1, dueTime: '09:00' }),
+          makeTask('1', 'Today task', '2026-07-20', { priority: 1, dueTime: '09:00', projectId: 'p1', projectColumnId: 'c1', tagIds: ['t1'] }),
           makeTask('2', 'Tomorrow task', '2026-07-21T00:00:00.000Z', { priority: 2 }),
         ]}
+        projects={[{ id: 'p1', userId: 'u1', parentId: null, areaId: null, name: 'Personal', color: null, type: 'PERSONAL', isArchived: false, calendarSyncEnabled: false, sortOrder: 0, createdAt: '', updatedAt: '', deletedAt: null }]}
+        projectColumns={[{ id: 'c1', projectId: 'p1', name: 'Doing', color: 'ocean', isDone: false, sortOrder: 1, createdAt: '', updatedAt: '', deletedAt: null }]}
+        tags={[{ id: 't1', userId: 'u1', name: 'urgent', color: null, createdAt: '', updatedAt: '', deletedAt: null }]}
         onSelectTask={onSelectTask}
         obsidianSettings={settings ?? undefined}
         onConfigureObsidian={onConfigureObsidian}
@@ -153,6 +156,7 @@ describe('SummaryCalendar', () => {
     expect(preview).toHaveTextContent('type: mindoist-weekly-review');
     expect(preview).toHaveTextContent('week_start: 2026-07-20');
     expect(preview).toHaveTextContent('- [ ] Today task');
+    expect(preview).toHaveTextContent('Personal · Doing · #urgent · P1');
 
     await act(async () => {
       fireEvent.click(screen.getByTestId('summary-copy-markdown'));
@@ -182,6 +186,7 @@ describe('SummaryCalendar', () => {
 
     expect(writeText).toHaveBeenCalledWith(expect.stringContaining('# Mindoist monthly review — July 2026'));
     expect(writeText).toHaveBeenCalledWith(expect.stringContaining('- [ ] Today task'));
+    expect(writeText).toHaveBeenCalledWith(expect.stringContaining('Personal · Doing · #urgent · P1'));
     expect(openedHref).toContain(
       'obsidian://new?vault=Hi%E1%BA%BFu%20-%20Personal&file=03_Project%2FMindoist%2FT%E1%BB%95ng%20k%E1%BA%BFt%20Mindoist%202026-07.md&clipboard',
     );

@@ -229,19 +229,23 @@ describe('useApi hooks', () => {
 
   describe('useSummaryTasks', () => {
     it('combines active and completed tasks without duplicates', async () => {
-      const active = [{ id: '1', title: 'Open task', completedAt: null }];
+      const active = [{ id: '1', title: 'Open task', completedAt: null, projectId: 'p1', projectColumnId: 'c1' }];
       const completed = [
-        { id: '1', title: 'Open task duplicate', completedAt: null },
+        { id: '1', title: 'Open task duplicate', completedAt: null, projectId: 'p1', projectColumnId: 'c1' },
         { id: '2', title: 'Done task', completedAt: '2026-07-20T09:00:00Z' },
       ];
+      const projectColumns = [{ id: 'c1', projectId: 'p1', name: 'Doing' }];
       mockFetch
         .mockResolvedValueOnce({ ok: true, json: async () => ({ success: true, data: active }) })
-        .mockResolvedValueOnce({ ok: true, json: async () => ({ success: true, data: completed }) });
+        .mockResolvedValueOnce({ ok: true, json: async () => ({ success: true, data: completed }) })
+        .mockResolvedValueOnce({ ok: true, json: async () => ({ success: true, data: projectColumns }) });
 
       const { result } = renderHook(() => useSummaryTasks(true));
       await waitFor(() => expect(result.current.tasks).toHaveLength(2));
+      await waitFor(() => expect(result.current.projectColumns).toEqual(projectColumns));
       expect(mockFetch).toHaveBeenCalledWith('/tasks', expect.any(Object));
       expect(mockFetch).toHaveBeenCalledWith('/tasks?filter=completed', expect.any(Object));
+      expect(mockFetch).toHaveBeenCalledWith('/projects/p1/columns', expect.any(Object));
     });
   });
 

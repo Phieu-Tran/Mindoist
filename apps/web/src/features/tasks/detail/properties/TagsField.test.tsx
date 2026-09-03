@@ -33,6 +33,7 @@ describe('TagsField', () => {
 
     fireEvent.click(screen.getByTestId('detail-tags'));
     expect(screen.getByText('No tags yet. Create one above.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Add tag' })).toHaveTextContent('Add tag');
     fireEvent.change(screen.getByLabelText('Tag name'), { target: { value: 'Deep work' } });
     fireEvent.click(screen.getByRole('button', { name: 'Add tag' }));
 
@@ -67,7 +68,9 @@ describe('TagsField', () => {
     );
 
     fireEvent.click(screen.getByTestId('detail-tags'));
-    fireEvent.click(screen.getByRole('button', { name: 'Delete tag Deep work' }));
+    const deleteButton = screen.getByRole('button', { name: 'Delete tag Deep work' });
+    expect(deleteButton).toHaveTextContent('Delete tag');
+    fireEvent.click(deleteButton);
     expect(screen.getByText('Delete #Deep work? It will be removed from every task.')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Delete tag' }));
 

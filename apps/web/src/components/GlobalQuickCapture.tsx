@@ -24,6 +24,7 @@ interface Props {
   onScheduleTask?: (task: Task) => void;
   onMoveTask?: (task: Task, projectId: string) => void | Promise<void>;
   onAssignTag?: (task: Task, tagId: string) => void | Promise<void>;
+  onOpenChange?: (open: boolean) => void;
   onDismiss?: () => void;
 }
 
@@ -77,6 +78,7 @@ export function GlobalQuickCapture({
   onScheduleTask,
   onMoveTask,
   onAssignTag,
+  onOpenChange,
   onDismiss,
 }: Props) {
   const { i18n, t } = useTranslation('tasks');
@@ -120,14 +122,16 @@ export function GlobalQuickCapture({
     setOpen(false);
     setInput('');
     setEdits({});
+    onOpenChange?.(false);
     onDismiss?.();
-  }, [onDismiss]);
+  }, [onDismiss, onOpenChange]);
 
   const openCommandBar = useCallback((initialInput = '') => {
     triggerElementRef.current = document.activeElement;
     setInput(initialInput);
     setOpen(true);
-  }, []);
+    onOpenChange?.(true);
+  }, [onOpenChange]);
 
   useEffect(() => {
     const handleGlobalKeyDown = (event: KeyboardEvent) => {
@@ -151,12 +155,13 @@ export function GlobalQuickCapture({
   const handleOpenChange = useCallback((nextOpen: boolean) => {
     if (nextOpen) {
       setOpen(true);
+      onOpenChange?.(true);
       return;
     }
     if (datePickerOpenRef.current || timePickerOpenRef.current) return;
     resetAndClose();
     window.setTimeout(() => (triggerElementRef.current as HTMLElement | null)?.focus?.(), 0);
-  }, [resetAndClose]);
+  }, [onOpenChange, resetAndClose]);
 
   const createTask = useCallback(async () => {
     if (!preview?.title.trim()) return;

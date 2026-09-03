@@ -212,11 +212,17 @@ export function useSummaryTasks(enabled: boolean) {
         apiFetch<Task[]>('/tasks?filter=completed'),
       ]);
       const unique = new Map([...active, ...completed].map(task => [task.id, task]));
-      return Array.from(unique.values());
+      const tasks = Array.from(unique.values());
+      const projectIds = [...new Set(tasks.flatMap(task => task.projectId && task.projectColumnId ? [task.projectId] : []))];
+      const projectColumns = (await Promise.all(
+        projectIds.map(projectId => apiFetch<ProjectColumn[]>(`/projects/${projectId}/columns`)),
+      )).flat();
+      return { tasks, projectColumns };
     },
   }, queryClient);
   return {
-    tasks: enabled ? query.data ?? [] : [],
+    tasks: enabled ? query.data?.tasks ?? [] : [],
+    projectColumns: enabled ? query.data?.projectColumns ?? [] : [],
     loading: enabled && query.isPending,
     error: query.error instanceof Error ? query.error.message : query.error ? 'Failed to load summary' : null,
     refetch: query.refetch,

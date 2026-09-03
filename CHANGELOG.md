@@ -7,6 +7,7 @@ Notable changes to Mindoist, grouped by date. This project doesn't cut versioned
 ### Added
 - JSON export/import now carries account settings and safe browser preferences, including Obsidian configuration, without exporting authentication or integration secrets.
 - The public landing page can expose a Better Stack live service-status link through the optional `VITE_STATUS_PAGE_URL` setting.
+- Task Detail now shows and updates a task's Kanban column, exposes clear create/delete actions in the tag picker, and includes column/tag names in Summary and Obsidian reviews. Non-critical all-task, settings, calendar-status, and initial-sync requests now wait until they are needed so the first view can load sooner.
 
 ## 2026-09-01
 

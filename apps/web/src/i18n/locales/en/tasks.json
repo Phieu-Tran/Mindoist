@@ -289,6 +289,8 @@
     "priority": "Priority",
     "noPriority": "None",
     "project": "Project",
+    "kanbanColumn": "Kanban column",
+    "noKanbanColumn": "No column",
     "recurrence": "Recurrence",
     "save": "Save",
     "cancel": "Cancel",
