@@ -82,6 +82,24 @@ describe('useTasksQuery', () => {
     expect(api.completeTask).toHaveBeenCalledWith('task-1');
   });
 
+  it('shows a created task before a pending list response resolves', async () => {
+    const listResponse = deferred<Task[]>();
+    const createResponse = deferred<Task>();
+    api.listTasks.mockReturnValueOnce(listResponse.promise);
+    api.createTask.mockReturnValue(createResponse.promise);
+    const { result } = renderHook(() => useTasksQuery('all', true), { wrapper: wrapper() });
+
+    let request!: Promise<Task>;
+    act(() => { request = result.current.addTask({ title: 'Immediate' }); });
+    await waitFor(() => expect(result.current.tasks.map(item => item.title)).toContain('Immediate'));
+
+    createResponse.resolve(task({ id: 'task-created', title: 'Immediate' }));
+    await act(async () => { await request; });
+    listResponse.resolve([task()]);
+
+    await waitFor(() => expect(result.current.tasks.map(item => item.id)).toContain('task-created'));
+  });
+
   it('reconciles concurrent optimistic creates independently when responses finish out of order', async () => {
     const first = deferred<Task>();
     const second = deferred<Task>();
