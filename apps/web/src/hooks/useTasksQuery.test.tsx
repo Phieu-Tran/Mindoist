@@ -67,6 +67,21 @@ describe('useTasksQuery', () => {
     expect(result.current.tasks[0]?.title).toBe('Original');
   });
 
+  it('updates completion state without waiting for a pending API response', async () => {
+    const response = deferred<Task>();
+    api.completeTask.mockReturnValue(response.promise);
+    const { result } = renderHook(() => useTasksQuery('all', true), { wrapper: wrapper() });
+    await waitFor(() => expect(result.current.tasks[0]?.completedAt).toBeNull());
+
+    let request!: Promise<Task>;
+    act(() => { request = result.current.completeTask('task-1'); });
+    await waitFor(() => expect(result.current.tasks[0]?.completedAt).not.toBeNull());
+
+    response.resolve(task({ completedAt: '2026-09-03T00:00:00Z' }));
+    await act(async () => { await request; });
+    expect(api.completeTask).toHaveBeenCalledWith('task-1');
+  });
+
   it('reconciles concurrent optimistic creates independently when responses finish out of order', async () => {
     const first = deferred<Task>();
     const second = deferred<Task>();
