@@ -6,6 +6,7 @@ Notable changes to Mindoist, grouped by date. This project doesn't cut versioned
 
 ### Added
 - JSON export/import now carries account settings and safe browser preferences, including Obsidian configuration, without exporting authentication or integration secrets.
+- The public landing page can expose a Better Stack live service-status link through the optional `VITE_STATUS_PAGE_URL` setting.
 
 ## 2026-09-01
 

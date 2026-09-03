@@ -10,6 +10,10 @@ export type LegalSection = {
 export const GITHUB_URL = 'https://github.com/Phieu-Tran/Mindoist';
 export const SUPPORT_EMAIL = 'hieutran111zx@gmail.com';
 
+export function getStatusPageUrl() {
+  return (import.meta.env.VITE_STATUS_PAGE_URL ?? '').trim();
+}
+
 export function getPublicLocale(language?: string): PublicLocale {
   return language?.toLowerCase().startsWith('vi') ? 'vi' : 'en';
 }
@@ -25,6 +29,7 @@ export const publicCopy = {
       login: 'Log in',
       register: 'Get started',
       legal: 'Legal links',
+      status: 'Service status',
     },
     landing: {
       eyebrow: 'A calmer place for your work',
@@ -64,6 +69,10 @@ export const publicCopy = {
       ],
       ctaTitle: 'Ready for a quieter way to plan?',
       ctaBody: 'Create an account or sign in with Google to start your workspace.',
+      statusEyebrow: 'Service status',
+      statusTitle: 'See Mindoist availability in real time.',
+      statusDescription: 'Check the live status of Mindoist services and ongoing incidents.',
+      statusLink: 'View live status',
     },
     privacy: {
       title: 'Privacy Policy',
@@ -201,6 +210,7 @@ export const publicCopy = {
       login: 'Đăng nhập',
       register: 'Bắt đầu',
       legal: 'Liên kết pháp lý',
+      status: 'Trạng thái dịch vụ',
     },
     landing: {
       eyebrow: 'Một nơi nhẹ nhàng hơn cho công việc',
@@ -240,6 +250,10 @@ export const publicCopy = {
       ],
       ctaTitle: 'Sẵn sàng cho cách lên kế hoạch yên tĩnh hơn?',
       ctaBody: 'Tạo tài khoản hoặc đăng nhập bằng Google để bắt đầu không gian của bạn.',
+      statusEyebrow: 'Trạng thái dịch vụ',
+      statusTitle: 'Xem tình trạng hoạt động của Mindoist theo thời gian thực.',
+      statusDescription: 'Kiểm tra trạng thái các dịch vụ Mindoist và sự cố đang diễn ra.',
+      statusLink: 'Xem trạng thái trực tiếp',
     },
     privacy: {
       title: 'Chính sách quyền riêng tư',

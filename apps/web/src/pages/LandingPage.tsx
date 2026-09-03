@@ -1,14 +1,15 @@
 import { useEffect } from 'react';
-import { CalendarDays, Check, Inbox, LayoutDashboard, ShieldCheck } from 'lucide-react';
+import { Activity, CalendarDays, Check, ExternalLink, Inbox, LayoutDashboard, ShieldCheck } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { PublicFooter, PublicHeader, PublicPage } from '../components/PublicSiteChrome';
-import { GITHUB_URL, getPublicLocale, publicCopy } from '../lib/publicContent';
+import { GITHUB_URL, getPublicLocale, getStatusPageUrl, publicCopy } from '../lib/publicContent';
 
 const featureIcons = [Inbox, LayoutDashboard, ShieldCheck] as const;
 
 export function LandingPage() {
   const { i18n } = useTranslation();
   const copy = publicCopy[getPublicLocale(i18n.resolvedLanguage)].landing;
+  const statusPageUrl = getStatusPageUrl();
 
   useEffect(() => {
     document.title = 'Mindoist';
@@ -127,6 +128,32 @@ export function LandingPage() {
             </ul>
           </div>
         </section>
+
+        {statusPageUrl ? (
+          <section className="border-b border-border px-5 py-10 sm:px-8">
+            <div className="mx-auto flex max-w-6xl flex-col gap-6 rounded-panel border border-border bg-card p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8">
+              <div className="flex items-start gap-4">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control bg-primary/10 text-primary">
+                  <Activity size={21} aria-hidden="true" />
+                </span>
+                <div>
+                  <p className="text-sm font-semibold text-primary">{copy.statusEyebrow}</p>
+                  <h2 className="mt-1 text-xl font-semibold tracking-tight">{copy.statusTitle}</h2>
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">{copy.statusDescription}</p>
+                </div>
+              </div>
+              <a
+                href={statusPageUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-control border border-border bg-background px-4 text-sm font-semibold text-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                {copy.statusLink}
+                <ExternalLink size={16} aria-hidden="true" />
+              </a>
+            </div>
+          </section>
+        ) : null}
 
         <section className="px-5 py-16 text-center sm:px-8 sm:py-20">
           <div className="mx-auto max-w-2xl">
