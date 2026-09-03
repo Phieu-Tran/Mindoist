@@ -2,8 +2,13 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Download, FileJson, FileText } from 'lucide-react';
 import { Button } from './ui/button';
+import { readClientSettings } from '@/lib/settings-backup';
 
-export function ExportView() {
+interface Props {
+  userId?: string;
+}
+
+export function ExportView({ userId }: Props) {
   const { t } = useTranslation('tasks');
   const [downloading, setDownloading] = useState(false);
 
@@ -15,7 +20,14 @@ export function ExportView() {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (!res.ok) throw new Error('Export failed');
-      const blob = await res.blob();
+      const blob = format === 'json'
+        ? new Blob([
+            JSON.stringify({
+              ...JSON.parse(await res.text()),
+              ...(userId ? { clientSettings: readClientSettings(userId) } : {}),
+            }, null, 2),
+          ], { type: 'application/json' })
+        : await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;

@@ -1,6 +1,8 @@
 import { useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Upload, FileText, CheckCircle, AlertCircle, ArrowRight, FolderOpen, Tag, AlertTriangle, ChevronLeft, Clock } from 'lucide-react';
+import { restoreClientSettings } from '@/lib/settings-backup';
+import type { ObsidianSettings } from '@/lib/obsidian-settings';
 
 const API = import.meta.env.VITE_API_URL || '';
 
@@ -46,14 +48,17 @@ interface ImportResult {
   projectsCreated: number;
   tagsCreated: number;
   countdownsImported?: number;
+  clientSettings?: unknown;
 }
 
 interface Props {
   onImportComplete?: () => void;
+  userId?: string;
+  onClientSettingsImported?: (settings: ObsidianSettings) => void;
 }
 
-export function ImportView({ onImportComplete }: Props) {
-  const { t } = useTranslation('tasks');
+export function ImportView({ onImportComplete, userId, onClientSettingsImported }: Props) {
+  const { t, i18n } = useTranslation('tasks');
   const [source, setSource] = useState<ImportSource | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
@@ -116,6 +121,11 @@ export function ImportView({ onImportComplete }: Props) {
 
       if (!res.ok) throw new Error('Failed to import');
       const data: ImportResult = await res.json();
+      const restored = userId ? restoreClientSettings(userId, data.clientSettings) : null;
+      if (restored) {
+        onClientSettingsImported?.(restored.obsidian);
+        if (restored.appearance.language !== i18n.language?.slice(0, 2)) void i18n.changeLanguage(restored.appearance.language);
+      }
       setResult(data);
       // Imported tasks land in the shared task list right away (it refetches
       // on view change), but new projects/tags created by the import don't —

@@ -2,6 +2,11 @@
 
 Notable changes to Mindoist, grouped by date. This project doesn't cut versioned releases yet — entries are dated instead.
 
+## 2026-09-03
+
+### Added
+- JSON export/import now carries account settings and safe browser preferences, including Obsidian configuration, without exporting authentication or integration secrets.
+
 ## 2026-09-01
 
 ### Added

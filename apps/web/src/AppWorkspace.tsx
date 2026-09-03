@@ -880,7 +880,11 @@ function AuthenticatedWorkspace({ user, setPassword, logout }: AuthenticatedWork
           />
         </div>
       ) : isImportView ? (
-        <ImportView onImportComplete={() => { refetchProjects(); refetchTags(); refetchTasks(); }} />
+        <ImportView
+          userId={user.id}
+          onClientSettingsImported={setObsidianSettings}
+          onImportComplete={() => { refetchProjects(); refetchTags(); refetchTasks(); }}
+        />
       ) : isSummaryView ? (
         <>
         <ReviewTabs active={sidebarView} onSelect={view => handleSidebarSelect(view)} />
@@ -1130,7 +1134,7 @@ function AuthenticatedWorkspace({ user, setPassword, logout }: AuthenticatedWork
       ) : isExportView ? (
         <div className="mx-auto max-w-4xl py-6 px-4">
           <h2 className="text-2xl font-semibold m-0 mb-5">{viewTitle}</h2>
-          <ExportView />
+          <ExportView userId={user.id} />
         </div>
       ) : (
         <div className="flex min-w-0 gap-4">
