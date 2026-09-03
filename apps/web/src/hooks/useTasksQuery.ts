@@ -57,15 +57,18 @@ export function useTasksQuery(view: SidebarView, enabled: boolean, projectId?: s
     ]);
   };
 
-  const settleCreate = async () => {
-    await Promise.all([
+  const settleCreate = () => {
+    // Dependent views refresh in the background. Waiting here keeps
+    // mutateAsync pending and makes Quick Add look frozen after the API has
+    // already created the task.
+    void Promise.all([
       // Mark task views stale without refetching the active view while another
       // optimistic create may still be pending in that cache.
       queryClient.invalidateQueries({ queryKey: ['tasks'], refetchType: 'none' }),
       queryClient.invalidateQueries({ queryKey: queryKeys.taskCounts() }),
       queryClient.invalidateQueries({ queryKey: ['calendar'] }),
       queryClient.invalidateQueries({ queryKey: ['summary'] }),
-    ]);
+    ]).catch(() => undefined);
   };
 
   const addMutation = useMutation({
