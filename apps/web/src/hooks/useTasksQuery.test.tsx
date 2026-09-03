@@ -1,8 +1,9 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
 import { renderHook, waitFor, act } from '@testing-library/react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import type { Task } from '@mindoist/shared/types';
 import { useTasksQuery } from './useTasksQuery';
+import { queryKeys } from '@/lib/query-client';
 
 const api = vi.hoisted(() => ({
   listTasks: vi.fn(),
@@ -38,8 +39,11 @@ function deferred<T>() {
   return { promise, resolve, reject };
 }
 
-function wrapper() {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
+function createClient() {
+  return new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
+}
+
+function wrapper(client = createClient()) {
   return ({ children }: { children: React.ReactNode }) => <QueryClientProvider client={client}>{children}</QueryClientProvider>;
 }
 
@@ -98,6 +102,23 @@ describe('useTasksQuery', () => {
     listResponse.resolve([task()]);
 
     await waitFor(() => expect(result.current.tasks.map(item => item.id)).toContain('task-created'));
+  });
+
+  it('resolves create before dependent view refetches finish', async () => {
+    const dependentResponse = deferred<{ inbox: number; today: number; next7: number; overdue: number; completed: number }>();
+    api.createTask.mockResolvedValue(task({ id: 'task-created', title: 'Fast' }));
+    const client = createClient();
+    const { result } = renderHook(() => {
+      useQuery({
+        queryKey: queryKeys.taskCounts(),
+        queryFn: () => dependentResponse.promise,
+      });
+      return useTasksQuery('all', true);
+    }, { wrapper: wrapper(client) });
+
+    await waitFor(() => expect(api.listTasks).toHaveBeenCalled());
+    await expect(result.current.addTask({ title: 'Fast' })).resolves.toMatchObject({ id: 'task-created' });
+    dependentResponse.resolve({ inbox: 1, today: 1, next7: 1, overdue: 0, completed: 0 });
   });
 
   it('reconciles concurrent optimistic creates independently when responses finish out of order', async () => {
