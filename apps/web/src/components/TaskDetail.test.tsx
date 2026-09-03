@@ -29,7 +29,7 @@ describe('TaskInspector', () => {
     onCompletePomodoro = vi.fn().mockImplementation(async () => makeTask('1', { pomodoroCount: 1 }));
   });
 
-  const renderInspector = (task?: LegacyTaskOverrides) =>
+  const renderInspector = (task?: LegacyTaskOverrides, onToggleComplete?: (task: Task) => Promise<void> | void) =>
     render(
       <I18nextProvider i18n={i18n}>
         <TaskInspector
@@ -38,6 +38,7 @@ describe('TaskInspector', () => {
           tags={[{ id: 't1', userId: 'u1', name: 'urgent', color: null, createdAt: '', updatedAt: '', deletedAt: null }]}
           onSave={onSave}
           onCompletePomodoro={onCompletePomodoro}
+          onToggleComplete={onToggleComplete}
           onClose={onClose}
           onDelete={onDelete}
         />
@@ -102,6 +103,16 @@ describe('TaskInspector', () => {
 
     localStorage.removeItem('token');
     vi.unstubAllGlobals();
+  });
+
+  it('closes immediately when the workspace completion mutation is provided', () => {
+    const onToggleComplete = vi.fn().mockImplementation(() => new Promise<void>(() => {}));
+    renderInspector({ title: 'My Task' }, onToggleComplete);
+
+    fireEvent.click(screen.getByTestId('detail-title-complete'));
+
+    expect(onToggleComplete).toHaveBeenCalledWith(expect.objectContaining({ id: '1', title: 'My Task' }));
+    expect(onClose).toHaveBeenCalledOnce();
   });
 
   it('displays task description', () => {
