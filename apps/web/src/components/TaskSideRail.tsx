@@ -19,6 +19,7 @@ interface Props {
   onSave: (id: string, req: UpdateTaskRequest) => Promise<void> | void;
   onAutosave?: (id: string, req: UpdateTaskRequest) => Promise<void> | void;
   onCompletePomodoro: (id: string) => Promise<Task>;
+  onToggleComplete?: (task: Task) => Promise<void> | void;
   onClose: () => void;
   onDelete: (id: string) => void;
   onDeleteWithUndo?: (task: Task) => Promise<void>;
@@ -47,6 +48,7 @@ export function TaskSideRail({
   onSave,
   onAutosave,
   onCompletePomodoro,
+  onToggleComplete,
   onClose,
   onDelete,
   onDeleteWithUndo,
@@ -235,6 +237,7 @@ export function TaskSideRail({
             onSave={onSave}
             onAutosave={onAutosave}
             onCompletePomodoro={onCompletePomodoro}
+            onToggleComplete={onToggleComplete}
             onClose={onClose}
             onDelete={onDelete}
             onDeleteWithUndo={onDeleteWithUndo}

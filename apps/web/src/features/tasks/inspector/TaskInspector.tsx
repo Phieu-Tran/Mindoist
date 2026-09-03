@@ -29,6 +29,7 @@ export interface TaskInspectorProps {
   onSave: (id: string, req: UpdateTaskRequest) => Promise<void> | void;
   onAutosave?: (id: string, req: UpdateTaskRequest) => Promise<void> | void;
   onCompletePomodoro: (id: string) => Promise<Task>;
+  onToggleComplete?: (task: Task) => Promise<void> | void;
   onClose: () => void;
   onDelete: (id: string) => void;
   onDeleteWithUndo?: (task: Task) => Promise<void>;
@@ -48,7 +49,7 @@ function authHeaders(): Record<string, string> | null {
 
 export function TaskInspector({
   task, projects, tags, onCreateTag, onDeleteTag, onSave, onAutosave, onCompletePomodoro, onClose, onDelete, onDeleteWithUndo,
-  onSelectTask, onTasksChanged, onColorPreview, rail = false,
+  onToggleComplete, onSelectTask, onTasksChanged, onColorPreview, rail = false,
   pomodoroWorkMinutes, pomodoroBreakMinutes,
 }: TaskInspectorProps) {
   const { t } = useTranslation('tasks');
@@ -312,6 +313,11 @@ export function TaskInspector({
 
   const handleCompleteParent = useCallback(async () => {
     setShowCompleteConfirm(false);
+    if (onToggleComplete) {
+      onClose();
+      void Promise.resolve(onToggleComplete(task)).catch(() => undefined);
+      return;
+    }
     const headers = authHeaders();
     if (!headers) return;
     const endpoint = task.completedAt ? 'reopen' : 'complete';
@@ -327,7 +333,7 @@ export function TaskInspector({
         onClose();
       }
     } catch { /* noop */ }
-  }, [task.id, task.completedAt, onTasksChanged, onClose]);
+  }, [onClose, onTasksChanged, onToggleComplete, task]);
 
   const handleSubtaskDragStart = useCallback((subtask: Task, e: React.DragEvent) => {
     e.dataTransfer.effectAllowed = 'move';

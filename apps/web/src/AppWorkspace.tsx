@@ -320,11 +320,11 @@ function AuthenticatedWorkspace({ user, setPassword, logout }: AuthenticatedWork
 
   const handleToggle = useCallback(async (task: Task) => {
     if (task.completedAt) {
+      if (selectedTask?.id === task.id) setSelectedTask(null);
       await reopenTask(task.id);
-      if (selectedTask?.id === task.id) setSelectedTask(null);
     } else {
-      await completeTask(task.id);
       if (selectedTask?.id === task.id) setSelectedTask(null);
+      await completeTask(task.id);
       showToast({
         message: t('tasks:undo.completed', { title: task.title }),
         actionLabel: t('tasks:undo.action'),
@@ -916,6 +916,7 @@ function AuthenticatedWorkspace({ user, setPassword, logout }: AuthenticatedWork
                     onSave={handleUpdate}
                     onAutosave={handleAutosave}
                     onCompletePomodoro={handlePomodoroComplete}
+                    onToggleComplete={handleToggle}
                     onClose={handleCloseTask}
                     onDelete={handleDeleteTask}
                     onDeleteWithUndo={handleDeleteWithUndoSubtask}
@@ -969,6 +970,7 @@ function AuthenticatedWorkspace({ user, setPassword, logout }: AuthenticatedWork
                     onSave={handleUpdate}
                     onAutosave={handleAutosave}
                     onCompletePomodoro={handlePomodoroComplete}
+                    onToggleComplete={handleToggle}
                     onClose={handleCloseTask}
                     onDelete={handleDeleteTask}
                     onDeleteWithUndo={handleDeleteWithUndoSubtask}
@@ -1022,6 +1024,7 @@ function AuthenticatedWorkspace({ user, setPassword, logout }: AuthenticatedWork
                     onSave={handleUpdate}
                     onAutosave={handleAutosave}
                     onCompletePomodoro={handlePomodoroComplete}
+                    onToggleComplete={handleToggle}
                     onClose={handleCloseTask}
                     onDelete={handleDeleteTask}
                     onDeleteWithUndo={handleDeleteWithUndoSubtask}
@@ -1120,6 +1123,7 @@ function AuthenticatedWorkspace({ user, setPassword, logout }: AuthenticatedWork
               onSave={handleUpdate}
               onAutosave={handleAutosave}
               onCompletePomodoro={handlePomodoroComplete}
+              onToggleComplete={handleToggle}
               onClose={handleCloseTask}
               onDelete={handleDeleteTask}
               onDeleteWithUndo={handleDeleteWithUndoSubtask}
@@ -1207,6 +1211,7 @@ function AuthenticatedWorkspace({ user, setPassword, logout }: AuthenticatedWork
               onSave={handleUpdate}
               onAutosave={handleAutosave}
               onCompletePomodoro={handlePomodoroComplete}
+              onToggleComplete={handleToggle}
               onClose={handleCloseTask}
               onDelete={handleDeleteTask}
               onDeleteWithUndo={handleDeleteWithUndoSubtask}
