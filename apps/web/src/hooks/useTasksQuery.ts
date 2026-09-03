@@ -104,8 +104,8 @@ export function useTasksQuery(view: SidebarView, enabled: boolean, projectId?: s
 
   const completeMutation = useMutation({
     mutationFn: (id: string) => completeTaskRequest(id),
-    onMutate: async id => {
-      await queryClient.cancelQueries({ queryKey: taskKey });
+    onMutate: id => {
+      void queryClient.cancelQueries({ queryKey: taskKey }, { revert: false });
       const previous = queryClient.getQueryData<Task[]>(taskKey);
       queryClient.setQueryData<Task[]>(taskKey, current => (current ?? []).map(task => task.id === id ? { ...task, completedAt: new Date().toISOString() } : task));
       return { previous };
@@ -117,8 +117,8 @@ export function useTasksQuery(view: SidebarView, enabled: boolean, projectId?: s
 
   const reopenMutation = useMutation({
     mutationFn: (id: string) => reopenTaskRequest(id),
-    onMutate: async id => {
-      await queryClient.cancelQueries({ queryKey: taskKey });
+    onMutate: id => {
+      void queryClient.cancelQueries({ queryKey: taskKey }, { revert: false });
       const previous = queryClient.getQueryData<Task[]>(taskKey);
       queryClient.setQueryData<Task[]>(taskKey, current => (current ?? []).map(task => task.id === id ? { ...task, completedAt: null } : task));
       return { previous };
