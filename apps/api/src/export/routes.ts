@@ -14,7 +14,7 @@ function toCsvRow(values: (string | number | null | undefined)[]): string {
 export async function exportRoutes(app: FastifyInstance) {
   app.get('/export/json', { preHandler: requireAuth }, async (request, reply) => {
     const userId = request.auth!.sub;
-    const [tasks, projects, notes, tags, sections, projectColumns, taskTags] = await Promise.all([
+    const [tasks, projects, notes, tags, sections, projectColumns, taskTags, countdowns] = await Promise.all([
       prisma.task.findMany({ where: { userId, deletedAt: null }, orderBy: { createdAt: 'asc' } }),
       prisma.project.findMany({ where: { userId, deletedAt: null }, orderBy: { createdAt: 'asc' } }),
       prisma.note.findMany({ where: { userId, deletedAt: null }, orderBy: { createdAt: 'asc' } }),
@@ -22,9 +22,10 @@ export async function exportRoutes(app: FastifyInstance) {
       prisma.section.findMany({ where: { project: { userId }, deletedAt: null }, orderBy: { createdAt: 'asc' } }),
       prisma.projectColumn.findMany({ where: { project: { userId }, deletedAt: null }, orderBy: { createdAt: 'asc' } }),
       prisma.taskTag.findMany({ where: { task: { userId, deletedAt: null }, deletedAt: null }, orderBy: { createdAt: 'asc' } }),
+      prisma.countdown.findMany({ where: { userId, deletedAt: null }, orderBy: { targetDate: 'asc' } }),
     ]);
 
-    const data = { schema: 1, exportedAt: new Date().toISOString(), tasks, projects, notes, tags, sections, projectColumns, taskTags };
+    const data = { schema: 1, exportedAt: new Date().toISOString(), tasks, projects, notes, tags, sections, projectColumns, taskTags, countdowns };
     const json = JSON.stringify(data, null, 2);
 
     reply.header('Content-Type', 'application/json');

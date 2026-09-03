@@ -12,7 +12,7 @@ type ParsedTask = {
 type JsonRow = Record<string, unknown>;
 type MindoistData = {
   tasks: JsonRow[]; projects: JsonRow[]; notes: JsonRow[]; tags: JsonRow[];
-  sections: JsonRow[]; projectColumns: JsonRow[]; taskTags: JsonRow[];
+  sections: JsonRow[]; projectColumns: JsonRow[]; taskTags: JsonRow[]; countdowns: JsonRow[];
 };
 
 function priority(value: string) {
@@ -125,8 +125,9 @@ function parseMindoistJson(content: string): MindoistData | null {
   const sections = jsonRows(root.sections, true);
   const projectColumns = jsonRows(root.projectColumns, true);
   const taskTags = jsonRows(root.taskTags, true);
-  if (!tasks || !projects || !tags || !notes || !sections || !projectColumns || !taskTags) return null;
-  return { tasks, projects, notes, tags, sections, projectColumns, taskTags };
+  const countdowns = jsonRows(root.countdowns, true);
+  if (!tasks || !projects || !tags || !notes || !sections || !projectColumns || !taskTags || !countdowns) return null;
+  return { tasks, projects, notes, tags, sections, projectColumns, taskTags, countdowns };
 }
 
 function mindoistPreview(data: MindoistData) {
@@ -313,7 +314,25 @@ async function importMindoistData(userId: string, data: MindoistData) {
       await tx`insert into notes (id,user_id,task_id,title,content,created_at,updated_at) values (${crypto.randomUUID()},${userId},${taskId},${stringField(note, 'title')},${stringField(note, 'content')},now(),now())`;
       notesImported++;
     }
-    return { imported, projectsCreated, tagsCreated, taskTagsLinked, notesImported };
+    const existingCountdowns = await tx<JsonRow[]>`select id,title,target_date from countdowns where user_id=${userId} and deleted_at is null`;
+    const countdownIds = new Map(existingCountdowns.map(countdown => [`${String(countdown.title)}\0${new Date(String(countdown.target_date)).toISOString()}`, String(countdown.id)]));
+    let countdownsImported = 0;
+    for (const countdown of data.countdowns) {
+      const title = stringField(countdown, 'title');
+      const targetDate = dateField(countdown, 'targetDate', 'target_date');
+      if (!title || !targetDate) continue;
+      const key = `${title}\0${targetDate.toISOString()}`;
+      const existingId = countdownIds.get(key);
+      const reminderDaysBefore = numberField(countdown, 'reminderDaysBefore', 'reminder_days_before');
+      const safeReminderDaysBefore = reminderDaysBefore !== null && Number.isInteger(reminderDaysBefore) && reminderDaysBefore >= 0 && reminderDaysBefore <= 30 ? reminderDaysBefore : null;
+      if (existingId) await tx`update countdowns set title=${title},target_date=${targetDate},color=${stringField(countdown, 'color')},image_url=${stringField(countdown, 'imageUrl', 'image_url')},reminder_days_before=${safeReminderDaysBefore},show_in_calendar=${booleanField(countdown, 'showInCalendar', 'show_in_calendar')},updated_at=now(),notification_sent_at=null,early_notification_sent_at=null,deleted_at=null where id=${existingId} and user_id=${userId}`;
+      else {
+        const rows = await tx<JsonRow[]>`insert into countdowns (id,user_id,title,target_date,color,image_url,reminder_days_before,show_in_calendar,created_at,updated_at) values (${crypto.randomUUID()},${userId},${title},${targetDate},${stringField(countdown, 'color')},${stringField(countdown, 'imageUrl', 'image_url')},${safeReminderDaysBefore},${booleanField(countdown, 'showInCalendar', 'show_in_calendar')},now(),now()) returning id`;
+        countdownIds.set(key, String(rows[0].id));
+      }
+      countdownsImported++;
+    }
+    return { imported, projectsCreated, tagsCreated, taskTagsLinked, notesImported, countdownsImported };
   });
 }
 

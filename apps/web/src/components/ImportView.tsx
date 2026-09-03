@@ -45,6 +45,7 @@ interface ImportResult {
   imported: number;
   projectsCreated: number;
   tagsCreated: number;
+  countdownsImported?: number;
 }
 
 interface Props {
@@ -224,6 +225,11 @@ export function ImportView({ onImportComplete }: Props) {
           {result.tagsCreated > 0 && (
             <p className="text-[var(--color-muted-foreground)]">
               + {result.tagsCreated} {t('import.tagsCreated')}
+            </p>
+          )}
+          {(result.countdownsImported ?? 0) > 0 && (
+            <p className="text-[var(--color-muted-foreground)]">
+              + {result.countdownsImported} {t('import.countdownsImported')}
             </p>
           )}
         </div>

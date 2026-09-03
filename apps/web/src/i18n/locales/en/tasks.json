@@ -170,6 +170,7 @@
     "doneDesc": "tasks imported successfully",
     "projectsCreated": "projects created",
     "tagsCreated": "tags created",
+    "countdownsImported": "countdowns imported",
     "importAnother": "Import Another File",
     "previewTitle": "Import Preview",
     "back": "Back",
