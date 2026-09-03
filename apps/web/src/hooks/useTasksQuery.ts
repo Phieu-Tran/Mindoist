@@ -70,8 +70,11 @@ export function useTasksQuery(view: SidebarView, enabled: boolean, projectId?: s
 
   const addMutation = useMutation({
     mutationFn: (request: CreateTaskRequest) => createTask(request),
-    onMutate: async request => {
-      await queryClient.cancelQueries({ queryKey: taskKey });
+    onMutate: request => {
+      // Do not make the UI wait for a slow/stuck list GET before showing the
+      // new task. The active query is cancelled in the background, then the
+      // optimistic row is written synchronously like completion/reopen.
+      void queryClient.cancelQueries({ queryKey: taskKey }, { revert: false });
       const optimistic = optimisticTask(request);
       queryClient.setQueryData<Task[]>(taskKey, current => [...(current ?? []), optimistic]);
       return { optimisticId: optimistic.id };
