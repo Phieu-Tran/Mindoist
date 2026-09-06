@@ -122,7 +122,9 @@ test.describe('B1.15 Task Detail UX', () => {
     await expect(page.getByTestId('task-detail')).not.toBeVisible();
 
     // Persistence + calendar: the task renders as an event on the calendar.
-    await page.getByTestId('sidebar-calendar').click();
+    // Open the due week: +3 days can fall outside the current week.
+    const dueKey = `${due.getFullYear()}-${String(due.getMonth() + 1).padStart(2, '0')}-${String(due.getDate()).padStart(2, '0')}`;
+    await page.goto(`/calendar?view=week&date=${dueKey}`);
     await expect(page.locator('.calendar-view')).toBeVisible();
     await expect(page.locator('.calendar-view').getByText(title, { exact: true }).first()).toBeVisible();
 

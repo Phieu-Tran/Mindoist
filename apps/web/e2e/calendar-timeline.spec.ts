@@ -195,7 +195,8 @@ test('[CALENDAR-03] a task date range stays continuous across week rows and view
   }, dates);
   expect(created.success).toBe(true);
 
-  await page.goto('/calendar?view=month&plan=0');
+  // Anchor both views to the task's week, even when the next Friday is next week.
+  await page.goto(`/calendar?view=month&plan=0&date=${dates.start}`);
   const monthRange = page
     .locator('.mindoist-month-event.is-range')
     .filter({ hasText: 'Continuous launch range' });

@@ -13,6 +13,7 @@ Notable changes to Mindoist, grouped by date. This project doesn't cut versioned
 
 ### Validation
 - Added PostgreSQL regressions for recurring completion and tag recreation, component tests for editing/deleted tags and session races, a browser tag lifecycle case, and equivalent Edge smoke assertions used by CI and both deployment environments.
+- Calendar browser checks open the task's target week so future deadlines and Friday ranges remain valid across week boundaries.
 - This release adapts the local stabilization fixes onto current `main` and its date-only deadline contract; it does not deploy the older July application or replace the user's timezone settings with fixed UTC+7.
 
 ## 2026-09-03
