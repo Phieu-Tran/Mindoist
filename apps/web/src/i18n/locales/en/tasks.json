@@ -28,12 +28,17 @@
     "later": "Later"
   },
   "tags": {
+    "editTag": "Edit tag {{name}}",
+    "editName": "New tag name",
+    "editError": "Couldn't update this tag. Try again.",
+    "color": "Tag color",
+    "save": "Save tag",
     "addTag": "Add tag",
     "namePlaceholder": "Tag name",
     "empty": "No tags yet. Create one above.",
     "createError": "Couldn't create this tag. Try again.",
     "manageTags": "Manage tags",
-    "manageHint": "Create, assign, or delete tags.",
+    "manageHint": "Create, edit, assign, or delete tags.",
     "deleteTag": "Delete tag {{name}}",
     "deleteConfirm": "Delete #{{name}}? It will be removed from every task.",
     "delete": "Delete tag",

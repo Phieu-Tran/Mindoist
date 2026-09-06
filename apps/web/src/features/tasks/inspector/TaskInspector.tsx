@@ -25,6 +25,7 @@ export interface TaskInspectorProps {
   projects: { id: string; name: string; color?: string | null }[];
   tags: TagType[];
   onCreateTag?: (name: string) => Promise<TagType>;
+  onUpdateTag?: (id: string, request: { name: string; color?: string }) => Promise<unknown>;
   onDeleteTag?: (id: string) => Promise<void>;
   onSave: (id: string, req: UpdateTaskRequest) => Promise<void> | void;
   onAutosave?: (id: string, req: UpdateTaskRequest) => Promise<void> | void;
@@ -48,12 +49,13 @@ function authHeaders(): Record<string, string> | null {
 }
 
 export function TaskInspector({
-  task, projects, tags, onCreateTag, onDeleteTag, onSave, onAutosave, onCompletePomodoro, onClose, onDelete, onDeleteWithUndo,
+  task, projects, tags, onCreateTag, onUpdateTag, onDeleteTag, onSave, onAutosave, onCompletePomodoro, onClose, onDelete, onDeleteWithUndo,
   onToggleComplete, onSelectTask, onTasksChanged, onColorPreview, rail = false,
   pomodoroWorkMinutes, pomodoroBreakMinutes,
 }: TaskInspectorProps) {
   const { t } = useTranslation('tasks');
   const titleRef = useRef<HTMLTextAreaElement>(null);
+  const previousTags = useRef(tags);
   const {
     title, setTitle, description, setDescription, color, setColor, dueDate, setDueDate,
     dueTime, setDueTime, startDate, setStartDate, priority, setPriority, projectId, setProjectId,
@@ -504,9 +506,15 @@ export function TaskInspector({
     }
   }, []);
 
+  useEffect(() => {
+    const removed = new Set(previousTags.current.filter(old => !tags.some(tag => tag.id === old.id)).map(tag => tag.id));
+    previousTags.current = tags;
+    if (removed.size) setTagIds(ids => ids.filter(id => !removed.has(id)));
+  }, [tags, setTagIds]);
+
   const taskDraft = useMemo<UpdateTaskRequest>(() => ({
     title: title.trim(),
-    description: description.trim() || undefined,
+    description: description.trim(),
     color: color || null,
     deadline: dueDate
       ? {
@@ -776,7 +784,7 @@ export function TaskInspector({
               projects={projects}
               tags={tags}
               onCreateTag={onCreateTag}
-              onDeleteTag={onDeleteTag}
+              onUpdateTag={onUpdateTag} onDeleteTag={onDeleteTag}
               save={saveProperty}
               onDraftChange={updatePropertyDraft}
               onTasksChanged={onTasksChanged}

@@ -75,4 +75,27 @@ describe('TagsField', () => {
     expect(onChange).toHaveBeenCalledWith([]);
     expect(save).toHaveBeenCalledWith({ tagIds: [] });
   });
+  it('keeps a failed edit draft and saves the corrected name and color', async () => {
+    const update = vi.fn().mockRejectedValueOnce(new Error('Conflict')).mockResolvedValueOnce({});
+    render(<TagsField taskId="task-1" value={[]} tags={[{ id: 'tag-1', name: 'Work' } as any]} save={vi.fn()} onChange={vi.fn()} onUpdateTag={update} />);
+    fireEvent.click(screen.getByTestId('detail-tags'));
+    fireEvent.click(screen.getByRole('button', { name: 'Edit tag Work' }));
+    fireEvent.change(screen.getByLabelText('New tag name'), { target: { value: 'Renamed' } });
+    fireEvent.change(screen.getByLabelText('Tag color'), { target: { value: '#123456' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save tag' }));
+    await screen.findByRole('alert');
+    expect(screen.getByLabelText('New tag name')).toHaveValue('Renamed');
+    fireEvent.click(screen.getByRole('button', { name: 'Save tag' }));
+    await waitFor(() => expect(screen.queryByLabelText('New tag name')).toBeNull());
+    expect(update).toHaveBeenLastCalledWith('tag-1', { name: 'Renamed', color: '#123456' });
+  });
+
+  it('does not send a previously deleted tag when selecting another tag', async () => {
+    const save = vi.fn();
+    render(<TagsField taskId="task-1" value={['deleted']} tags={[{ id: 'active', name: 'Active' } as any]} save={save} onChange={vi.fn()} />);
+    fireEvent.click(screen.getByTestId('detail-tags'));
+    fireEvent.click(screen.getByTestId('detail-tag-active'));
+    await waitFor(() => expect(save).toHaveBeenCalledWith({ tagIds: ['active'] }));
+  });
+
 });

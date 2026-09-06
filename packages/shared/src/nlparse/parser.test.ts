@@ -20,6 +20,7 @@ describe('parseQuickAdd — EN', () => {
   it('parses "today"', () => {
     const r = en('review PR today');
     expect(r.title).toBe('review PR');
+    expect(r.deadline?.time).toBeUndefined();
     expect(r.deadline?.date).toBe('2026-07-18');
   });
 

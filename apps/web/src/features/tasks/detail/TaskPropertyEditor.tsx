@@ -15,7 +15,7 @@ function PropertyField({ definition, editor }: { definition: TaskPropertyDefinit
   const { draft } = editor;
   switch (definition.id) {
     case 'project': return <ProjectField taskId={editor.taskId} value={draft.projectId} projects={editor.projects} save={editor.save} onChange={(value) => editor.onDraftChange('projectId', value)} />;
-    case 'tags': return <TagsField taskId={editor.taskId} value={draft.tagIds} tags={editor.tags} save={editor.save} onChange={(value) => editor.onDraftChange('tagIds', value)} onCreateTag={editor.onCreateTag} onDeleteTag={editor.onDeleteTag} />;
+    case 'tags': return <TagsField taskId={editor.taskId} value={draft.tagIds} tags={editor.tags} save={editor.save} onChange={(value) => editor.onDraftChange('tagIds', value)} onCreateTag={editor.onCreateTag} onUpdateTag={editor.onUpdateTag} onDeleteTag={editor.onDeleteTag} />;
     case 'priority': return <PriorityField taskId={editor.taskId} value={draft.priority} save={editor.save} onChange={(value) => editor.onDraftChange('priority', value)} />;
     case 'color': return <ColorField taskId={editor.taskId} value={draft.color} save={editor.save} onChange={(value) => editor.onDraftChange('color', value)} onPreview={editor.onColorPreview} />;
     case 'deadline': return <DeadlineField taskId={editor.taskId} deadlineDate={draft.deadlineDate} deadlineTime={draft.deadlineTime} deadlineTimeZone={editor.deadlineTimeZone} startDate={draft.startDate} save={editor.save} onDeadlineDateChange={(value) => editor.onDraftChange('deadlineDate', value)} onDeadlineTimeChange={(value) => editor.onDraftChange('deadlineTime', value)} onStartDateChange={(value) => editor.onDraftChange('startDate', value)} />;

@@ -32,6 +32,7 @@ export interface TaskPropertyEditorProps {
   projects: ProjectOption[];
   tags: Tag[];
   onCreateTag?: (name: string) => Promise<Tag>;
+  onUpdateTag?: (id: string, request: { name: string; color?: string }) => Promise<unknown>;
   onDeleteTag?: (id: string) => Promise<void>;
   save: PropertySave;
   onDraftChange: <K extends keyof TaskPropertyDraft>(key: K, value: TaskPropertyDraft[K]) => void;

@@ -15,6 +15,7 @@ interface Props {
   projects: Project[];
   tags: TagType[];
   onCreateTag?: (name: string) => Promise<TagType>;
+  onUpdateTag?: (id: string, request: { name: string; color?: string }) => Promise<unknown>;
   onDeleteTag?: (id: string) => Promise<void>;
   onSave: (id: string, req: UpdateTaskRequest) => Promise<void> | void;
   onAutosave?: (id: string, req: UpdateTaskRequest) => Promise<void> | void;
@@ -44,6 +45,7 @@ export function TaskSideRail({
   projects,
   tags,
   onCreateTag,
+  onUpdateTag,
   onDeleteTag,
   onSave,
   onAutosave,
@@ -233,7 +235,7 @@ export function TaskSideRail({
             projects={projects}
             tags={tags}
             onCreateTag={onCreateTag}
-            onDeleteTag={onDeleteTag}
+            onUpdateTag={onUpdateTag} onDeleteTag={onDeleteTag}
             onSave={onSave}
             onAutosave={onAutosave}
             onCompletePomodoro={onCompletePomodoro}
