@@ -685,6 +685,53 @@ describe('Task Pomodoro completion', () => {
 });
 
 describe('Recurring tasks (RRULE)', () => {
+  it('concurrent completion creates only one next occurrence on the local weekday', async () => {
+    const headers = { authorization: `Bearer ${userToken}` };
+    const created = await app.inject({ method: 'POST', url: '/tasks', headers,
+      payload: { title: 'Monday meeting', deadline: { date: '2026-09-06' }, rrule: 'FREQ=WEEKLY;BYDAY=MO' } });
+    expect(created.statusCode).toBe(201);
+    const id = created.json().data.id;
+    const results = await Promise.all([1, 2, 3].map(() => app.inject({ method: 'POST', url: `/tasks/${id}/complete`, headers })));
+    for (const result of results) {
+      expect(result.statusCode).toBe(200);
+      expect(result.json().data.completedAt).not.toBeNull();
+      expect(result.json().data.nextTask.deadline.date).toBe('2026-09-07');
+    }
+    expect(new Set(results.map(result => result.json().data.nextTask.id)).size).toBe(1);
+    expect(await prisma.task.count({ where: { userId } })).toBe(2);
+  });
+
+  it('rescheduling the second COUNT=2 occurrence does not restart the count', async () => {
+    const headers = { authorization: `Bearer ${userToken}` };
+    const created = await app.inject({ method: 'POST', url: '/tasks', headers,
+      payload: { title: 'Twice', deadline: { date: '2026-09-06' }, rrule: 'FREQ=DAILY;COUNT=2' } });
+    const first = await app.inject({ method: 'POST', url: `/tasks/${created.json().data.id}/complete`, headers });
+    const next = first.json().data.nextTask;
+    const patched = await app.inject({ method: 'PATCH', url: `/tasks/${next.id}`, headers, payload: { deadline: { date: '2026-09-08' } } });
+    expect(patched.statusCode).toBe(200);
+    const last = await app.inject({ method: 'POST', url: `/tasks/${next.id}/complete`, headers });
+    expect(last.statusCode).toBe(200);
+    expect(last.json().data.nextTask).toBeNull();
+    expect(await prisma.task.count({ where: { userId } })).toBe(2);
+  });
+
+  it('reopen and complete respects a deleted next occurrence without rolling back completion', async () => {
+    const headers = { authorization: `Bearer ${userToken}` };
+    const created = await app.inject({ method: 'POST', url: '/tasks', headers,
+      payload: { title: 'Deleted next', deadline: { date: '2026-09-06' }, rrule: 'FREQ=DAILY' } });
+    const id = created.json().data.id;
+    const first = await app.inject({ method: 'POST', url: `/tasks/${id}/complete`, headers });
+    await app.inject({ method: 'DELETE', url: `/tasks/${first.json().data.nextTask.id}`, headers });
+    await app.inject({ method: 'POST', url: `/tasks/${id}/reopen`, headers });
+    const repeated = await app.inject({ method: 'POST', url: `/tasks/${id}/complete`, headers });
+    expect(repeated.statusCode).toBe(200);
+    expect(repeated.json().data.completedAt).not.toBeNull();
+    expect(repeated.json().data.nextTask).toBeNull();
+    expect(await prisma.task.count({ where: { userId } })).toBe(2);
+    expect((await prisma.task.findUniqueOrThrow({ where: { id } })).completedAt).not.toBeNull();
+  });
+
+
   it('complete task with DAILY rrule creates next occurrence +1 day', async () => {
     const t = await prisma.task.create({
       data: {
@@ -705,7 +752,7 @@ describe('Recurring tasks (RRULE)', () => {
     expect(body.data.completedAt).not.toBeNull();
     expect(body.data.nextTask).not.toBeNull();
     expect(body.data.nextTask.title).toBe('Daily Standup');
-    expect(body.data.nextTask.deadlineDate).toBe('2026-07-19T00:00:00.000Z');
+    expect(body.data.nextTask.deadline.date).toBe('2026-07-19');
     expect(body.data.nextTask.rrule).toBe('FREQ=DAILY');
   });
 

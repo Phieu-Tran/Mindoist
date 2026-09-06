@@ -50,6 +50,42 @@ assert.equal(createdTask.response.status, 201);
 const taskId = createdTask.payload.data.id;
 assert.equal(createdTask.payload.data.deadline.date, '2099-01-01');
 
+
+// Tag lifecycle must work with the same Edge API deployed to staging/production.
+const tagCreated = await request('/api/tags', { method: 'POST', token: accessToken, body: { name: 'smoke-tag' } });
+assert.equal(tagCreated.response.status, 201);
+const tagId = tagCreated.payload.data.id;
+const tagged = await request(`/api/tasks/${taskId}`, { method: 'PATCH', token: accessToken, body: { tagIds: [tagId] } });
+assert.equal(tagged.response.status, 200);
+const renamed = await request(`/api/tags/${tagId}`, { method: 'PATCH', token: accessToken, body: { name: 'smoke-renamed', color: '#123456' } });
+assert.equal(renamed.response.status, 200);
+assert.equal(renamed.payload.data.name, 'smoke-renamed');
+assert.equal((await request(`/api/tags/${tagId}`, { method: 'DELETE', token: accessToken })).response.status, 200);
+const untagged = await request(`/api/tasks/${taskId}`, { token: accessToken });
+assert.deepEqual(untagged.payload.data.tagIds, []);
+const recreated = await Promise.all([1, 2].map(() => request('/api/tags', { method: 'POST', token: accessToken, body: { name: 'smoke-renamed' } })));
+assert.deepEqual(recreated.map(item => item.response.status).sort(), [201, 409]);
+assert.equal(recreated.find(item => item.response.status === 201).payload.data.id, tagId);
+assert.deepEqual((await request(`/api/tasks/${taskId}`, { token: accessToken })).payload.data.tagIds, []);
+
+const recurring = await request('/api/tasks', { method: 'POST', token: accessToken, body: { title: 'Smoke recurring', deadline: { date: '2099-01-01' }, rrule: 'FREQ=DAILY;COUNT=2' } });
+assert.equal(recurring.response.status, 201);
+const recurringId = recurring.payload.data.id;
+const completed = await Promise.all([1, 2].map(() => request(`/api/tasks/${recurringId}/complete`, { method: 'POST', token: accessToken })));
+for (const result of completed) { assert.equal(result.response.status, 200); assert.ok(result.payload.data.completedAt); }
+const nextId = completed[0].payload.data.nextTask.id;
+assert.equal(completed[1].payload.data.nextTask.id, nextId);
+assert.equal((await request(`/api/tasks/${nextId}`, { method: 'PATCH', token: accessToken, body: { deadline: { date: '2099-01-05' } } })).response.status, 200);
+const last = await request(`/api/tasks/${nextId}/complete`, { method: 'POST', token: accessToken });
+assert.equal(last.response.status, 200);
+assert.equal(last.payload.data.nextTask, null);
+await request(`/api/tasks/${nextId}`, { method: 'DELETE', token: accessToken });
+await request(`/api/tasks/${recurringId}/reopen`, { method: 'POST', token: accessToken });
+const repeated = await request(`/api/tasks/${recurringId}/complete`, { method: 'POST', token: accessToken });
+assert.equal(repeated.response.status, 200);
+assert.ok(repeated.payload.data.completedAt);
+assert.equal(repeated.payload.data.nextTask, null);
+
 const reminder = await request(`/api/tasks/${taskId}/reminders`, {
   method: 'POST',
   token: accessToken,

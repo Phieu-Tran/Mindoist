@@ -80,15 +80,15 @@ export function useTasksQuery(view: SidebarView, enabled: boolean, projectId?: s
       void queryClient.cancelQueries({ queryKey: taskKey }, { revert: false });
       const optimistic = optimisticTask(request);
       queryClient.setQueryData<Task[]>(taskKey, current => [...(current ?? []), optimistic]);
-      return { optimisticId: optimistic.id };
+      return { taskKey, optimisticId: optimistic.id };
     },
     onError: (_error, _request, context) => {
-      queryClient.setQueryData<Task[]>(taskKey, current => (
+      queryClient.setQueryData<Task[]>(context?.taskKey ?? taskKey, current => (
         (current ?? []).filter(item => item.id !== context?.optimisticId)
       ));
     },
     onSuccess: (task, _request, context) => {
-      queryClient.setQueryData<Task[]>(taskKey, current => (
+      queryClient.setQueryData<Task[]>(context?.taskKey ?? taskKey, current => (
         (current ?? []).map(item => item.id === context?.optimisticId ? mergeTask(item, task) : item)
       ));
     },
@@ -101,10 +101,10 @@ export function useTasksQuery(view: SidebarView, enabled: boolean, projectId?: s
       await queryClient.cancelQueries({ queryKey: taskKey });
       const previous = queryClient.getQueryData<Task[]>(taskKey);
       queryClient.setQueryData<Task[]>(taskKey, current => (current ?? []).map(task => task.id === id ? { ...task, ...request } as Task : task));
-      return { previous };
+      return { taskKey, previous };
     },
-    onError: (_error, _variables, context) => queryClient.setQueryData(taskKey, context?.previous),
-    onSuccess: task => queryClient.setQueryData<Task[]>(taskKey, current => (current ?? []).map(item => item.id === task.id ? mergeTask(item, task) : item)),
+    onError: (_error, _variables, context) => queryClient.setQueryData(context?.taskKey ?? taskKey, context?.previous),
+    onSuccess: (task, _variables, context) => queryClient.setQueryData<Task[]>(context?.taskKey ?? taskKey, current => (current ?? []).map(item => item.id === task.id ? mergeTask(item, task) : item)),
     onSettled: invalidate,
   });
 
@@ -114,10 +114,10 @@ export function useTasksQuery(view: SidebarView, enabled: boolean, projectId?: s
       void queryClient.cancelQueries({ queryKey: taskKey }, { revert: false });
       const previous = queryClient.getQueryData<Task[]>(taskKey);
       queryClient.setQueryData<Task[]>(taskKey, current => (current ?? []).map(task => task.id === id ? { ...task, completedAt: new Date().toISOString() } : task));
-      return { previous };
+      return { taskKey, previous };
     },
-    onError: (_error, _id, context) => queryClient.setQueryData(taskKey, context?.previous),
-    onSuccess: task => queryClient.setQueryData<Task[]>(taskKey, current => (current ?? []).map(item => item.id === task.id ? mergeTask(item, task) : item)),
+    onError: (_error, _id, context) => queryClient.setQueryData(context?.taskKey ?? taskKey, context?.previous),
+    onSuccess: (task, _variables, context) => queryClient.setQueryData<Task[]>(context?.taskKey ?? taskKey, current => (current ?? []).map(item => item.id === task.id ? mergeTask(item, task) : item)),
     onSettled: invalidate,
   });
 
@@ -127,10 +127,10 @@ export function useTasksQuery(view: SidebarView, enabled: boolean, projectId?: s
       void queryClient.cancelQueries({ queryKey: taskKey }, { revert: false });
       const previous = queryClient.getQueryData<Task[]>(taskKey);
       queryClient.setQueryData<Task[]>(taskKey, current => (current ?? []).map(task => task.id === id ? { ...task, completedAt: null } : task));
-      return { previous };
+      return { taskKey, previous };
     },
-    onError: (_error, _id, context) => queryClient.setQueryData(taskKey, context?.previous),
-    onSuccess: task => queryClient.setQueryData<Task[]>(taskKey, current => (current ?? []).map(item => item.id === task.id ? mergeTask(item, task) : item)),
+    onError: (_error, _id, context) => queryClient.setQueryData(context?.taskKey ?? taskKey, context?.previous),
+    onSuccess: (task, _variables, context) => queryClient.setQueryData<Task[]>(context?.taskKey ?? taskKey, current => (current ?? []).map(item => item.id === task.id ? mergeTask(item, task) : item)),
     onSettled: invalidate,
   });
 
@@ -140,15 +140,16 @@ export function useTasksQuery(view: SidebarView, enabled: boolean, projectId?: s
       await queryClient.cancelQueries({ queryKey: taskKey });
       const previous = queryClient.getQueryData<Task[]>(taskKey);
       queryClient.setQueryData<Task[]>(taskKey, current => (current ?? []).filter(task => task.id !== id));
-      return { previous };
+      return { taskKey, previous };
     },
-    onError: (_error, _id, context) => queryClient.setQueryData(taskKey, context?.previous),
+    onError: (_error, _id, context) => queryClient.setQueryData(context?.taskKey ?? taskKey, context?.previous),
     onSettled: invalidate,
   });
 
   const restoreMutation = useMutation({
     mutationFn: (id: string) => restoreTaskRequest(id),
-    onSuccess: task => queryClient.setQueryData<Task[]>(taskKey, current => {
+    onMutate: () => ({ taskKey }),
+    onSuccess: (task, _variables, context) => queryClient.setQueryData<Task[]>(context?.taskKey ?? taskKey, current => {
       const next = current ?? [];
       return next.some(item => item.id === task.id) ? next.map(item => item.id === task.id ? mergeTask(item, task) : item) : [...next, task];
     }),
@@ -161,10 +162,10 @@ export function useTasksQuery(view: SidebarView, enabled: boolean, projectId?: s
       await queryClient.cancelQueries({ queryKey: taskKey });
       const previous = queryClient.getQueryData<Task[]>(taskKey);
       queryClient.setQueryData<Task[]>(taskKey, current => (current ?? []).map(task => task.id === id ? { ...task, projectColumnId: columnId } : task));
-      return { previous };
+      return { taskKey, previous };
     },
-    onError: (_error, _variables, context) => queryClient.setQueryData(taskKey, context?.previous),
-    onSuccess: task => queryClient.setQueryData<Task[]>(taskKey, current => (current ?? []).map(item => item.id === task.id ? mergeTask(item, task) : item)),
+    onError: (_error, _variables, context) => queryClient.setQueryData(context?.taskKey ?? taskKey, context?.previous),
+    onSuccess: (task, _variables, context) => queryClient.setQueryData<Task[]>(context?.taskKey ?? taskKey, current => (current ?? []).map(item => item.id === task.id ? mergeTask(item, task) : item)),
     onSettled: invalidate,
   });
 

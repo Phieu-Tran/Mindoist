@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { I18nextProvider } from 'react-i18next';
 import i18n from 'i18next';
 import { GlobalQuickCapture } from './GlobalQuickCapture';
@@ -184,4 +184,30 @@ describe('GlobalQuickCapture command bar', () => {
     expect(screen.getByRole('button', { name: 'Tháng trước' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Tháng sau' })).toBeInTheDocument();
   });
+  it('keeps the next draft and prevents duplicate submission while the first save is pending', async () => {
+    let finish!: () => void;
+    onAdd.mockImplementation(() => new Promise<void>(resolve => { finish = resolve; }));
+    renderCapture();
+    const input = await open();
+    fireEvent.change(input, { target: { value: 'First draft' } });
+    fireEvent.click(screen.getByTestId('global-quick-capture-submit'));
+    fireEvent.change(input, { target: { value: 'Second draft' } });
+    expect(screen.getByTestId('global-quick-capture-submit')).toBeDisabled();
+    await act(async () => { finish(); });
+    expect(input).toHaveValue('Second draft');
+    expect(onAdd).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows a failed save and preserves the draft for retry', async () => {
+    onAdd.mockRejectedValueOnce(new Error('Unable to save')).mockResolvedValueOnce(undefined);
+    renderCapture();
+    const input = await open();
+    fireEvent.change(input, { target: { value: 'Keep this task' } });
+    fireEvent.click(screen.getByTestId('global-quick-capture-submit'));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Unable to save');
+    expect(input).toHaveValue('Keep this task');
+    fireEvent.click(screen.getByTestId('global-quick-capture-submit'));
+    await waitFor(() => expect(screen.queryByTestId('global-quick-capture')).toBeNull());
+  });
+
 });

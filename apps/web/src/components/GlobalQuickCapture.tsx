@@ -84,6 +84,11 @@ export function GlobalQuickCapture({
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
   const [edits, setEdits] = useState<Partial<PreviewEdits>>({});
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+  const pending = useRef(false);
+  const currentDraft = useRef({ input, edits });
+  currentDraft.current = { input, edits };
   const triggerElementRef = useRef<Element | null>(null);
   const datePickerOpenRef = useRef(false);
   const timePickerOpenRef = useRef(false);
@@ -120,6 +125,7 @@ export function GlobalQuickCapture({
     setOpen(false);
     setInput('');
     setEdits({});
+    setSubmitError('');
     onDismiss?.();
   }, [onDismiss]);
 
@@ -159,10 +165,22 @@ export function GlobalQuickCapture({
   }, [resetAndClose]);
 
   const createTask = useCallback(async () => {
-    if (!preview?.title.trim()) return;
-    await onAdd(preview);
-    resetAndClose();
-  }, [onAdd, preview, resetAndClose]);
+    if (!preview?.title.trim() || pending.current) return;
+    const draft = currentDraft.current;
+    const fresh = parseQuickAdd(input.trim(), { locale: effectiveLocale, now: new Date() });
+    pending.current = true;
+    setSubmitting(true);
+    setSubmitError('');
+    try {
+      await onAdd(applyPreviewEdits(fresh, { ...parsedEdits, date: fresh.deadline?.date ?? '', time: fresh.deadline?.time ?? '', ...edits }));
+      if (currentDraft.current.input === draft.input && currentDraft.current.edits === draft.edits) resetAndClose();
+    } catch (cause) {
+      setSubmitError(cause instanceof Error ? cause.message : t('detail.error'));
+    } finally {
+      pending.current = false;
+      setSubmitting(false);
+    }
+  }, [onAdd, preview, input, edits, effectiveLocale, parsedEdits, resetAndClose, t]);
 
   const run = useCallback(async (action: () => void | Promise<void>) => {
     await action();
@@ -195,11 +213,13 @@ export function GlobalQuickCapture({
           />
           <kbd className="command-escape">Esc</kbd>
           {mode === 'create' && (
-            <Button type="button" size="sm" className="command-submit" onClick={() => { void createTask(); }} disabled={!preview?.title.trim()} data-testid="global-quick-capture-submit">
+            <Button type="button" size="sm" className="command-submit" onClick={() => { void createTask(); }} disabled={submitting || !preview?.title.trim()} data-testid="global-quick-capture-submit">
               {t('quickAdd.add')}
             </Button>
           )}
         </div>
+
+        {submitError && <p role="alert" className="px-4 text-sm text-destructive">{submitError}</p>}
 
         <div className="command-context-row">
           <span className={`command-mode is-${mode}`}><CommandIcon className="size-3.5" aria-hidden="true" />{modeLabel}</span>

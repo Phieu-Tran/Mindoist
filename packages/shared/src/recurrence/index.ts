@@ -25,9 +25,8 @@ export function nextOccurrence(
   }
 
   // after is the current due_date — we want the NEXT one strictly after it
-  const dates = rule.between(after, addYears(after, 10), false);
-  if (dates.length === 0) return null;
-  return dates[0];
+  const next = rule.after(after, false);
+  return next && next < addYears(after, 10) ? next : null;
 }
 
 function toICalDate(d: Date): string {

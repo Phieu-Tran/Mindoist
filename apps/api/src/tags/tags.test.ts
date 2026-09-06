@@ -34,6 +34,37 @@ beforeEach(async () => {
 });
 
 describe('Tag CRUD', () => {
+  it('delete unlinks tasks and recreation reuses the name without restoring old links', async () => {
+    const headers = { authorization: `Bearer ${userToken}` };
+    const created = await app.inject({ method: 'POST', url: '/tags', headers, payload: { name: 'Reusable' } });
+    const id = created.json().data.id;
+    const task = await prisma.task.create({ data: { userId, title: 'Keep this task', taskTags: { create: { tagId: id } } } });
+    const removed = await app.inject({ method: 'DELETE', url: `/tags/${id}`, headers });
+    expect(removed.statusCode).toBe(200);
+    expect(await prisma.taskTag.count({ where: { tagId: id } })).toBe(0);
+    expect((await prisma.task.findUniqueOrThrow({ where: { id: task.id } })).deletedAt).toBeNull();
+    const recreated = await app.inject({ method: 'POST', url: '/tags', headers, payload: { name: 'Reusable', color: '#112233' } });
+    expect(recreated.statusCode).toBe(201);
+    expect(recreated.json().data).toMatchObject({ id, color: '#112233', deletedAt: null });
+    expect(await prisma.taskTag.count({ where: { tagId: id } })).toBe(0);
+  });
+
+  it('concurrent creation returns one success and one name conflict', async () => {
+    const results = await Promise.all([1, 2].map(() => app.inject({ method: 'POST', url: '/tags',
+      headers: { authorization: `Bearer ${userToken}` }, payload: { name: 'Same name' } })));
+    expect(results.map(result => result.statusCode).sort()).toEqual([201, 409]);
+    expect(await prisma.tag.count({ where: { userId, name: 'Same name' } })).toBe(1);
+  });
+
+  it('concurrent recreation claims a deleted tag only once and clears its old color', async () => {
+    const tag = await prisma.tag.create({ data: { userId, name: 'Deleted name', color: '#112233', deletedAt: new Date() } });
+    const results = await Promise.all([1, 2].map(() => app.inject({ method: 'POST', url: '/tags',
+      headers: { authorization: `Bearer ${userToken}` }, payload: { name: tag.name } })));
+    expect(results.map(result => result.statusCode).sort()).toEqual([201, 409]);
+    expect((await prisma.tag.findUniqueOrThrow({ where: { id: tag.id } })).color).toBeNull();
+  });
+
+
   it('POST /tags creates a tag', async () => {
     const res = await app.inject({
       method: 'POST',

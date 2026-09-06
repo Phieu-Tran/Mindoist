@@ -4,6 +4,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import type { Task } from '@mindoist/shared/types';
 import { useTasksQuery } from './useTasksQuery';
 import { queryKeys } from '@/lib/query-client';
+import type { SidebarView } from './useApi';
 
 const api = vi.hoisted(() => ({
   listTasks: vi.fn(),
@@ -69,6 +70,29 @@ describe('useTasksQuery', () => {
 
     expect(failure).toBeInstanceOf(Error);
     expect(result.current.tasks[0]?.title).toBe('Original');
+  });
+
+  it('rolls back into the original cache when the view changes during an update', async () => {
+    const response = deferred<Task>();
+    api.updateTask.mockReturnValue(response.promise);
+    const client = createClient();
+    const todayTask = task({ id: 'today-task', title: 'Today' });
+    client.setQueryData(queryKeys.tasks('all'), [task()]);
+    client.setQueryData(queryKeys.tasks('today'), [todayTask]);
+    // Disable reads to observe mutation reconciliation without a refetch hiding it.
+    const { result, rerender } = renderHook(({ view }: { view: SidebarView }) => useTasksQuery(view, false), {
+      initialProps: { view: 'all' }, wrapper: wrapper(client),
+    });
+    let request!: Promise<unknown>;
+    act(() => { request = result.current.updateTask('task-1', { title: 'Pending' }).catch(error => error); });
+    await waitFor(() => expect(api.updateTask).toHaveBeenCalled());
+    rerender({ view: 'today' });
+    await act(async () => {
+      response.reject(new Error('network down'));
+      await request;
+    });
+    expect(client.getQueryData(queryKeys.tasks('today'))).toEqual([todayTask]);
+    expect(client.getQueryData(queryKeys.tasks('all'))).toEqual([task()]);
   });
 
   it('updates completion state without waiting for a pending API response', async () => {

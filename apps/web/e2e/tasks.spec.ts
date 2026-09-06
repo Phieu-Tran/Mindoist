@@ -29,6 +29,31 @@ test.describe('Task Management E2E', () => {
     await expect(page.getByText(title, { exact: true })).toBeVisible();
   }
 
+
+  test('[TAG-CRUD] edits and deletes an assigned tag, then recreates its name', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await login(page);
+    const title = `Tag lifecycle ${Date.now()}`;
+    await addTask(page, title);
+    await page.getByText(title, { exact: true }).click();
+    await page.getByTestId('detail-tags').click();
+    await page.getByLabel('Tag name', { exact: true }).fill('Work');
+    await page.getByRole('dialog', { name: 'Manage tags', exact: true }).getByRole('button', { name: 'Add tag', exact: true }).click();
+    await page.getByRole('button', { name: 'Edit tag Work', exact: true }).click();
+    await page.getByLabel('New tag name').fill('Renamed work');
+    await page.getByRole('button', { name: 'Save tag', exact: true }).click();
+    await expect(page.getByRole('option', { name: '#Renamed work', exact: true })).toBeVisible();
+    await page.getByRole('button', { name: 'Delete tag Renamed work', exact: true }).click();
+    await page.getByRole('button', { name: 'Delete tag', exact: true }).click();
+    await expect(page.getByRole('option', { name: '#Renamed work', exact: true })).toHaveCount(0);
+    await page.reload();
+    await expect(page.getByText(title, { exact: true }).first()).toBeVisible();
+    await page.getByTestId('sidebar-add-tag').click();
+    await page.getByLabel('Tag name', { exact: true }).fill('Renamed work');
+    await page.getByLabel('Tag name', { exact: true }).press('Enter');
+    await expect(page.getByText('No tasks with this tag')).toBeVisible();
+  });
+
   test('[SHELL-01] login shows the five-destination workspace navigation', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await login(page);

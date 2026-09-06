@@ -20,7 +20,7 @@ function invalid(message: string) {
 function validRrule(value: unknown) {
   if (value === undefined || value === null || value === '') return true;
   if (typeof value !== 'string') return false;
-  try { RRule.fromString(value); return true; } catch { return false; }
+  try { const { freq, interval } = RRule.fromString(value).options; return freq <= RRule.HOURLY && interval > 0; } catch { return false; }
 }
 
 function nextOccurrence(rrule: string, after: Date, dtstart: Date) {
@@ -28,8 +28,8 @@ function nextOccurrence(rrule: string, after: Date, dtstart: Date) {
     const ical = dtstart.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
     const upper = new Date(after);
     upper.setFullYear(upper.getFullYear() + 10);
-    const dates = RRule.fromString(`DTSTART:${ical}\nRRULE:${rrule}`).between(after, upper, false);
-    return dates[0] ?? null;
+    const next = RRule.fromString(`DTSTART:${ical}\nRRULE:${rrule}`).after(after, false);
+    return next && next < upper ? next : null;
   } catch { return null; }
 }
 
@@ -52,6 +52,7 @@ const taskSelect = sql`id, user_id as "userId", project_id as "projectId", proje
   due_date as "dueDate", due_time as "dueTime", deadline_date as "deadlineDate", deadline_time as "deadlineTime",
   deadline_time_zone as "deadlineTimeZone", start_date as "startDate", duration_min as "durationMin",
   estimate_min as "estimateMin", rrule, recurring_reset_mode as "recurringResetMode", recurrence_basis as "recurrenceBasis",
+  recurrence_start as "recurrenceStart", recurrence_index as "recurrenceIndex", recurrence_series_id as "recurrenceSeriesId",
   import_source as "importSource", external_id as "externalId", pomodoro_count as "pomodoroCount",
   due_notification_sent_at as "dueNotificationSentAt", completed_at as "completedAt", sort_order as "sortOrder",
   created_at as "createdAt", updated_at as "updatedAt", deleted_at as "deletedAt", snoozed_until as "snoozedUntil",
@@ -65,9 +66,9 @@ async function taskRow(id: string, userId: string, includeDeleted = false) {
   return rows[0] ?? null;
 }
 
-async function taskResponse(row: Record<string, unknown> | null) {
+async function taskResponse(row: Record<string, unknown> | null, db: any = sql) {
   if (!row) return null;
-  const tags = await sql<{ tagId: string }[]>`select tag_id as "tagId" from task_tags where task_id = ${row.id}`;
+  const tags = await db`select tt.tag_id as "tagId" from task_tags tt join tags t on t.id = tt.tag_id where tt.task_id = ${row.id} and t.deleted_at is null`;
   return mapTask({ ...row, taskTags: tags });
 }
 
@@ -105,6 +106,7 @@ async function updateTask(id: string, userId: string, input: Record<string, unkn
   if (!existing) return json({ success: false, error: 'Task not found' }, { status: 404 });
 
   const assignments = [];
+  let tagIds: string[] | undefined;
   try {
     if (!validRrule(input.rrule)) return invalid('Invalid RRULE');
     if (input.title !== undefined) {
@@ -177,28 +179,37 @@ async function updateTask(id: string, userId: string, input: Record<string, unkn
     }
     if (input.tagIds !== undefined) {
       if (!Array.isArray(input.tagIds) || input.tagIds.some(tag => typeof tag !== 'string')) return invalid('Invalid tagIds');
-      const tagIds = input.tagIds as string[];
+      tagIds = [...new Set(input.tagIds as string[])];
       if (tagIds.length) {
         const owned = await sql<{ count: number }[]>`select count(*)::int as count from tags where id in ${sql(tagIds)} and user_id = ${userId} and deleted_at is null`;
         if ((owned[0]?.count ?? 0) !== new Set(tagIds).size) return invalid('One or more tags not found');
       }
-      await sql.begin(async tx => {
-        await tx`delete from task_tags where task_id = ${id}`;
-        for (const tagId of tagIds) await tx`insert into task_tags (task_id, tag_id, created_at, updated_at) values (${id}, ${tagId}, now(), now())`;
-      });
+
     }
 
     const finalStart = input.startDate !== undefined ? (input.startDate === null ? null : parseDate(input.startDate, 'startDate')) : existing.startDate;
     const finalDeadline = input.deadline !== undefined ? (deadline?.date ? deadline.date : null) : existing.deadlineDate;
+    if (input.rrule !== undefined && input.rrule !== existing.rrule) {
+      assignments.push(sql`recurrence_start = ${input.rrule ? finalDeadline : null}`);
+      assignments.push(sql`recurrence_index = ${input.rrule ? 0 : null}`);
+      assignments.push(sql`recurrence_series_id = ${input.rrule ? crypto.randomUUID() : null}`);
+    }
+
     if (finalStart && finalDeadline && isoDate(finalStart)! > isoDate(finalDeadline)!) return invalid('Start date must be before or equal to deadline');
   } catch (error) {
     return invalid(error instanceof Error ? error.message : 'Invalid task data');
   }
 
-  if (assignments.length) {
+  await sql.begin(async tx => {
+    if (assignments.length) {
     if (input.projectId !== undefined && input.projectId !== existing.projectId && input.projectColumnId === undefined) assignments.push(sql`project_column_id = null`);
-    await sql`update tasks set ${joinSql(assignments)}, updated_at = now() where id = ${id} and user_id = ${userId} and deleted_at is null`;
+    await tx`update tasks set ${joinSql(assignments)}, updated_at = now() where id = ${id} and user_id = ${userId} and deleted_at is null`;
   }
+    if (tagIds !== undefined) {
+      await tx`delete from task_tags where task_id = ${id}`;
+      for (const tagId of tagIds) await tx`insert into task_tags (task_id, tag_id, created_at, updated_at) values (${id}, ${tagId}, now(), now())`;
+    }
+  });
   return json({ success: true, data: await taskResponse(await taskRow(id, userId)) });
 }
 
@@ -219,66 +230,76 @@ export async function handleTaskCoreRoutes(path: string, request: Request, auth:
 
   const action = path.match(/^\/tasks\/([^/]+)\/(complete|reopen|restore|pomodoro\/complete|move)$/);
   if (action && request.method === 'POST' && ['complete', 'reopen', 'restore', 'pomodoro/complete'].includes(action[2])) {
-    const includeDeleted = action[2] === 'restore';
-    const task = await taskRow(action[1], userId, includeDeleted);
-    if (!task) return json({ success: false, error: 'Task not found' }, { status: 404 });
-    const column = action[2] === 'complete' ? sql`completed_at = now()`
-      : action[2] === 'reopen' || action[2] === 'restore' ? sql`completed_at = null, deleted_at = null`
-      : sql`pomodoro_count = pomodoro_count + 1`;
-    await sql`update tasks set ${column}, updated_at = now() where id = ${action[1]} and user_id = ${userId}`;
-    let nextTask: Record<string, unknown> | null = null;
-    if (action[2] === 'complete' && task.rrule && task.deadlineDate) {
-      const deadlineDate = new Date(String(task.deadlineDate));
-      const referenceDate = task.recurrenceBasis === 'COMPLETION_DATE' ? new Date() : deadlineDate;
-      const nextDeadline = nextOccurrence(String(task.rrule), deadlineDate, referenceDate);
-      if (nextDeadline) {
-        let nextStart: Date | null = null;
-        if (task.startDate) {
-          const oldStart = new Date(String(task.startDate));
-          const dayOffset = Math.round((deadlineDate.getTime() - oldStart.getTime()) / 86_400_000);
-          nextStart = new Date(nextDeadline.getTime() - dayOffset * 86_400_000);
-        }
-        const rows = await sql<Record<string, unknown>[]>`
-          insert into tasks (id,user_id,project_id,project_column_id,section_id,parent_id,title,description,color,priority,
-            deadline_date,deadline_time,deadline_time_zone,start_date,estimate_min,rrule,recurring_reset_mode,recurrence_basis,sort_order,created_at,updated_at)
-          values (${crypto.randomUUID()},${userId},${task.projectId ?? null},${task.projectColumnId ?? null},${task.sectionId ?? null},${task.parentId ?? null},
-            ${task.title},${task.description ?? null},${task.color ?? null},${task.priority ?? null},${nextDeadline},${task.deadlineTime ?? null},${task.deadlineTimeZone ?? null},
-            ${nextStart},${task.estimateMin ?? null},${task.rrule},${task.recurringResetMode ?? null}::"RecurringResetMode",${task.recurrenceBasis ?? null}::"RecurrenceBasis",${task.sortOrder ?? 0},now(),now())
-          returning ${taskSelect}
-        `;
-        nextTask = rows[0] ?? null;
-        const nextId = String(nextTask?.id ?? '');
-        if (nextId) {
-          const tags = await sql<{ tagId: string }[]>`select tag_id as "tagId" from task_tags where task_id=${action[1]}`;
-          for (const tag of tags) await sql`insert into task_tags (task_id,tag_id,created_at,updated_at) values (${nextId},${tag.tagId},now(),now())`;
-          const reminders = await sql<{ remindAt: Date; type: string }[]>`select remind_at as "remindAt",type from reminders where task_id=${action[1]}`;
-          for (const reminder of reminders) {
-            const offset = deadlineDate.getTime() - new Date(String(reminder.remindAt)).getTime();
-            await sql`insert into reminders (id,task_id,remind_at,type,is_sent,created_at,updated_at) values (${crypto.randomUUID()},${nextId},${new Date(nextDeadline.getTime()-offset)},${reminder.type}::"ReminderType",false,now(),now())`;
+    return await sql.begin(async sql => {
+      const includeDeleted = action[2] === 'restore';
+      const locked = await sql<Record<string, unknown>[]>`select ${taskSelect} from tasks where id = ${action[1]} and user_id = ${userId} ${includeDeleted ? sql`` : sql`and deleted_at is null`} for update`;
+      const task = locked[0];
+      if (!task) return json({ success: false, error: 'Task not found' }, { status: 404 });
+      const seriesId = task.recurrenceSeriesId ?? task.id;
+      const seriesStart = task.recurrenceStart ?? task.deadlineDate;
+      const index = Number(task.recurrenceIndex ?? 0);
+      const existingNext = action[2] === 'complete' ? await sql<Record<string, unknown>[]>`select ${taskSelect} from tasks where user_id = ${userId} and recurrence_series_id = ${seriesId} and recurrence_index = ${index + 1}` : [];
+      if (action[2] === 'complete' && task.completedAt) return json({ success: true, data: { ...await taskResponse(task, sql), nextTask: existingNext[0]?.deletedAt ? null : await taskResponse(existingNext[0] ?? null, sql) } });
+      const column = action[2] === 'complete' ? sql`completed_at = now()`
+        : action[2] === 'reopen' || action[2] === 'restore' ? sql`completed_at = null, deleted_at = null`
+        : sql`pomodoro_count = pomodoro_count + 1`;
+      await sql`update tasks set ${column}, updated_at = now() where id = ${action[1]} and user_id = ${userId}`;
+      if (action[2] === 'complete' && task.rrule) await sql`update tasks set recurrence_start = ${seriesStart}, recurrence_series_id = ${seriesId}, recurrence_index = ${index} where id = ${action[1]}`;
+      let nextTask: Record<string, unknown> | null = existingNext[0]?.deletedAt ? null : (existingNext[0] ?? null);
+      if (action[2] === 'complete' && task.rrule && task.deadlineDate && !existingNext.length) {
+        const deadlineDate = new Date(String(task.deadlineDate));
+        const referenceDate = task.recurrenceBasis === 'COMPLETION_DATE' ? new Date() : new Date(String(seriesStart));
+        const count = RRule.fromString(String(task.rrule)).options.count;
+        const nextDeadline = count != null && index + 1 >= count ? null : nextOccurrence(String(task.rrule), deadlineDate, referenceDate);
+        if (nextDeadline) {
+          let nextStart: Date | null = null;
+          if (task.startDate) {
+            const oldStart = new Date(String(task.startDate));
+            const dayOffset = Math.round((deadlineDate.getTime() - oldStart.getTime()) / 86_400_000);
+            nextStart = new Date(nextDeadline.getTime() - dayOffset * 86_400_000);
           }
-          if (task.recurringResetMode !== 'KEEP') {
-            const subtasks = await sql<Record<string, unknown>[]>`select id,project_id as "projectId",project_column_id as "projectColumnId",title,description,color,priority,sort_order as "sortOrder" from tasks where parent_id=${action[1]} and user_id=${userId} and deleted_at is null order by sort_order asc`;
-            for (const sub of subtasks) {
-              const subRows = await sql<Record<string, unknown>[]>`
-                insert into tasks (id,user_id,project_id,project_column_id,title,description,color,priority,parent_id,sort_order,created_at,updated_at)
-                values (${crypto.randomUUID()},${userId},${sub.projectId ?? task.projectId ?? null},${sub.projectColumnId ?? task.projectColumnId ?? null},${sub.title},${sub.description ?? null},${sub.color ?? null},${sub.priority ?? null},${nextId},${sub.sortOrder ?? 0},now(),now()) returning id`;
-              const subId = String(subRows[0]?.id ?? '');
-              if (subId) {
-                const subTags = await sql<{ tagId: string }[]>`select tag_id as "tagId" from task_tags where task_id=${sub.id}`;
-                for (const tag of subTags) await sql`insert into task_tags (task_id,tag_id,created_at,updated_at) values (${subId},${tag.tagId},now(),now())`;
-              }
+          const rows = await sql<Record<string, unknown>[]>`
+            insert into tasks (id,user_id,project_id,project_column_id,section_id,parent_id,title,description,color,priority,
+              deadline_date,deadline_time,deadline_time_zone,start_date,estimate_min,rrule,recurring_reset_mode,recurrence_basis,recurrence_start,recurrence_series_id,recurrence_index,sort_order,created_at,updated_at)
+            values (${crypto.randomUUID()},${userId},${task.projectId ?? null},${task.projectColumnId ?? null},${task.sectionId ?? null},${task.parentId ?? null},
+              ${task.title},${task.description ?? null},${task.color ?? null},${task.priority ?? null},${nextDeadline},${task.deadlineTime ?? null},${task.deadlineTimeZone ?? null},
+              ${nextStart},${task.estimateMin ?? null},${task.rrule},${task.recurringResetMode ?? null}::"RecurringResetMode",${task.recurrenceBasis ?? null}::"RecurrenceBasis",${seriesStart},${seriesId},${index + 1},${task.sortOrder ?? 0},now(),now())
+            returning ${taskSelect}
+          `;
+          nextTask = rows[0] ?? null;
+          const nextId = String(nextTask?.id ?? '');
+          if (nextId) {
+            const tags = await sql<{ tagId: string }[]>`select tt.tag_id as "tagId" from task_tags tt join tags t on t.id=tt.tag_id where tt.task_id=${action[1]} and t.user_id=${userId} and t.deleted_at is null`;
+            for (const tag of tags) await sql`insert into task_tags (task_id,tag_id,created_at,updated_at) values (${nextId},${tag.tagId},now(),now())`;
+            const reminders = await sql<{ remindAt: Date; type: string }[]>`select remind_at as "remindAt",type from reminders where task_id=${action[1]}`;
+            for (const reminder of reminders) {
+              const offset = deadlineDate.getTime() - new Date(String(reminder.remindAt)).getTime();
+              await sql`insert into reminders (id,task_id,remind_at,type,is_sent,created_at,updated_at) values (${crypto.randomUUID()},${nextId},${new Date(nextDeadline.getTime()-offset)},${reminder.type}::"ReminderType",false,now(),now())`;
             }
-            const items = await sql<Record<string, unknown>[]>`select title,sort_order as "sortOrder" from task_checklist_items where task_id=${action[1]} order by sort_order asc`;
-            for (const item of items) await sql`insert into task_checklist_items (id,task_id,title,sort_order,created_at,updated_at) values (${crypto.randomUUID()},${nextId},${item.title},${item.sortOrder ?? 0},now(),now())`;
+            if (task.recurringResetMode !== 'KEEP') {
+              const subtasks = await sql<Record<string, unknown>[]>`select id,project_id as "projectId",project_column_id as "projectColumnId",title,description,color,priority,sort_order as "sortOrder" from tasks where parent_id=${action[1]} and user_id=${userId} and deleted_at is null order by sort_order asc`;
+              for (const sub of subtasks) {
+                const subRows = await sql<Record<string, unknown>[]>`
+                  insert into tasks (id,user_id,project_id,project_column_id,title,description,color,priority,parent_id,sort_order,created_at,updated_at)
+                  values (${crypto.randomUUID()},${userId},${sub.projectId ?? task.projectId ?? null},${sub.projectColumnId ?? task.projectColumnId ?? null},${sub.title},${sub.description ?? null},${sub.color ?? null},${sub.priority ?? null},${nextId},${sub.sortOrder ?? 0},now(),now()) returning id`;
+                const subId = String(subRows[0]?.id ?? '');
+                if (subId) {
+                  const subTags = await sql<{ tagId: string }[]>`select tt.tag_id as "tagId" from task_tags tt join tags t on t.id=tt.tag_id where tt.task_id=${sub.id} and t.user_id=${userId} and t.deleted_at is null`;
+                  for (const tag of subTags) await sql`insert into task_tags (task_id,tag_id,created_at,updated_at) values (${subId},${tag.tagId},now(),now())`;
+                }
+              }
+              const items = await sql<Record<string, unknown>[]>`select title,sort_order as "sortOrder" from task_checklist_items where task_id=${action[1]} order by sort_order asc`;
+              for (const item of items) await sql`insert into task_checklist_items (id,task_id,title,sort_order,created_at,updated_at) values (${crypto.randomUUID()},${nextId},${item.title},${item.sortOrder ?? 0},now(),now())`;
+            }
           }
-          nextTask = await taskResponse(nextTask);
         }
       }
-    }
-    const updated = await taskRow(action[1], userId);
-    const data = await taskResponse(updated);
-    return json({ success: true, data: action[2] === 'complete' ? { ...data, nextTask } : data });
+      const updated = (await sql<Record<string, unknown>[]>`select ${taskSelect} from tasks where id=${action[1]} and user_id=${userId}`)[0];
+      const data = await taskResponse(updated, sql);
+      return json({ success: true, data: action[2] === 'complete' ? { ...data, nextTask: await taskResponse(nextTask, sql) } : data });
+    });
   }
+
   if (action && action[2] === 'move' && request.method === 'PATCH') {
     const task = await taskRow(action[1], userId);
     if (!task) return json({ success: false, error: 'Task not found' }, { status: 404 });
@@ -296,7 +317,7 @@ export async function handleTaskCoreRoutes(path: string, request: Request, auth:
     const parentId = path.match(/^\/tasks\/([^/]+)\/subtasks$/)![1];
     if (!await taskRow(parentId, userId)) return json({ success: false, error: 'Task not found' }, { status: 404 });
     const rows = await sql<Record<string, unknown>[]>`select ${taskSelect} from tasks where parent_id = ${parentId} and user_id = ${userId} and deleted_at is null order by sort_order asc`;
-    return json({ success: true, data: await Promise.all(rows.map(taskResponse)) });
+    return json({ success: true, data: await Promise.all(rows.map(row => taskResponse(row))) });
   }
 
   const checklistPath = path.match(/^\/tasks\/([^/]+)\/checklist-items$/);

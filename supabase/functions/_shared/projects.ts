@@ -447,11 +447,18 @@ export async function handleProjectRoutes(path: string, request: Request, auth: 
     if (!name) return bodyError('Name is required');
     const color = input.color === undefined ? null : optionalString(input.color, 24);
     if (color === null && input.color !== undefined && input.color !== null) return bodyError('Invalid color');
-    const rows = await sql<Record<string, unknown>[]>`
+    const rows = await sql.begin(async tx => {
+      const restored = await tx<Record<string, unknown>[]>`
       insert into tags (id, user_id, name, color, created_at, updated_at)
       values (${crypto.randomUUID()}, ${userId}, ${name}, ${color}, now(), now())
+      on conflict (user_id, name) do update set deleted_at = null, color = excluded.color, updated_at = now()
+      where tags.deleted_at is not null
       returning id, user_id as "userId", name, color, created_at as "createdAt", updated_at as "updatedAt", deleted_at as "deletedAt"
     `;
+      if (restored[0]) await tx`delete from task_tags where tag_id = ${restored[0].id}`;
+      return restored;
+    });
+    if (!rows[0]) return json({ success: false, error: 'Tag name already exists' }, { status: 409 });
     return json({ success: true, data: rows[0] }, { status: 201 });
   }
 
@@ -460,19 +467,27 @@ export async function handleProjectRoutes(path: string, request: Request, auth: 
     const existing = await sql<Record<string, unknown>[]>`select id from tags where id = ${tagMatch[1]} and user_id = ${userId} and deleted_at is null limit 1`;
     if (!existing[0]) return json({ success: false, error: 'Tag not found' }, { status: 404 });
     if (request.method === 'DELETE') {
-      await sql`update tags set deleted_at = now(), updated_at = now() where id = ${tagMatch[1]}`;
+      await sql.begin(async tx => {
+        await tx`update tags set deleted_at = now(), updated_at = now() where id = ${tagMatch[1]} and user_id = ${userId}`;
+        await tx`delete from task_tags where tag_id = ${tagMatch[1]}`;
+      });
       return json({ success: true });
     }
     const input = await body();
     const name = input.name === undefined ? undefined : stringValue(input.name, 1, 120);
     const color = input.color === undefined ? undefined : optionalString(input.color, 24);
     if (name === null || color === null) return bodyError('Invalid tag data');
+    try {
     const rows = await sql<Record<string, unknown>[]>`
       update tags set name = coalesce(${name ?? null}, name), color = case when ${input.color !== undefined} then ${color ?? null} else color end, updated_at = now()
       where id = ${tagMatch[1]} and user_id = ${userId} and deleted_at is null
       returning id, user_id as "userId", name, color, created_at as "createdAt", updated_at as "updatedAt", deleted_at as "deletedAt"
     `;
     return json({ success: true, data: rows[0] });
+    } catch (error) {
+      if ((error as { code?: string }).code === '23505') return json({ success: false, error: 'Tag name already exists' }, { status: 409 });
+      throw error;
+    }
   }
 
   return null;

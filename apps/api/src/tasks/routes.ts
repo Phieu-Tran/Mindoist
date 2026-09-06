@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+import rrulePkg from 'rrule';
 import type { FastifyInstance } from 'fastify';
 import { prisma } from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
@@ -419,6 +421,12 @@ export async function taskRoutes(app: FastifyInstance) {
     // Validate startDate <= deadline when both present after merge
     const finalStartDate = data.startDate !== undefined ? data.startDate : existing.startDate;
     const finalDeadlineDate = data.deadlineDate !== undefined ? data.deadlineDate : existing.deadlineDate;
+    if (parsed.data.rrule !== undefined && parsed.data.rrule !== existing.rrule) {
+      data.recurrenceStart = parsed.data.rrule ? finalDeadlineDate : null;
+      data.recurrenceIndex = parsed.data.rrule ? 0 : null;
+      data.recurrenceSeriesId = parsed.data.rrule ? randomUUID() : null;
+    }
+
     if (finalStartDate && finalDeadlineDate && finalStartDate > finalDeadlineDate) {
       return reply.status(400).send({ success: false, error: 'Start date must be before or equal to deadline' });
     }
@@ -494,128 +502,147 @@ export async function taskRoutes(app: FastifyInstance) {
   app.post('/tasks/:id/complete', { preHandler: requireAuth }, async (request, reply) => {
     const { id } = request.params as { id: string };
 
-    const existing = await prisma.task.findFirst({
-      where: { id, userId: request.auth!.sub, deletedAt: null },
-    });
-    if (!existing) {
-      return reply.status(404).send({ success: false, error: 'Task not found' });
-    }
+    const result = await prisma.$transaction(async prisma => {
+      await prisma.$queryRaw`SELECT id FROM tasks WHERE id = ${id} AND user_id = ${request.auth!.sub} FOR UPDATE`;
+      const existing = await prisma.task.findFirst({
+        where: { id, userId: request.auth!.sub, deletedAt: null },
+      });
+      if (!existing) {
+        return null;
+      }
 
-    const task = await prisma.task.update({
-      where: { id },
-      data: { completedAt: new Date() },
-      include: taskTagsInclude,
-    });
+      const seriesId = existing.recurrenceSeriesId ?? existing.id;
+      const seriesStart = existing.recurrenceStart ?? existing.deadlineDate;
+      const index = existing.recurrenceIndex ?? 0;
+      const previouslyCreated = await prisma.task.findFirst({ where: { userId: request.auth!.sub, recurrenceSeriesId: seriesId, recurrenceIndex: index + 1 }, include: taskTagsInclude });
+      if (existing.completedAt) return { task: { ...existing, taskTags: await prisma.taskTag.findMany({ where: { taskId: id } }) }, nextTask: previouslyCreated?.deletedAt ? null : previouslyCreated };
+      const task = await prisma.task.update({
+        where: { id },
+        data: { completedAt: new Date(), ...(existing.rrule ? { recurrenceStart: seriesStart, recurrenceSeriesId: seriesId, recurrenceIndex: index } : {}) },
+        include: taskTagsInclude,
+      });
 
-    let nextTask: any = null;
-    if (task.rrule && task.deadlineDate) {
-      const deadlineDateObj = new Date(task.deadlineDate);
-      // B2.9b: use completion date as reference when recurrenceBasis is COMPLETION_DATE
-      const referenceDate = task.recurrenceBasis === 'COMPLETION_DATE' ? new Date() : deadlineDateObj;
-      const nextDeadlineDate = nextOccurrence(task.rrule, deadlineDateObj, referenceDate);
-      if (nextDeadlineDate) {
-        const tags = await prisma.taskTag.findMany({
-          where: { taskId: id },
-          select: { tagId: true },
-        });
-
-        // Offset startDate by the same number of days as the deadline shifted.
-        let nextStartDate: Date | null = null;
-        if (task.startDate) {
-          const oldStart = new Date(task.startDate);
-          const dayOffset = Math.round((deadlineDateObj.getTime() - oldStart.getTime()) / 86_400_000);
-          nextStartDate = new Date(nextDeadlineDate.getTime() - dayOffset * 86_400_000);
-        }
-
-        nextTask = await prisma.task.create({
-          data: {
-            userId: task.userId,
-            projectId: task.projectId,
-            projectColumnId: task.projectColumnId,
-            sectionId: task.sectionId,
-            parentId: task.parentId,
-            title: task.title,
-            description: task.description,
-            color: task.color,
-            priority: task.priority,
-            deadlineDate: nextDeadlineDate,
-            deadlineTime: task.deadlineTime,
-            deadlineTimeZone: task.deadlineTimeZone,
-            startDate: nextStartDate,
-            estimateMin: task.estimateMin,
-            rrule: task.rrule,
-            sortOrder: task.sortOrder,
-            taskTags: tags.length > 0 ? { create: tags.map(t => ({ tagId: t.tagId })) } : undefined,
-          },
-        });
-
-        // Create reminders for the next occurrence using the same relative offset
-        const reminders = await prisma.reminder.findMany({
-          where: { taskId: id },
-        });
-        for (const rem of reminders) {
-          const oldRemindAt = new Date(rem.remindAt);
-          const offsetMs = deadlineDateObj.getTime() - oldRemindAt.getTime();
-          const nextRemindAt = new Date(nextDeadlineDate.getTime() - offsetMs);
-          await prisma.reminder.create({
-            data: {
-              taskId: nextTask.id,
-              remindAt: nextRemindAt,
-              type: rem.type,
-            },
+      if (previouslyCreated) return { task, nextTask: previouslyCreated.deletedAt ? null : previouslyCreated };
+      let nextTask: any = null;
+      if (task.rrule && task.deadlineDate) {
+        const deadlineDateObj = new Date(task.deadlineDate);
+        // B2.9b: use completion date as reference when recurrenceBasis is COMPLETION_DATE
+        const referenceDate = task.recurrenceBasis === 'COMPLETION_DATE' ? new Date() : (seriesStart ?? deadlineDateObj);
+        const count = rrulePkg.RRule.fromString(task.rrule).options.count;
+        const nextDeadlineDate = count != null && index + 1 >= count ? null : nextOccurrence(task.rrule, deadlineDateObj, referenceDate);
+        if (nextDeadlineDate) {
+          const tags = await prisma.taskTag.findMany({
+            where: { taskId: id, tag: { userId: request.auth!.sub, deletedAt: null } },
+            select: { tagId: true },
           });
-        }
 
-        // B2.9: Copy subtasks and checklist items based on recurringResetMode
-        if (task.recurringResetMode !== 'KEEP') {
-          // RESET mode: copy subtasks with completedAt=null
-          const subtasks = await prisma.task.findMany({
-            where: { parentId: id, deletedAt: null },
-            orderBy: { sortOrder: 'asc' },
-          });
-          for (const sub of subtasks) {
-            const subTags = await prisma.taskTag.findMany({
-              where: { taskId: sub.id },
-              select: { tagId: true },
-            });
-            await prisma.task.create({
-              data: {
-                userId: sub.userId,
-                projectId: sub.projectId,
-                projectColumnId: sub.projectColumnId,
-                title: sub.title,
-                description: sub.description,
-                color: sub.color,
-                priority: sub.priority,
-                parentId: nextTask.id,
-                sortOrder: sub.sortOrder,
-                taskTags: subTags.length > 0 ? { create: subTags.map(t => ({ tagId: t.tagId })) } : undefined,
-              },
-            });
+          // Offset startDate by the same number of days as the deadline shifted.
+          let nextStartDate: Date | null = null;
+          if (task.startDate) {
+            const oldStart = new Date(task.startDate);
+            const dayOffset = Math.round((deadlineDateObj.getTime() - oldStart.getTime()) / 86_400_000);
+            nextStartDate = new Date(nextDeadlineDate.getTime() - dayOffset * 86_400_000);
           }
 
-          // RESET mode: copy checklist items with completedAt=null
-          const checklistItems = await prisma.taskChecklistItem.findMany({
-            where: { taskId: id },
-            orderBy: { sortOrder: 'asc' },
+          nextTask = await prisma.task.create({
+            data: {
+              userId: task.userId,
+              projectId: task.projectId,
+              projectColumnId: task.projectColumnId,
+              sectionId: task.sectionId,
+              parentId: task.parentId,
+              title: task.title,
+              description: task.description,
+              color: task.color,
+              priority: task.priority,
+              deadlineDate: nextDeadlineDate,
+              deadlineTime: task.deadlineTime,
+              deadlineTimeZone: task.deadlineTimeZone,
+              startDate: nextStartDate,
+              estimateMin: task.estimateMin,
+              rrule: task.rrule,
+              recurrenceStart: seriesStart,
+              recurrenceSeriesId: seriesId,
+              recurrenceIndex: index + 1,
+              recurrenceBasis: task.recurrenceBasis,
+              recurringResetMode: task.recurringResetMode,
+              sortOrder: task.sortOrder,
+              taskTags: tags.length > 0 ? { create: tags.map(t => ({ tagId: t.tagId })) } : undefined,
+            },
+            include: taskTagsInclude,
           });
-          for (const ci of checklistItems) {
-            await prisma.taskChecklistItem.create({
+
+          // Create reminders for the next occurrence using the same relative offset
+          const reminders = await prisma.reminder.findMany({
+            where: { taskId: id },
+          });
+          for (const rem of reminders) {
+            const oldRemindAt = new Date(rem.remindAt);
+            const offsetMs = deadlineDateObj.getTime() - oldRemindAt.getTime();
+            const nextRemindAt = new Date(nextDeadlineDate.getTime() - offsetMs);
+            await prisma.reminder.create({
               data: {
                 taskId: nextTask.id,
-                title: ci.title,
-                sortOrder: ci.sortOrder,
+                remindAt: nextRemindAt,
+                type: rem.type,
               },
             });
           }
+
+          // B2.9: Copy subtasks and checklist items based on recurringResetMode
+          if (task.recurringResetMode !== 'KEEP') {
+            // RESET mode: copy subtasks with completedAt=null
+            const subtasks = await prisma.task.findMany({
+              where: { parentId: id, deletedAt: null },
+              orderBy: { sortOrder: 'asc' },
+            });
+            for (const sub of subtasks) {
+              const subTags = await prisma.taskTag.findMany({
+                where: { taskId: sub.id, tag: { userId: request.auth!.sub, deletedAt: null } },
+                select: { tagId: true },
+              });
+              await prisma.task.create({
+                data: {
+                  userId: sub.userId,
+                  projectId: sub.projectId,
+                  projectColumnId: sub.projectColumnId,
+                  title: sub.title,
+                  description: sub.description,
+                  color: sub.color,
+                  priority: sub.priority,
+                  parentId: nextTask.id,
+                  sortOrder: sub.sortOrder,
+                  taskTags: subTags.length > 0 ? { create: subTags.map(t => ({ tagId: t.tagId })) } : undefined,
+                },
+              });
+            }
+
+            // RESET mode: copy checklist items with completedAt=null
+            const checklistItems = await prisma.taskChecklistItem.findMany({
+              where: { taskId: id },
+              orderBy: { sortOrder: 'asc' },
+            });
+            for (const ci of checklistItems) {
+              await prisma.taskChecklistItem.create({
+                data: {
+                  taskId: nextTask.id,
+                  title: ci.title,
+                  sortOrder: ci.sortOrder,
+                },
+              });
+            }
+          }
+
+          // Sync any explicit TimeBlocks for the new recurring task.
+
         }
-
-        // Sync any explicit TimeBlocks for the new recurring task.
-        syncTaskCalendar(request.auth!.sub, nextTask.id).catch(() => {});
       }
-    }
 
-    return reply.send({ success: true, data: { ...toTaskResponse(task), nextTask } });
+      return { task, nextTask };
+    });
+    if (!result) return reply.status(404).send({ success: false, error: 'Task not found' });
+    if (result.nextTask) syncTaskCalendar(request.auth!.sub, result.nextTask.id).catch(() => {});
+    return reply.send({ success: true, data: { ...toTaskResponse(result.task), nextTask: result.nextTask ? toTaskResponse(result.nextTask) : null } });
   });
 
   // Record a completed Pomodoro work session

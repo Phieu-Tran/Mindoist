@@ -220,6 +220,9 @@ model Task {
   durationMin           Int?                @map("duration_min")
   estimateMin           Int?                @map("estimate_min")
   rrule                 String? // RFC 5545 recurrence
+  recurrenceStart DateTime? @map("recurrence_start")
+  recurrenceIndex Int? @map("recurrence_index")
+  recurrenceSeriesId String? @map("recurrence_series_id")
   recurringResetMode    RecurringResetMode? @default(RESET) @map("recurring_reset_mode")
   recurrenceBasis       RecurrenceBasis?    @default(DUE_DATE) @map("recurrence_basis")
   importSource          String?             @map("import_source") // e.g. "ticktick"
@@ -262,6 +265,7 @@ model Task {
   @@index([estimateMin])
   @@index([userId, snoozedUntil])
   @@index([dueNotificationSentAt])
+  @@unique([recurrenceSeriesId, recurrenceIndex])
   @@map("tasks")
 }
 

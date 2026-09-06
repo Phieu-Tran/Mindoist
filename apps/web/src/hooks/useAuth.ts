@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import type { User, LoginRequest, RegisterRequest } from '@mindoist/shared/types';
 import {
   clearTokens,
@@ -27,8 +27,10 @@ function consumeGoogleRedirectToken() {
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const version = useRef(0);
 
   const fetchMe = useCallback(async () => {
+    const requestVersion = ++version.current;
     const token = getToken();
     if (!token) {
       setLoading(false);
@@ -38,6 +40,7 @@ export function useAuth() {
       const res = await fetch(`${API}/me`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+      if (requestVersion !== version.current || getToken() !== token) return;
       if (!res.ok) {
         // A persisted session is invalid only when the server says so.
         // Transient 5xx responses must not turn an outage into a logout.
@@ -45,14 +48,14 @@ export function useAuth() {
         return;
       }
       const body = await res.json();
-      if (body.success) {
+      if (body.success && requestVersion === version.current && getToken() === token) {
         setUser(body.data);
       }
     } catch {
       // Navigation/reload can abort this request. Keep the persisted token so
       // the next mount can validate it instead of signing the user out.
     } finally {
-      setLoading(false);
+      if (requestVersion === version.current) setLoading(false);
     }
   }, []);
 
@@ -63,29 +66,39 @@ export function useAuth() {
   }, [fetchMe]);
 
   const login = async (data: LoginRequest): Promise<string | null> => {
+    const requestVersion = ++version.current;
+    try {
     const res = await fetch(`${API}/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
     const body = await res.json();
+    if (requestVersion !== version.current) return null;
     if (!body.success) return body.error || 'Login failed';
     storeTokens(body.data.accessToken, body.data.refreshToken);
     setUser(body.data.user);
     return null;
+    } catch { return 'Network error. Please try again.'; }
+    finally { if (requestVersion === version.current) setLoading(false); }
   };
 
   const register = async (data: RegisterRequest): Promise<string | null> => {
+    const requestVersion = ++version.current;
+    try {
     const res = await fetch(`${API}/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
     const body = await res.json();
+    if (requestVersion !== version.current) return null;
     if (!body.success) return body.error || 'Registration failed';
     storeTokens(body.data.accessToken, body.data.refreshToken);
     setUser(body.data.user);
     return null;
+    } catch { return 'Network error. Please try again.'; }
+    finally { if (requestVersion === version.current) setLoading(false); }
   };
 
   const setPassword = async (password: string): Promise<string | null> => {
@@ -143,6 +156,11 @@ export function useAuth() {
 
   const logout = async () => {
     const token = getToken();
+    const refreshToken = getRefreshToken();
+    ++version.current;
+    clearTokens();
+    setUser(null);
+    setLoading(false);
     if (token) {
       // The refresh token has to be handed over to be revoked - dropping it
       // locally alone would leave a credential that still works for 30 days.
@@ -152,11 +170,9 @@ export function useAuth() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ refreshToken: getRefreshToken() }),
+        body: JSON.stringify({ refreshToken }),
       }).catch(() => {});
     }
-    clearTokens();
-    setUser(null);
   };
 
   return {

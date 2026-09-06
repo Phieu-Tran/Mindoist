@@ -28,12 +28,17 @@
     "later": "Sau hôm nay"
   },
   "tags": {
+    "editTag": "Sửa thẻ {{name}}",
+    "editName": "Tên thẻ mới",
+    "editError": "Không cập nhật được thẻ. Hãy thử lại.",
+    "color": "Màu thẻ",
+    "save": "Lưu thẻ",
     "addTag": "Thêm thẻ",
     "namePlaceholder": "Tên thẻ",
     "empty": "Chưa có thẻ. Tạo thẻ mới ở trên.",
     "createError": "Chưa tạo được thẻ này. Thử lại nhé.",
     "manageTags": "Quản lý thẻ",
-    "manageHint": "Tạo, gắn hoặc xóa thẻ.",
+    "manageHint": "Tạo, sửa, gán hoặc xóa thẻ.",
     "deleteTag": "Xóa thẻ {{name}}",
     "deleteConfirm": "Xóa #{{name}}? Thẻ sẽ bị gỡ khỏi mọi task.",
     "delete": "Xóa thẻ",

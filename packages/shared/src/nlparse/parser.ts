@@ -88,7 +88,7 @@ function parseEn(input: string, now: Date): ParsedQuickAdd {
 
   if (first) {
     const ref = first.start;
-    const hasTime = ref.get('hour') !== undefined || ref.get('minute') !== undefined;
+    const hasTime = ref.isCertain('hour') || ref.isCertain('minute');
     const y = ref.get('year') ?? new Date().getFullYear();
     const M = ref.get('month') ?? new Date().getMonth() + 1;
     const d = ref.get('day') ?? new Date().getDate();

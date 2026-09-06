@@ -1,7 +1,8 @@
 import { useCallback, useMemo, useState } from 'react';
-import { Check, ChevronDown, Plus, Tag, Trash2 } from 'lucide-react';
+import { Check, ChevronDown, Plus, Tag, Trash2, Pencil } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { Tag as TagType } from '@mindoist/shared/types';
+import { primitiveColors } from '@mindoist/design-tokens';
 import { cn } from '@/lib/utils';
 import { useDismissiblePopover } from './use-dismissible-popover';
 import { usePropertyMutation } from './use-property-mutation';
@@ -15,9 +16,10 @@ interface Props {
   onChange: (value: string[]) => void;
   onCreateTag?: (name: string) => Promise<TagType>;
   onDeleteTag?: (id: string) => Promise<void>;
+  onUpdateTag?: (id: string, request: { name: string; color?: string }) => Promise<unknown>;
 }
 
-export function TagsField({ taskId, value, tags, save, onChange, onCreateTag, onDeleteTag }: Props) {
+export function TagsField({ taskId, value, tags, save, onChange, onCreateTag, onDeleteTag, onUpdateTag }: Props) {
   const { t } = useTranslation('tasks');
   const [open, setOpen] = useState(false);
   const [newTagName, setNewTagName] = useState('');
@@ -26,6 +28,22 @@ export function TagsField({ taskId, value, tags, save, onChange, onCreateTag, on
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [deletingTagId, setDeletingTagId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState('');
+  const [editing, setEditing] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editColor, setEditColor] = useState('');
+  const [editingPending, setEditingPending] = useState(false);
+  const [editError, setEditError] = useState('');
+  const rename = async () => {
+    if (!editing || !onUpdateTag || !editName.trim() || editingPending) return;
+    setEditingPending(true);
+    setEditError('');
+    try {
+      await onUpdateTag(editing, { name: editName.trim(), ...(editColor ? { color: editColor } : {}) });
+      setEditing(null);
+    } catch {
+      setEditError(t('tags.editError'));
+    } finally { setEditingPending(false); }
+  };
   const close = useCallback(() => {
     setOpen(false);
     setDeleteConfirmId(null);
@@ -34,9 +52,10 @@ export function TagsField({ taskId, value, tags, save, onChange, onCreateTag, on
   const ref = useDismissiblePopover(open, close);
   const { commit, error } = usePropertyMutation(taskId, save);
   const selectedTags = useMemo(() => value.map((id) => tags.find((tag) => tag.id === id)).filter((tag): tag is TagType => Boolean(tag)), [tags, value]);
-  const summary = selectedTags.length ? `${selectedTags[0].name}${value.length > 1 ? ` +${value.length - 1}` : ''}` : t('detail.noTags');
+  const summary = selectedTags.length ? `${selectedTags[0].name}${selectedTags.length > 1 ? ` +${selectedTags.length - 1}` : ''}` : t('detail.noTags');
   const toggle = (tagId: string) => {
-    const next = value.includes(tagId) ? value.filter((id) => id !== tagId) : [...value, tagId];
+    const active = value.filter(id => tags.some(tag => tag.id === id));
+    const next = active.includes(tagId) ? active.filter((id) => id !== tagId) : [...active, tagId];
     onChange(next);
     void commit({ tagIds: next });
   };
@@ -106,6 +125,7 @@ export function TagsField({ taskId, value, tags, save, onChange, onCreateTag, on
                 id={`new-tag-${taskId}`}
                 name="newTagName"
                 value={newTagName}
+                disabled={creating}
                 onChange={(event) => setNewTagName(event.target.value)}
                 onKeyDown={(event) => {
                   if (event.key === 'Enter') {
@@ -124,7 +144,7 @@ export function TagsField({ taskId, value, tags, save, onChange, onCreateTag, on
               </button>
             </div>
           )}
-          {(createError || deleteError) && <p className="m-0 px-2 py-1.5 text-xs text-destructive" role="alert">{createError || deleteError}</p>}
+          {(createError || deleteError || editError) && <p className="m-0 px-2 py-1.5 text-xs text-destructive" role="alert">{createError || deleteError || editError}</p>}
           <div className="mt-1 max-h-64 overflow-y-auto" role="listbox" aria-label={t('sidebar.tags')}>
             {tags.length === 0 ? <p className="px-2 py-2 text-xs text-muted-foreground">{t('tags.empty')}</p> : tags.map((tag) => {
               const selected = value.includes(tag.id);
@@ -136,12 +156,25 @@ export function TagsField({ taskId, value, tags, save, onChange, onCreateTag, on
                       <Check className={cn('h-3 w-3 shrink-0', !selected && 'opacity-0')} aria-hidden="true" />
                       <span className="truncate">#{tag.name}</span>
                     </button>
+                    {onUpdateTag && (
+                      <button type="button" aria-label={t('tags.editTag', { name: tag.name })} disabled={editingPending} onClick={() => { setEditing(tag.id); setEditName(tag.name); setEditColor(tag.color || ''); setEditError(''); }} className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring">
+                        <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
+                      </button>
+                    )}
                     {onDeleteTag && (
                       <button type="button" aria-label={t('tags.deleteTag', { name: tag.name })} onClick={() => { setDeleteError(''); setDeleteConfirmId(confirming ? null : tag.id); }} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                         <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                       </button>
                     )}
                   </div>
+                  {editing === tag.id && (
+                    <div className="flex flex-wrap gap-1 p-2">
+                      <input aria-label={t('tags.editName')} value={editName} onChange={event => setEditName(event.target.value)} disabled={editingPending} maxLength={120} className="min-w-0 flex-1 rounded border p-1 text-xs" />
+                      <input type="color" aria-label={t('tags.color')} value={editColor || primitiveColors.slate[500]} onChange={event => setEditColor(event.target.value)} disabled={editingPending} className="h-8 w-8" />
+                      <button type="button" disabled={editingPending || !editName.trim()} onClick={() => void rename()} className="rounded bg-primary px-2 text-xs text-primary-foreground">{t('tags.save')}</button>
+                      <button type="button" disabled={editingPending} onClick={() => setEditing(null)} className="px-2 text-xs">{t('tags.cancel')}</button>
+                    </div>
+                  )}
                   {confirming && (
                     <div className="px-2 pb-2 pt-1">
                       <p className="m-0 text-[0.68rem] leading-4 text-foreground">{t('tags.deleteConfirm', { name: tag.name })}</p>

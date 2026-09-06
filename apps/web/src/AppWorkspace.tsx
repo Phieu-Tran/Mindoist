@@ -1,3 +1,5 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { queryClient as defaultQueryClient } from './lib/query-client';
 import { lazy, Suspense, useState, useEffect, useCallback, useMemo } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
@@ -141,7 +143,13 @@ export default function AppWorkspace() {
     return <Onboarding user={user} onComplete={completeOnboarding} />;
   }
 
-  return <AuthenticatedWorkspace user={user} setPassword={setPassword} logout={logout} />;
+  return <SessionWorkspace key={user.id} user={user} setPassword={setPassword} logout={logout} />;
+}
+
+function SessionWorkspace(props: AuthenticatedWorkspaceProps) {
+  const [client] = useState(() => new QueryClient({ defaultOptions: defaultQueryClient.getDefaultOptions() }));
+  useEffect(() => () => client.clear(), [client]);
+  return <QueryClientProvider client={client}><AuthenticatedWorkspace {...props} /></QueryClientProvider>;
 }
 
 function AuthenticatedWorkspace({ user, setPassword, logout }: AuthenticatedWorkspaceProps) {
@@ -192,7 +200,7 @@ function AuthenticatedWorkspace({ user, setPassword, logout }: AuthenticatedWork
     deleteProject,
     refetch: refetchProjects,
   } = useProjectsQuery(Boolean(user));
-  const { tags, loading: tagsLoading, error: tagsError, createTag, deleteTag, refetch: refetchTags } = useTagsQuery(Boolean(user));
+  const { tags, loading: tagsLoading, error: tagsError, createTag, updateTag, deleteTag, refetch: refetchTags } = useTagsQuery(Boolean(user));
   const isNotesView = sidebarView === 'notes';
   const isSummaryView = sidebarView === 'summary';
   const summary = useSummaryTasks(Boolean(user) && isSummaryView);
@@ -912,7 +920,7 @@ function AuthenticatedWorkspace({ user, setPassword, logout }: AuthenticatedWork
                     projects={projects}
                     tags={tags}
                     onCreateTag={(name) => createTag({ name })}
-                    onDeleteTag={deleteTag}
+                    onUpdateTag={updateTag} onDeleteTag={deleteTag}
                     onSave={handleUpdate}
                     onAutosave={handleAutosave}
                     onCompletePomodoro={handlePomodoroComplete}
@@ -966,7 +974,7 @@ function AuthenticatedWorkspace({ user, setPassword, logout }: AuthenticatedWork
                     projects={projects}
                     tags={tags}
                     onCreateTag={(name) => createTag({ name })}
-                    onDeleteTag={deleteTag}
+                    onUpdateTag={updateTag} onDeleteTag={deleteTag}
                     onSave={handleUpdate}
                     onAutosave={handleAutosave}
                     onCompletePomodoro={handlePomodoroComplete}
@@ -1020,7 +1028,7 @@ function AuthenticatedWorkspace({ user, setPassword, logout }: AuthenticatedWork
                     projects={projects}
                     tags={tags}
                     onCreateTag={(name) => createTag({ name })}
-                    onDeleteTag={deleteTag}
+                    onUpdateTag={updateTag} onDeleteTag={deleteTag}
                     onSave={handleUpdate}
                     onAutosave={handleAutosave}
                     onCompletePomodoro={handlePomodoroComplete}
@@ -1119,7 +1127,7 @@ function AuthenticatedWorkspace({ user, setPassword, logout }: AuthenticatedWork
               projects={projects}
               tags={tags}
               onCreateTag={(name) => createTag({ name })}
-              onDeleteTag={deleteTag}
+              onUpdateTag={updateTag} onDeleteTag={deleteTag}
               onSave={handleUpdate}
               onAutosave={handleAutosave}
               onCompletePomodoro={handlePomodoroComplete}
@@ -1207,7 +1215,7 @@ function AuthenticatedWorkspace({ user, setPassword, logout }: AuthenticatedWork
               projects={projects}
               tags={tags}
               onCreateTag={(name) => createTag({ name })}
-              onDeleteTag={deleteTag}
+              onUpdateTag={updateTag} onDeleteTag={deleteTag}
               onSave={handleUpdate}
               onAutosave={handleAutosave}
               onCompletePomodoro={handlePomodoroComplete}
@@ -1234,7 +1242,7 @@ function AuthenticatedWorkspace({ user, setPassword, logout }: AuthenticatedWork
             projects={projects}
             tags={tags}
             onCreateTag={(name) => createTag({ name })}
-            onDeleteTag={deleteTag}
+            onUpdateTag={updateTag} onDeleteTag={deleteTag}
             onSave={handleUpdate}
             onAutosave={handleAutosave}
             onCompletePomodoro={handlePomodoroComplete}

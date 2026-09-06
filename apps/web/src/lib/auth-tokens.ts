@@ -43,6 +43,7 @@ export function refreshAccessToken(): Promise<string | null> {
         body: JSON.stringify({ refreshToken }),
       });
       const body = await response.json();
+      if (getRefreshToken() !== refreshToken) return null;
       if (!response.ok || !body.success) {
         // The server rejected the refresh token outright - it is spent,
         // revoked or expired, and keeping it would retry forever.
