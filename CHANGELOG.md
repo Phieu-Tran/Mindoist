@@ -9,6 +9,7 @@ Notable changes to Mindoist, grouped by date. This project doesn't cut versioned
 - Recurring completion now runs in a transaction with a locked task and unique series occurrence. Concurrent completion, reopen/retry, and a deleted next occurrence no longer create duplicates; rescheduling preserves the series count. Next occurrences use the public task response contract.
 - Recurrence lookup uses the next occurrence directly instead of materializing ten years of dates. Date-only English Quick Add input no longer invents a noon deadline.
 - Session restore and token refresh cannot overwrite a later login/logout. Each signed-in workspace owns its query cache, so pending responses from a previous session cannot populate a new account's lists. Clearing a task description now persists an empty value.
+- Pending task mutations reconcile with their original view after navigation. Tag editing uses the shared default color token.
 
 ### Validation
 - Added PostgreSQL regressions for recurring completion and tag recreation, component tests for editing/deleted tags and session races, a browser tag lifecycle case, and equivalent Edge smoke assertions used by CI and both deployment environments.

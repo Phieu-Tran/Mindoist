@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { Check, ChevronDown, Plus, Tag, Trash2, Pencil } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { Tag as TagType } from '@mindoist/shared/types';
+import { primitiveColors } from '@mindoist/design-tokens';
 import { cn } from '@/lib/utils';
 import { useDismissiblePopover } from './use-dismissible-popover';
 import { usePropertyMutation } from './use-property-mutation';
@@ -169,7 +170,7 @@ export function TagsField({ taskId, value, tags, save, onChange, onCreateTag, on
                   {editing === tag.id && (
                     <div className="flex flex-wrap gap-1 p-2">
                       <input aria-label={t('tags.editName')} value={editName} onChange={event => setEditName(event.target.value)} disabled={editingPending} maxLength={120} className="min-w-0 flex-1 rounded border p-1 text-xs" />
-                      <input type="color" aria-label={t('tags.color')} value={editColor || '#64748b'} onChange={event => setEditColor(event.target.value)} disabled={editingPending} className="h-8 w-8" />
+                      <input type="color" aria-label={t('tags.color')} value={editColor || primitiveColors.slate[500]} onChange={event => setEditColor(event.target.value)} disabled={editingPending} className="h-8 w-8" />
                       <button type="button" disabled={editingPending || !editName.trim()} onClick={() => void rename()} className="rounded bg-primary px-2 text-xs text-primary-foreground">{t('tags.save')}</button>
                       <button type="button" disabled={editingPending} onClick={() => setEditing(null)} className="px-2 text-xs">{t('tags.cancel')}</button>
                     </div>

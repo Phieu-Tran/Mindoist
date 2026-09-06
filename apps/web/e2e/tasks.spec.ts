@@ -38,7 +38,7 @@ test.describe('Task Management E2E', () => {
     await page.getByText(title, { exact: true }).click();
     await page.getByTestId('detail-tags').click();
     await page.getByLabel('Tag name', { exact: true }).fill('Work');
-    await page.getByRole('button', { name: 'Add tag', exact: true }).click();
+    await page.getByRole('dialog', { name: 'Manage tags', exact: true }).getByRole('button', { name: 'Add tag', exact: true }).click();
     await page.getByRole('button', { name: 'Edit tag Work', exact: true }).click();
     await page.getByLabel('New tag name').fill('Renamed work');
     await page.getByRole('button', { name: 'Save tag', exact: true }).click();
