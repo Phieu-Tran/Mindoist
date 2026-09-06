@@ -275,8 +275,8 @@
 .dark .mindoist-calendar-grid-chip:hover { background: oklch(from var(--calendar-identity-color) 0.34 calc(c * 0.50) h); }
 .dark .mindoist-calendar-grid-chip.is-external:hover { background: oklch(from var(--calendar-identity-color) 0.285 calc(c * 0.42) h); }
 .mindoist-calendar-grid-block-button { display: flex; width: 100%; height: 100%; flex-direction: column; overflow: hidden; border: 0; background: transparent; padding: .45rem .6rem .45rem 1.28rem; color: inherit; text-align: left; }
-.mindoist-calendar-grid-block-button span { overflow: hidden; font-size: 12px; font-weight: 650; line-height: 1.35; text-overflow: ellipsis; white-space: nowrap; }
-.mindoist-calendar-grid-block-button small { margin-top: .12rem; font-size: 11px; font-weight: 520; font-variant-numeric: tabular-nums; opacity: .82; }
+.mindoist-calendar-grid-block-button span { overflow: hidden; font-size: 13px; font-weight: 650; line-height: 1.35; text-overflow: ellipsis; white-space: nowrap; }
+.mindoist-calendar-grid-block-button small { margin-top: .12rem; font-size: 12px; font-weight: 520; font-variant-numeric: tabular-nums; opacity: .82; }
 .mindoist-deadline-layer { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
 .mindoist-deadline-marker { position: absolute; right: 3px; left: 3px; display: flex; min-height: 22px; align-items: center; gap: .35rem; overflow: hidden; border: 0; border-top: 2px solid var(--calendar-identity-color); background: color-mix(in oklch, var(--card) 88%, transparent); color: var(--foreground); font-size: 11px; text-align: left; transform: translateY(-1px); pointer-events: auto; }
 .mindoist-deadline-marker > span { width: 0; height: 0; border-top: 4px solid transparent; border-bottom: 4px solid transparent; border-left: 6px solid var(--calendar-identity-color); }

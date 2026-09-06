@@ -352,7 +352,7 @@ export function TimeGrid({
           width: `calc(${100 / block.columnCount}% - 4px)`,
           top: block.top,
           height: resizing?.blockId === blockId
-            ? Math.max(22, ((resizing.end - (item.start.getHours() * 60 + item.start.getMinutes())) / SLOT_MINUTES) * CALENDAR_SLOT_HEIGHT)
+            ? Math.max(36, ((resizing.end - (item.start.getHours() * 60 + item.start.getMinutes())) / SLOT_MINUTES) * CALENDAR_SLOT_HEIGHT)
             : block.height,
           '--calendar-identity-color': item.kind === 'block' ? item.identityColor : 'var(--calendar-external-accent)',
         } as CSSProperties;

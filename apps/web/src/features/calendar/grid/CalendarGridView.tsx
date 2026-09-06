@@ -45,7 +45,7 @@ function layoutForDay(day: Date, items: CalendarItem[]): PositionedBlock[] {
   const timed = items.filter((item): item is Extract<CalendarItem, { kind: 'block' | 'external' }> =>
     (item.kind === 'block' || item.kind === 'external') && !item.allDay && dayKey(item.start) === key,
   );
-  return layoutTimedItems(timed, { startHour: 6, slotHeight: CALENDAR_SLOT_HEIGHT, minHeight: 28 });
+  return layoutTimedItems(timed, { startHour: 6, slotHeight: CALENDAR_SLOT_HEIGHT, minHeight: 36 });
 }
 
 function externalItems(events: GCalEvent[], existing: CalendarItem[]): CalendarItem[] {
