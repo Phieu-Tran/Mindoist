@@ -5,6 +5,7 @@ Notable changes to Mindoist, grouped by date. This project doesn't cut versioned
 ## 2026-09-06
 
 ### Fixed
+- Calendar time-grid events are now easier to read with taller short-duration blocks and larger title/time text.
 - Task Inspector now supports editing tag names and colors, preserves failed edit drafts, and removes deleted tags from task drafts. Tag deletion unlinks tasks; recreating the name restores the tag without restoring old assignments. Node and Edge APIs report duplicate names as conflicts.
 - Recurring completion now runs in a transaction with a locked task and unique series occurrence. Concurrent completion, reopen/retry, and a deleted next occurrence no longer create duplicates; rescheduling preserves the series count. Next occurrences use the public task response contract.
 - Recurrence lookup uses the next occurrence directly instead of materializing ten years of dates. Date-only English Quick Add input no longer invents a noon deadline.
