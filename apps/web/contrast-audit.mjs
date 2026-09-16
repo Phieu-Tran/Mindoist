@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 /**
  * WCAG AA contrast audit — OKLCH → linear-sRGB → relative-luminance → ratio
  * Same method as docs/design/DESIGN.md §3 (accent preset verification).

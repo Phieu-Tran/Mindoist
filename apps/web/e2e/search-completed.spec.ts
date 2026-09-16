@@ -34,8 +34,9 @@ test.describe('T6: Search & Completed History E2E', () => {
     const checkbox = taskRow.locator('button[data-testid^="task-toggle-"]');
     await checkbox.click();
 
-    // Task gets strikethrough
-    await expect(page.getByText('File tax receipt', { exact: true })).toHaveCSS('text-decoration-line', 'line-through', { timeout: 15_000 });
+    // Completion reconciles the active list before displaying the undo toast.
+    await expect(page.getByTestId('undo-toast')).toContainText('Completed');
+    await expect(page.getByText('File tax receipt', { exact: true })).toBeHidden();
 
     // Reload — task not in inbox as open
     await page.reload();
@@ -43,7 +44,7 @@ test.describe('T6: Search & Completed History E2E', () => {
 
     // Navigate to Completed view
     await page.goto('/history/completed');
-    await expect(page.getByText('File tax receipt', { exact: true })).toBeVisible();
+    await expect(page.getByText('File tax receipt', { exact: true })).toHaveCSS('text-decoration-line', 'line-through');
 
     // Reopen from completed view
     const completedRow = page.getByText('File tax receipt', { exact: true }).locator('xpath=ancestor::div[starts-with(@data-testid,"task-")]');

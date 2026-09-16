@@ -1,12 +1,13 @@
 import { useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { Tag, UpdateTagRequest } from '@mindoist/shared/types';
+import { primitiveColors } from '@mindoist/design-tokens';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
-import type { TagListResult } from '../hooks/useApi';
+import type { useTagsQuery } from '../hooks/useTagsQuery';
 
 interface Props {
-  state: TagListResult;
+  state: ReturnType<typeof useTagsQuery>;
   selectedTagId: string | null;
   onSelect: (id: string | null) => void;
 }
@@ -83,7 +84,7 @@ export function TagManager({ state, selectedTagId, onSelect }: Props) {
           aria-label={t('tags.color')}
           type="color"
           disabled={pending}
-          value={newColor || '#64748b'}
+          value={newColor || primitiveColors.slate[500]}
           onChange={e => setNewColor(e.target.value)}
           className="h-9 w-12 cursor-pointer rounded border border-input bg-transparent p-1"
         />
@@ -100,7 +101,7 @@ export function TagManager({ state, selectedTagId, onSelect }: Props) {
               {editing === tag.id ? (
                 <>
                   <Input data-testid={`tag-edit-name-${tag.id}`} disabled={pending} aria-label={t('tags.name')} value={editName} onChange={e => setEditName(e.target.value)} autoFocus />
-                  <input aria-label={t('tags.color')} disabled={pending} type="color" value={editColor || '#64748b'} onChange={e => setEditColor(e.target.value)} className="h-9 w-12" />
+                  <input aria-label={t('tags.color')} disabled={pending} type="color" value={editColor || primitiveColors.slate[500]} onChange={e => setEditColor(e.target.value)} className="h-9 w-12" />
                   <Button type="button" size="sm" onClick={() => void saveEdit()} disabled={pending || !editName.trim()}>{t('tags.save')}</Button>
                   <Button type="button" size="sm" variant="outline" onClick={() => setEditing(null)} disabled={pending}>{t('detail.cancel')}</Button>
                 </>
@@ -113,7 +114,7 @@ export function TagManager({ state, selectedTagId, onSelect }: Props) {
                     onClick={() => onSelect(selectedTagId === tag.id ? null : tag.id)}
                     aria-pressed={selectedTagId === tag.id}
                   >
-                    <span className="mr-2 h-3 w-3 rounded-full" style={{ backgroundColor: tag.color || '#64748b' }} aria-hidden="true" />
+                    <span className="mr-2 h-3 w-3 rounded-full" style={{ backgroundColor: tag.color || primitiveColors.slate[500] }} aria-hidden="true" />
                     {tag.name}
                   </Button>
                   <Button type="button" size="sm" variant="outline" onClick={() => startEdit(tag)} disabled={pending}>{t('tags.edit')}</Button>
