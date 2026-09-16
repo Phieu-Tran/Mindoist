@@ -140,15 +140,20 @@ test.describe('Task Management E2E', () => {
 
     // Complete the task
     await checkbox.click();
-    await expect(titleEl).toHaveCSS('text-decoration-line', 'line-through', { timeout: 15_000 });
+    await expect(page.getByTestId('undo-toast')).toContainText('Completed');
+    await expect(titleEl).toBeHidden();
 
     // Reopen from the dedicated Completed history surface. Completed tasks
     // may leave the active work list as soon as the mutation is reconciled.
     await page.goto('/history/completed');
     const completedTitle = page.getByText(taskTitle, { exact: true });
+    await expect(completedTitle).toHaveCSS('text-decoration-line', 'line-through');
     const completedRow = completedTitle.locator('xpath=ancestor::div[starts-with(@data-testid,"task-")]');
     await completedRow.locator('button[data-testid^="task-toggle-"]').click();
     await expect(completedTitle).not.toBeVisible();
+    await page.goto('/tasks/inbox');
+    await expect(titleEl).toBeVisible();
+    await expect(checkbox).toHaveAttribute('data-state', 'unchecked');
   });
 
   test('complete task can be undone from the toast', async ({ page }) => {
@@ -162,10 +167,11 @@ test.describe('Task Management E2E', () => {
     const checkbox = taskRow.locator('button[data-testid^="task-toggle-"]');
 
     await checkbox.click();
-    await expect(titleEl).toHaveCSS('text-decoration-line', 'line-through');
     await expect(page.getByTestId('undo-toast')).toContainText('Completed');
+    await expect(titleEl).toBeHidden();
 
     await page.getByTestId('undo-toast-action').click();
+    await expect(titleEl).toBeVisible();
     await expect(titleEl).not.toHaveCSS('text-decoration-line', 'line-through');
   });
 
@@ -186,11 +192,13 @@ test.describe('Task Management E2E', () => {
     await page.getByTestId('bulk-complete').click();
     const titleOne = page.getByTestId('task-list').getByText(taskOne, { exact: true });
     const titleTwo = page.getByTestId('task-list').getByText(taskTwo, { exact: true });
-    await expect(titleOne).toHaveCSS('text-decoration-line', 'line-through');
-    await expect(titleTwo).toHaveCSS('text-decoration-line', 'line-through');
     await expect(page.getByTestId('undo-toast')).toContainText('Completed 2 tasks');
+    await expect(titleOne).toBeHidden();
+    await expect(titleTwo).toBeHidden();
 
     await page.getByTestId('undo-toast-action').click();
+    await expect(titleOne).toBeVisible();
+    await expect(titleTwo).toBeVisible();
     await expect(titleOne).not.toHaveCSS('text-decoration-line', 'line-through');
     await expect(titleTwo).not.toHaveCSS('text-decoration-line', 'line-through');
   });
