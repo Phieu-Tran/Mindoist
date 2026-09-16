@@ -1,7 +1,7 @@
 import '@testing-library/jest-dom';
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
-import { expect, afterEach, vi } from 'vitest';
+import { expect, beforeEach, afterEach, vi } from 'vitest';
 import { cleanup } from '@testing-library/react';
 import enAdmin from './src/i18n/locales/en/admin.json';
 
@@ -11,7 +11,7 @@ class TestResizeObserver {
   disconnect() {}
 }
 
-vi.stubGlobal('ResizeObserver', TestResizeObserver);
+beforeEach(() => { vi.stubGlobal('ResizeObserver', TestResizeObserver); });
 
 // cmdk keeps the active option visible. JSDOM does not implement this browser
 // API, so command menus with initial suggestions need a no-op test shim.
