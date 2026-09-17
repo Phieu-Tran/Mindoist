@@ -182,7 +182,7 @@ function AuthenticatedWorkspace({ user, setPassword, logout }: AuthenticatedWork
     if (!query) return tasks;
     return tasks.filter(task => `${task.title}\n${task.description ?? ''}`.toLocaleLowerCase().includes(query));
   }, [searchQuery, tasks]);
-  const keyboardTasks = useMemo(() => filteredTasks.filter(task => !task.parentId), [filteredTasks]);
+  const keyboardTasks = useMemo(() => filteredTasks.filter(task => !task.parentId && !task.id.startsWith('optimistic-')), [filteredTasks]);
   // Live-preview the color picked in TaskInspector on the calendar before Save.
   // Sub-tasks are managed from their parent's detail panel, not plotted as
   // their own entries on the grid (mirrors TaskList's topLevel filter).
@@ -701,6 +701,7 @@ function AuthenticatedWorkspace({ user, setPassword, logout }: AuthenticatedWork
   // the existing view state while the user is working. Closing a detail that
   // originated from a deep link uses browser history, preserving Back/Forward.
   const handleSelectTask = useCallback((task: Task) => {
+    if (task.id.startsWith('optimistic-')) return;
     setKeyboardTaskId(task.id);
     setSelectedTask(task);
     const target = `/tasks/${task.id}`;

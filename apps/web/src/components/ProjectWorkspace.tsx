@@ -453,7 +453,7 @@ export function ProjectWorkspace({
               .map(id => tagMap.get(id))
               .filter((tag): tag is TagType => Boolean(tag));
             return (
-              <article key={task.id} className={cn('project-workspace-list-row', task.completedAt && 'is-completed')}>
+              <article key={task.id} inert={task.id.startsWith('optimistic-')} className={cn('project-workspace-list-row', task.completedAt && 'is-completed')}>
                 <button type="button" title={task.title} onClick={() => onSelectTask(task)}>{task.title}</button>
                 {task.priority != null ? (
                   <span className={`project-task-priority priority-${task.priority}`}>P{task.priority}</span>
@@ -599,7 +599,8 @@ export function ProjectWorkspace({
                     <article
                       key={task.id}
                       className={cn('project-task-card', task.completedAt && 'is-completed', draggedTaskId === task.id && 'is-dragging')}
-                      draggable
+                      inert={task.id.startsWith('optimistic-')}
+                      draggable={!task.id.startsWith('optimistic-')}
                       onDragStart={event => {
                         setDraggedTaskId(task.id);
                         event.dataTransfer.effectAllowed = 'move';

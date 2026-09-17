@@ -141,10 +141,15 @@ test.describe('Task Management E2E', () => {
       await page.getByTestId('global-quick-capture-submit').click();
       await expect(page.getByTestId('global-quick-capture')).toBeHidden();
       await expect(page.getByText(title, { exact: true })).toBeVisible();
+      const pendingRow = page.getByTestId(/^task-optimistic-/).filter({ hasText: title });
+      await expect(pendingRow).toHaveAttribute('inert', '');
+      await expect(pendingRow).toHaveAttribute('draggable', 'false');
     } finally {
       release();
     }
     expect((await saved).ok()).toBe(true);
+    await expect(page.getByTestId(/^task-optimistic-/)).toHaveCount(0);
+    await page.getByText(title, { exact: true }).click({ trial: true });
     await page.reload();
     await expect(page.getByText(title, { exact: true })).toBeVisible();
   });
