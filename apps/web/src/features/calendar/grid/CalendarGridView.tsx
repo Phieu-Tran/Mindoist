@@ -1,4 +1,4 @@
-import { useMemo, useState, type CSSProperties } from 'react';
+import { useMemo, useRef, useState, type CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { GCalEvent } from '@/hooks/useApi';
 import type { Countdown, Task } from '@mindoist/shared/types';
@@ -103,6 +103,8 @@ export function CalendarGridView({
 }: Props) {
   const { t } = useTranslation('tasks');
   const [draft, setDraft] = useState<CalendarDraft | null>(null);
+  // ponytail: keep one pending inline draft; use per-draft state if parallel creates are needed.
+  const pendingCreate = useRef(false);
   const days = useMemo(() => {
     if (view === 'timeGridDay') return [new Date(anchorDate)];
     if (view === 'timeGrid3Day') return threeDayDates(anchorDate);
@@ -195,6 +197,7 @@ export function CalendarGridView({
                   draftInputLabel={t('calendar.quickCreateLabel')}
                   draftPlaceholder={t('calendar.quickCreatePlaceholder')}
                   draftSaveLabel={t('calendar.quickCreateSave')}
+                  draftSavingLabel={t('calendar.quickCreateSaving')}
                   draftCancelLabel={t('calendar.quickCreateCancel')}
                   draftErrorMessage={t('calendar.quickCreateError')}
                   draftProjectLabel={t('calendar.quickCreateProject')}
@@ -204,16 +207,22 @@ export function CalendarGridView({
                   draftInheritColorLabel={t('calendar.quickCreateInheritColor')}
                   draftColors={TASK_COLOR_OPTIONS.map(option => ({ value: option.value, label: t(option.labelKey) }))}
                   onEmptySelect={(selectedDay, startMinutes, endMinutes) => {
+                    if (pendingCreate.current) return;
                     const start = snapMinutes(startMinutes);
                     const end = Math.max(start + 15, snapMinutes(endMinutes));
                     const slot = createSlot(selectedDay, start, end);
                     setDraft({ date: slot.date, startMinutes: start, endMinutes: end, slot });
                   }}
-                  onDraftCancel={() => setDraft(null)}
+                  onDraftCancel={() => { if (!pendingCreate.current) setDraft(null); }}
                   onDraftSubmit={async (title, projectId, color) => {
-                    if (!draft) return;
-                    await onCreateTask({ ...draft.slot, title, projectId, color });
-                    setDraft(null);
+                    if (!draft || pendingCreate.current) return;
+                    pendingCreate.current = true;
+                    try {
+                      await onCreateTask({ ...draft.slot, title, projectId, color });
+                      setDraft(current => current === draft ? null : current);
+                    } finally {
+                      pendingCreate.current = false;
+                    }
                   }}
                   onTaskDrop={(taskId, selectedDay, startMinutes) => onTaskDrop?.(taskId, selectedDay, startMinutes, false)}
                   onBlockMove={onBlockMove}

@@ -637,6 +637,7 @@
     "quickCreateLabel": "Tên task",
     "quickCreatePlaceholder": "Bạn sẽ làm việc gì?…",
     "quickCreateSave": "Tạo task theo lịch",
+    "quickCreateSaving": "Đang lưu…",
     "quickCreateCancel": "Hủy task theo lịch",
     "quickCreateProject": "Dự án",
     "quickCreateNoProject": "Không có dự án",
