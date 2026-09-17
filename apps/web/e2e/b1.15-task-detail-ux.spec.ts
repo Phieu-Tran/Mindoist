@@ -74,7 +74,7 @@ test.describe('B1.15 Task Detail UX', () => {
     await addTask(page, parentTitle);
 
     // Grab the parent task id for the list indicator assertion.
-    const titleTestId = await page.getByTestId(/^task-title-/).filter({ hasText: parentTitle }).getAttribute('data-testid');
+    const titleTestId = await page.getByTestId(/^task-title-[0-9a-f-]{36}$/).filter({ hasText: parentTitle }).getAttribute('data-testid');
     const parentId = titleTestId!.replace('task-title-', '');
 
     await openDetail(page, parentTitle);
