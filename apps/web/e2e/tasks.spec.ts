@@ -125,6 +125,30 @@ test.describe('Task Management E2E', () => {
     await expect(page.getByText(taskTitle, { exact: true })).toBeVisible();
   });
 
+  test('quick add closes before a slow create request completes', async ({ page }) => {
+    await login(page);
+    let release!: () => void;
+    const pending = new Promise<void>(resolve => { release = resolve; });
+    await page.route('**/tasks', async route => {
+      if (route.request().method() === 'POST') await pending;
+      await route.continue();
+    });
+    const title = `Slow create ${Date.now()}`;
+    await page.keyboard.press('Control+k');
+    await page.getByTestId('global-quick-capture-input').fill(title);
+    const saved = page.waitForResponse(response => response.request().method() === 'POST' && response.url().endsWith('/tasks'));
+    try {
+      await page.getByTestId('global-quick-capture-submit').click();
+      await expect(page.getByTestId('global-quick-capture')).toBeHidden();
+      await expect(page.getByText(title, { exact: true })).toBeVisible();
+    } finally {
+      release();
+    }
+    expect((await saved).ok()).toBe(true);
+    await page.reload();
+    await expect(page.getByText(title, { exact: true })).toBeVisible();
+  });
+
   test('[TASK-04] completes a task and reopens it', async ({ page }) => {
     await login(page);
 

@@ -131,7 +131,8 @@ export function GlobalQuickCapture({
 
   const openCommandBar = useCallback((initialInput = '') => {
     triggerElementRef.current = document.activeElement;
-    setInput(initialInput);
+    // Reopening a pending save must keep its draft available for retry.
+    if (!pending.current) setInput(initialInput);
     setOpen(true);
   }, []);
 
@@ -160,7 +161,8 @@ export function GlobalQuickCapture({
       return;
     }
     if (datePickerOpenRef.current || timePickerOpenRef.current) return;
-    resetAndClose();
+    if (pending.current) setOpen(false);
+    else resetAndClose();
     window.setTimeout(() => (triggerElementRef.current as HTMLElement | null)?.focus?.(), 0);
   }, [resetAndClose]);
 
@@ -171,11 +173,14 @@ export function GlobalQuickCapture({
     pending.current = true;
     setSubmitting(true);
     setSubmitError('');
+    // Keep the draft until persistence succeeds, but release the dialog now.
+    setOpen(false);
     try {
       await onAdd(applyPreviewEdits(fresh, { ...parsedEdits, date: fresh.deadline?.date ?? '', time: fresh.deadline?.time ?? '', ...edits }));
       if (currentDraft.current.input === draft.input && currentDraft.current.edits === draft.edits) resetAndClose();
     } catch (cause) {
       setSubmitError(cause instanceof Error ? cause.message : t('detail.error'));
+      setOpen(true);
     } finally {
       pending.current = false;
       setSubmitting(false);
