@@ -34,6 +34,7 @@ interface Props {
   draftInputLabel?: string;
   draftPlaceholder?: string;
   draftSaveLabel?: string;
+  draftSavingLabel?: string;
   draftCancelLabel?: string;
   draftErrorMessage?: string;
   draftProjectLabel?: string;
@@ -67,6 +68,7 @@ export function TimeGrid({
   draftInputLabel = 'Task name',
   draftPlaceholder = 'What will you work on?…',
   draftSaveLabel = 'Create scheduled task',
+  draftSavingLabel = 'Saving…',
   draftCancelLabel = 'Cancel scheduled task',
   draftErrorMessage = 'Could not create this scheduled task. Check your connection and try again.',
   draftProjectLabel = 'Project',
@@ -117,25 +119,30 @@ export function TimeGrid({
 
   useEffect(() => {
     if (!resizing) return;
+    let previousEnd = resizing.end;
     const move = (event: PointerEvent) => {
       const grid = gridRef.current;
       if (!grid) return;
       const end = minutesAtPointer(grid, event.clientY, startHour, endHour);
-      setResizing(current => current
+      if (end === previousEnd) return;
+      previousEnd = end;
+      setResizing(current => current && current.end !== end
         ? { ...current, end }
-        : null);
+        : current);
     };
-    const finish = () => {
-      setResizing(current => {
-        if (current) onBlockResize?.(current.blockId, current.end);
-        return null;
-      });
+    const finish = (event: PointerEvent) => {
+      const grid = gridRef.current;
+      setResizing(null);
+      if (grid) onBlockResize?.(resizing.blockId, minutesAtPointer(grid, event.clientY, startHour, endHour));
     };
+    const cancel = () => setResizing(null);
     window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', finish, { once: true });
+    window.addEventListener('pointercancel', cancel, { once: true });
     return () => {
       window.removeEventListener('pointermove', move);
       window.removeEventListener('pointerup', finish);
+      window.removeEventListener('pointercancel', cancel);
     };
   }, [endHour, onBlockResize, resizing?.blockId, startHour]);
 
@@ -167,12 +174,14 @@ export function TimeGrid({
     if (!title || !onDraftSubmit || draftSaving) return;
     setDraftSaving(true);
     setDraftError(null);
+    gridRef.current?.focus();
     try {
       await onDraftSubmit(title, draftProjectId || undefined, draftColor || undefined);
     } catch {
-      setDraftSaving(false);
       setDraftError(draftErrorMessage);
-      draftInputRef.current?.focus();
+      window.requestAnimationFrame(() => draftInputRef.current?.focus());
+    } finally {
+      setDraftSaving(false);
     }
   };
 
@@ -198,6 +207,7 @@ export function TimeGrid({
         }
       }}
       onPointerDown={event => {
+        if (draftSaving) return;
         if ((event.target as HTMLElement).closest('.mindoist-time-grid-block, .mindoist-calendar-quick-create')) return;
         onDraftCancel?.();
         event.currentTarget.setPointerCapture(event.pointerId);
@@ -210,7 +220,7 @@ export function TimeGrid({
         // the layout synchronously so the state updater never dereferences a
         // null event target while dragging.
         const end = minutesAtPointer(event.currentTarget, event.clientY, startHour, endHour);
-        setSelection(current => current ? { ...current, end } : null);
+        setSelection(current => current && current.end !== end ? { ...current, end } : current);
       }}
       onPointerUp={event => {
         if (!selection) return;
@@ -234,7 +244,8 @@ export function TimeGrid({
           const end = block.item.end.getHours() * 60 + block.item.end.getMinutes();
           return minute < end && minute + duration > start;
         });
-        setDragPreview({ minute, duration, blockId, conflict });
+        setDragPreview(current => current?.minute === minute && current.duration === duration && current.blockId === blockId && current.conflict === conflict
+          ? current : { minute, duration, blockId, conflict });
       }}
       onDragLeave={event => {
         if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDragPreview(null);
@@ -253,7 +264,13 @@ export function TimeGrid({
         {Array.from({ length: slots + 1 }, (_, index) => <span key={index} style={{ top: `${(index / slots) * 100}%` }} />)}
       </div>
       {selectionStyle && <div className="mindoist-calendar-selection" style={selectionStyle} aria-hidden="true" />}
-      {draft && draftStyle && (
+      {draft && draftStyle && (draftSaving ? (
+        <div className="mindoist-calendar-quick-create" style={draftStyle} role="status">
+          <span className="mindoist-calendar-quick-create-time">{draft.timeLabel}</span>
+          <strong className="truncate text-sm">{draftTitle}</strong>
+          <span className="text-xs text-muted-foreground">{draftSavingLabel}</span>
+        </div>
+      ) : (
         <form
           className="mindoist-calendar-quick-create"
           style={draftStyle}
@@ -340,7 +357,7 @@ export function TimeGrid({
           )}
           {draftError && <span className="mindoist-calendar-quick-create-error" role="alert">{draftError}</span>}
         </form>
-      )}
+      ))}
       {dragPreviewStyle && <div className={`mindoist-calendar-drag-preview${dragPreview?.conflict ? ' is-conflict' : ''}`} style={dragPreviewStyle} aria-label={dragPreview?.conflict ? 'Scheduling conflict' : 'Schedule preview'} />}
       <div className="mindoist-calendar-keyboard-cursor" style={{ top: `${((keyboardMinute - startHour * 60) / ((endHour - startHour) * 60)) * 100}%` }} aria-hidden="true" />
       {today && nowTop >= 0 && nowTop <= 100 && <div className="mindoist-calendar-now" style={{ top: `${nowTop}%` }} aria-label="Current time" />}

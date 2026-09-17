@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { Profiler, StrictMode } from 'react';
 import type { Task, TimeBlock } from '@mindoist/shared/types';
 import type { CalendarProjection } from '../projection';
 import { CalendarGridView } from './CalendarGridView';
@@ -123,5 +124,67 @@ describe('CalendarGridView', () => {
       '--grid-height': '1496px',
       '--calendar-hour-height': '88px',
     });
+  });
+
+  it('shows a pending task immediately and restores the entire draft for retry on failure', async () => {
+    let reject!: (error: Error) => void;
+    const onCreateTask = vi.fn().mockImplementationOnce(() => new Promise<void>((_resolve, fail) => { reject = fail; })).mockResolvedValue(undefined);
+    render(<CalendarGridView anchorDate={new Date('2026-08-12T12:00:00')} projection={null} tasks={[]}
+      projects={[{ id: 'jade', name: 'Jade launch', color: 'jade' }]}
+      onSelectTask={vi.fn()} onCreateTask={onCreateTask} />);
+    const days = screen.getAllByRole('gridcell');
+    fireEvent.keyDown(days[0], { key: 'Enter' });
+    fireEvent.change(screen.getByLabelText('Task name'), { target: { value: 'Keep this draft' } });
+    fireEvent.change(screen.getByLabelText('Project'), { target: { value: 'jade' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Rose' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Create scheduled task' }));
+    expect(screen.queryByRole('form')).not.toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('Keep this draft');
+    expect(screen.getByRole('status')).toHaveTextContent('Saving');
+    fireEvent.keyDown(days[1], { key: 'Enter' });
+    expect(screen.queryByRole('form')).not.toBeInTheDocument();
+    expect(onCreateTask).toHaveBeenCalledTimes(1);
+    const submitted = onCreateTask.mock.calls[0][0];
+
+    await act(async () => reject(new Error('Offline')));
+    expect(screen.getByRole('alert')).toBeVisible();
+    expect(screen.getByLabelText('Task name')).toHaveValue('Keep this draft');
+    expect(screen.getByLabelText('Project')).toHaveValue('jade');
+    expect(screen.getByRole('button', { name: 'Rose' })).toHaveAttribute('aria-pressed', 'true');
+    await waitFor(() => expect(screen.getByLabelText('Task name')).toHaveFocus());
+    fireEvent.click(screen.getByRole('button', { name: 'Create scheduled task' }));
+    await waitFor(() => expect(screen.queryByRole('status')).not.toBeInTheDocument());
+    expect(screen.queryByRole('form')).not.toBeInTheDocument();
+    expect(onCreateTask).toHaveBeenNthCalledWith(2, submitted);
+    fireEvent.keyDown(days[1], { key: 'Enter' });
+    expect(screen.getByLabelText('Task name')).toHaveValue('');
+  });
+
+  it('skips resize renders within the same time slot and saves once at the release position', () => {
+    vi.stubGlobal('PointerEvent', MouseEvent);
+    try {
+      const task = makeTask('resize', 'Resize me');
+      const onBlockResize = vi.fn();
+      const onRender = vi.fn();
+      render(<StrictMode><Profiler id="calendar" onRender={onRender}>
+        <CalendarGridView anchorDate={new Date('2026-08-12T12:00:00')} view="timeGridDay"
+          projection={{ timeBlocks: [timeBlock(task.id)], deadlines: [], externalEvents: [] }} tasks={[task]}
+          onSelectTask={vi.fn()} onCreateTask={vi.fn()} onBlockResize={onBlockResize} />
+      </Profiler></StrictMode>);
+      vi.spyOn(screen.getByRole('gridcell'), 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 0, 100, 1496));
+      fireEvent.pointerDown(screen.getByRole('button', { name: 'Resize planned block' }), { clientY: 352 });
+      const commits = onRender.mock.calls.length;
+      for (const clientY of [352, 353, 354]) fireEvent.pointerMove(window, { clientY });
+      expect(onRender).toHaveBeenCalledTimes(commits);
+      fireEvent.pointerUp(window, { clientY: 396 });
+      expect(onBlockResize).toHaveBeenCalledTimes(1);
+      expect(onBlockResize).toHaveBeenCalledWith('block-1', 630);
+      fireEvent.pointerDown(screen.getByRole('button', { name: 'Resize planned block' }), { clientY: 352 });
+      fireEvent.pointerCancel(window);
+      fireEvent.pointerUp(window, { clientY: 440 });
+      expect(onBlockResize).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });

@@ -49,6 +49,34 @@ async function dragCalendarEventTo(page: Page, title: string, targetTime: string
   await page.waitForTimeout(350);
 }
 
+test('inline calendar creation shows progress before scheduling finishes', async ({ page }) => {
+  await register(page);
+  await page.goto('/calendar?view=day&date=2026-08-12&plan=0');
+  let release!: () => void;
+  const pending = new Promise<void>(resolve => { release = resolve; });
+  await page.route('**/time-blocks', async route => {
+    if (route.request().method() === 'POST') await pending;
+    await route.continue();
+  });
+  const title = `Pending calendar ${Date.now()}`;
+  await page.getByRole('gridcell').press('Enter');
+  await page.getByRole('textbox', { name: 'Task name', exact: true }).fill(title);
+  const saved = page.waitForResponse(response => response.request().method() === 'POST' && response.url().endsWith('/time-blocks'));
+  try {
+    await page.getByRole('button', { name: 'Create scheduled task' }).click();
+    await expect(page.getByRole('form', { name: 'Create scheduled task' })).toBeHidden();
+    await expect(page.getByRole('status').filter({ hasText: title })).toContainText('Saving');
+    await page.getByRole('gridcell').press('Enter');
+    await expect(page.getByRole('form', { name: 'Create scheduled task' })).toBeHidden();
+  } finally {
+    release();
+  }
+  expect((await saved).ok()).toBe(true);
+  await expect(page.locator('.mindoist-time-grid-block').filter({ hasText: title })).toBeVisible();
+  await page.reload();
+  await expect(page.locator('.mindoist-time-grid-block').filter({ hasText: title })).toBeVisible();
+});
+
 test('[CALENDAR-01] week/day timeline deep link is time-based, persistent, and responsive', async ({ page }) => {
   mkdirSync(EVIDENCE_DIR, { recursive: true });
   const pageErrors: Error[] = [];

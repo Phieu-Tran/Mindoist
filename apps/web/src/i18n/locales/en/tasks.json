@@ -639,6 +639,7 @@
     "quickCreateLabel": "Task name",
     "quickCreatePlaceholder": "What will you work on?…",
     "quickCreateSave": "Create scheduled task",
+    "quickCreateSaving": "Saving…",
     "quickCreateCancel": "Cancel scheduled task",
     "quickCreateProject": "Project",
     "quickCreateNoProject": "No project",
