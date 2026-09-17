@@ -162,6 +162,7 @@ it('typing the next draft while saving does not lose it on success', async () =>
   fireEvent.keyDown(document, { key: 'k', ctrlKey: true });
   fireEvent.change(screen.getByTestId('global-quick-capture-input'), { target: { value: 'First draft' } });
   fireEvent.click(screen.getByTestId('global-quick-capture-submit'));
+  fireEvent.keyDown(document, { key: 'k', ctrlKey: true });
   fireEvent.change(screen.getByTestId('global-quick-capture-input'), { target: { value: 'Second draft' } });
   await act(async () => { done(); });
   expect(screen.getByTestId('global-quick-capture-input')).toHaveValue('Second draft');

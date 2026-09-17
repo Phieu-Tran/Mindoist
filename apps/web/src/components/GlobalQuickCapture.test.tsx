@@ -184,30 +184,49 @@ describe('GlobalQuickCapture command bar', () => {
     expect(screen.getByRole('button', { name: 'Tháng trước' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Tháng sau' })).toBeInTheDocument();
   });
-  it('keeps the next draft and prevents duplicate submission while the first save is pending', async () => {
+  it.each(['click', 'Enter'])('closes on %s before saving and keeps a new draft without duplicate submission', async submit => {
     let finish!: () => void;
     onAdd.mockImplementation(() => new Promise<void>(resolve => { finish = resolve; }));
     renderCapture();
     const input = await open();
     fireEvent.change(input, { target: { value: 'First draft' } });
-    fireEvent.click(screen.getByTestId('global-quick-capture-submit'));
-    fireEvent.change(input, { target: { value: 'Second draft' } });
+    if (submit === 'click') fireEvent.click(screen.getByTestId('global-quick-capture-submit'));
+    else {
+      await waitFor(() => expect(screen.getByRole('option', { name: /Create.*First draft/ })).toHaveAttribute('aria-selected', 'true'));
+      fireEvent.keyDown(input, { key: 'Enter' });
+    }
+    expect(screen.queryByTestId('global-quick-capture')).not.toBeInTheDocument();
+    const nextInput = await open();
+    expect(nextInput).toHaveValue('First draft');
+    fireEvent.change(nextInput, { target: { value: 'Second draft' } });
     expect(screen.getByTestId('global-quick-capture-submit')).toBeDisabled();
+    fireEvent.keyDown(nextInput, { key: 'Enter' });
     await act(async () => { finish(); });
-    expect(input).toHaveValue('Second draft');
+    expect(nextInput).toHaveValue('Second draft');
     expect(onAdd).toHaveBeenCalledTimes(1);
   });
 
   it('shows a failed save and preserves the draft for retry', async () => {
-    onAdd.mockRejectedValueOnce(new Error('Unable to save')).mockResolvedValueOnce(undefined);
+    let fail!: (error: Error) => void;
+    onAdd.mockImplementationOnce(() => new Promise<void>((_resolve, reject) => { fail = reject; })).mockResolvedValueOnce(undefined);
     renderCapture();
     const input = await open();
     fireEvent.change(input, { target: { value: 'Keep this task' } });
+    fireEvent.change(screen.getByLabelText('Project'), { target: { value: 'Chailease' } });
+    fireEvent.change(screen.getByLabelText('Priority'), { target: { value: '2' } });
     fireEvent.click(screen.getByTestId('global-quick-capture-submit'));
+    expect(screen.queryByTestId('global-quick-capture')).not.toBeInTheDocument();
+    const pendingInput = await open();
+    fireEvent.keyDown(pendingInput, { key: 'Escape' });
+    expect(screen.queryByTestId('global-quick-capture')).not.toBeInTheDocument();
+    await act(async () => { fail(new Error('Unable to save')); });
     expect(await screen.findByRole('alert')).toHaveTextContent('Unable to save');
-    expect(input).toHaveValue('Keep this task');
+    expect(screen.getByTestId('global-quick-capture-input')).toHaveValue('Keep this task');
+    expect(screen.getByLabelText('Project')).toHaveValue('Chailease');
+    expect(screen.getByLabelText('Priority')).toHaveValue('2');
     fireEvent.click(screen.getByTestId('global-quick-capture-submit'));
     await waitFor(() => expect(screen.queryByTestId('global-quick-capture')).toBeNull());
+    expect(onAdd).toHaveBeenLastCalledWith(expect.objectContaining({ title: 'Keep this task', projectId: 'Chailease', priority: 2 }));
   });
 
 });

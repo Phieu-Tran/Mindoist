@@ -277,6 +277,7 @@ function TaskRow({
   deferOffscreen: boolean;
 }) {
   const hasMeta = taskHasMetadata(task, subtaskStat);
+  const isPending = task.id.startsWith('optimistic-');
   const identityColor = effectiveTaskColor(
     task.color,
     task.projectId ? projectMap.get(task.projectId)?.color : null,
@@ -297,7 +298,9 @@ function TaskRow({
     >
     <div
       data-testid={`task-${task.id}`}
-      draggable={Boolean(onMakeSubtask)}
+      inert={isPending}
+      aria-busy={isPending}
+      draggable={!isPending && Boolean(onMakeSubtask)}
       onDragStart={event => onRowDragStart(task, event)}
       onDragOver={event => onRowDragOver(task, event)}
       onDragLeave={onRowDragLeave}
@@ -631,6 +634,7 @@ export function TaskList({ tasks, loading, error, onToggle, onSelect, onBulkComp
   }, [tasks, view]);
 
   const bulkEnabled = Boolean(onBulkComplete || onBulkDelete);
+  const selectableTasks = useMemo(() => displayTasks.filter(task => !task.id.startsWith('optimistic-')), [displayTasks]);
 
   const commitBulkSelection = useCallback((next: Set<string>) => {
     if (controlledBulkSelectedIds === undefined) setInternalBulkSelectedIds(next);
@@ -639,15 +643,15 @@ export function TaskList({ tasks, loading, error, onToggle, onSelect, onBulkComp
 
   useEffect(() => {
     if (bulkSelectedIds.size > 0) {
-      const visibleIds = new Set(displayTasks.map(task => task.id));
+      const visibleIds = new Set(selectableTasks.map(task => task.id));
       const next = new Set(Array.from(bulkSelectedIds).filter(id => visibleIds.has(id)));
       if (next.size !== bulkSelectedIds.size) commitBulkSelection(next);
     }
-  }, [bulkSelectedIds, commitBulkSelection, displayTasks]);
+  }, [bulkSelectedIds, commitBulkSelection, selectableTasks]);
 
   const selectedBulkTasks = useMemo(
-    () => displayTasks.filter(task => bulkSelectedIds.has(task.id)),
-    [bulkSelectedIds, displayTasks],
+    () => selectableTasks.filter(task => bulkSelectedIds.has(task.id)),
+    [bulkSelectedIds, selectableTasks],
   );
 
   const incompleteBulkTasks = useMemo(
@@ -665,8 +669,8 @@ export function TaskList({ tasks, loading, error, onToggle, onSelect, onBulkComp
   const clearBulkSelection = useCallback(() => commitBulkSelection(new Set()), [commitBulkSelection]);
 
   const handleSelectVisible = useCallback(() => {
-    commitBulkSelection(new Set(displayTasks.map(task => task.id)));
-  }, [commitBulkSelection, displayTasks]);
+    commitBulkSelection(new Set(selectableTasks.map(task => task.id)));
+  }, [commitBulkSelection, selectableTasks]);
 
   const handleBulkComplete = useCallback(() => {
     if (incompleteBulkTasks.length === 0) return;
@@ -728,7 +732,7 @@ export function TaskList({ tasks, loading, error, onToggle, onSelect, onBulkComp
         <BulkActionBar
           selectedCount={selectedBulkTasks.length}
           canComplete={incompleteBulkTasks.length > 0}
-          canSelectVisible={selectedBulkTasks.length < displayTasks.length}
+          canSelectVisible={selectedBulkTasks.length < selectableTasks.length}
           onSelectVisible={handleSelectVisible}
           onComplete={onBulkComplete ? handleBulkComplete : undefined}
           onDelete={onBulkDelete ? handleBulkDelete : undefined}

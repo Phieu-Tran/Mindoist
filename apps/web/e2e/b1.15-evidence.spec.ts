@@ -65,7 +65,7 @@ async function arrangeDetailScene(page: Page) {
   await page.getByTestId('global-quick-capture-input').fill(title);
   await page.getByTestId('global-quick-capture-submit').click();
   await expect(page.getByTestId('global-quick-capture')).toBeHidden();
-  const titleTestId = await page.getByTestId(/^task-title-/).filter({ hasText: title }).getAttribute('data-testid');
+  const titleTestId = await page.getByTestId(/^task-title-[0-9a-f-]{36}$/).filter({ hasText: title }).getAttribute('data-testid');
   const parentId = titleTestId!.replace('task-title-', '');
   await page.getByRole('button', { name: title, exact: true }).click();
   await expect(page.getByTestId('task-detail')).toBeVisible();

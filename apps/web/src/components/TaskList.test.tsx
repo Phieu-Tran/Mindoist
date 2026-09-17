@@ -97,6 +97,17 @@ describe('TaskList', () => {
     expect(onToggle).toHaveBeenCalledWith(task);
   });
 
+  it('excludes tasks awaiting creation from bulk actions', () => {
+    const saved = [makeTask('1', 'First saved'), makeTask('2', 'Second saved')];
+    const onBulkComplete = vi.fn();
+    renderList([...saved, makeTask('optimistic-3', 'Still saving')], false, null, 'inbox', { onBulkComplete });
+    expect(screen.getByTestId('task-optimistic-3')).toHaveAttribute('inert');
+    fireEvent.click(screen.getByTestId('task-select-1'));
+    fireEvent.click(screen.getByTestId('bulk-select-visible'));
+    fireEvent.click(screen.getByTestId('bulk-complete'));
+    expect(onBulkComplete).toHaveBeenCalledWith(saved);
+  });
+
   it('calls onSelect when task title is clicked', () => {
     const task = makeTask('1', 'Buy milk');
     renderList([task]);
