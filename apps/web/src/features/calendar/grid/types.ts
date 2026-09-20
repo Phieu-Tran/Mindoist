@@ -27,8 +27,8 @@ export type CalendarItem =
       allDay: boolean; title: string; event?: ExternalEventProjection;
     };
 
-export interface PositionedBlock {
-  item: Extract<CalendarItem, { kind: 'block' | 'external' }>;
+export interface PositionedBlock<Item = Extract<CalendarItem, { kind: 'block' | 'external' }>> {
+  item: Item;
   column: number;
   columnCount: number;
   top: number;

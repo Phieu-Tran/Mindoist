@@ -3,8 +3,9 @@ import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { AnimatePresence, motion } from 'framer-motion';
 import { BriefcaseBusiness, CalendarCheck2, Heart, Shapes, X, Check } from 'lucide-react';
-import type { CreateProjectRequest, ProjectType, Area } from '@mindoist/shared/types';
+import type { CreateProjectRequest, ProjectType } from '@mindoist/shared/types';
 import { cn } from '@/lib/utils';
+import { useAreas } from '@/hooks/useApi';
 import { useDialogA11y } from './ui/dialog';
 import './CreateProjectDialog.css';
 
@@ -36,7 +37,7 @@ export function CreateProjectDialog({ open, parentId, parentName, onClose, onCre
   const [color, setColor] = useState<string>('indigo');
   const [customColumns, setCustomColumns] = useState('Backlog, In progress, Done');
   const [areaId, setAreaId] = useState<string>('');
-  const [areas, setAreas] = useState<Area[]>([]);
+  const { areas } = useAreas(open && Boolean(localStorage.getItem('token')));
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const nameRef = useRef<HTMLInputElement>(null);
@@ -54,13 +55,6 @@ export function CreateProjectDialog({ open, parentId, parentName, onClose, onCre
     setColor('indigo');
     setAreaId('');
     setError('');
-    const token = localStorage.getItem('token');
-    if (token) {
-      fetch('/areas', { headers: { Authorization: `Bearer ${token}` } })
-        .then(r => r.json())
-        .then(d => { if (d.success) setAreas(d.data); })
-        .catch(() => {});
-    }
   }, [open]);
 
   const parsedCustomColumns = useMemo(() => customColumns

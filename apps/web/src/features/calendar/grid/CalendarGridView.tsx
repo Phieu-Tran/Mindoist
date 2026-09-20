@@ -90,9 +90,9 @@ export function CalendarGridView({
   anchorDate,
   projection,
   tasks,
-  projects = [],
-  gcalEvents = [],
-  countdowns = [],
+  projects,
+  gcalEvents,
+  countdowns,
   onSelectTask,
   onCreateTask,
   onTaskDrop,
@@ -113,9 +113,22 @@ export function CalendarGridView({
   }, [anchorDate, view]);
   const tasksById = useMemo(() => new Map(tasks.map(task => [task.id, task])), [tasks]);
   const items = useMemo(() => {
-    const projected = projection ? calendarProjectionToItems(projection, tasks, projects) : [];
-    return [...projected, ...externalItems(gcalEvents, projected), ...countdownItems(countdowns)];
+    const projected = projection ? calendarProjectionToItems(projection, tasks, projects ?? []) : [];
+    return [...projected, ...externalItems(gcalEvents ?? [], projected), ...countdownItems(countdowns ?? [])];
   }, [countdowns, gcalEvents, projection, projects, tasks]);
+  const dayLayouts = useMemo(() => view === 'dayGridMonth' ? [] : days.map(day => {
+    const key = dayKey(day);
+    return {
+      day, key,
+      blocks: layoutForDay(day, items),
+      deadlines: items.filter((item): item is Extract<CalendarItem, { kind: 'deadline' }> => item.kind === 'deadline' && !item.allDay && item.date === key),
+      allDayItems: items.filter(item => (
+        item.kind === 'deadline' ? item.allDay && item.date === key
+          : item.kind === 'range' ? item.startDate <= key && item.endDate >= key
+            : item.allDay && dayKey(item.start) === key
+      )),
+    };
+  }), [days, items, view]);
   const today = dayKey(new Date());
 
   if (view === 'dayGridMonth') {
@@ -155,13 +168,7 @@ export function CalendarGridView({
       </div>
       <div className="mindoist-calendar-all-day-row">
         <div className="mindoist-calendar-all-day-label">{t('calendar.allDay')}</div>
-        {days.map(day => {
-          const key = dayKey(day);
-          const allDayItems = items.filter(item => (
-            item.kind === 'deadline' ? item.allDay && item.date === key
-              : item.kind === 'range' ? item.startDate <= key && item.endDate >= key
-                : item.allDay && dayKey(item.start) === key
-          ));
+        {dayLayouts.map(({ key, allDayItems }) => {
           return <div key={key} className={`mindoist-calendar-grid-all-day${key === today ? ' is-today' : ''}`}>{allDayItems.slice(0, 3).map(item => {
             const task = item.kind === 'external' ? undefined : tasksById.get(item.taskId);
             const identityColor = item.kind === 'external' ? 'var(--calendar-external-accent)' : item.identityColor;
@@ -178,10 +185,7 @@ export function CalendarGridView({
           {Array.from({ length: 18 }, (_, index) => <span key={index}>{String(index + 6).padStart(2, '0')}:00</span>)}
         </div>
         <div className="mindoist-calendar-grid-columns">
-          {days.map(day => {
-            const key = dayKey(day);
-            const blocks = layoutForDay(day, items);
-            const deadlines = items.filter((item): item is Extract<CalendarItem, { kind: 'deadline' }> => item.kind === 'deadline' && !item.allDay && item.date === key);
+          {dayLayouts.map(({ day, key, blocks, deadlines }) => {
             return (
               <section key={key} className={`mindoist-calendar-grid-column${key === today ? ' is-today' : ''}`}>
                 <TimeGrid

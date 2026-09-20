@@ -1,13 +1,16 @@
 import { QueryClient } from '@tanstack/react-query';
+import { buildTaskQuery } from '@/features/tasks/api';
+
+export const referenceStaleTime = 5 * 60_000;
 
 /** Shared cache policy for server state. Local/offline state remains outside Query. */
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 30_000,
-      gcTime: 5 * 60_000,
+      staleTime: 60_000,
+      gcTime: 15 * 60_000,
       retry: 1,
-      refetchOnWindowFocus: false,
+      refetchOnWindowFocus: true,
     },
     mutations: { retry: 0 },
   },
@@ -15,16 +18,16 @@ export const queryClient = new QueryClient({
 
 export const queryKeys = {
   tasks: (view: string, projectId?: string | null, tagId?: string | null) =>
-    ['tasks', { view, projectId: projectId ?? null, tagId: tagId ?? null }] as const,
+    ['tasks', { query: buildTaskQuery({ view, projectId: projectId ?? undefined, tagId: tagId ?? undefined }) }] as const,
   task: (id: string) => ['tasks', 'detail', id] as const,
   taskCounts: () => ['task-counts'] as const,
   projects: () => ['projects'] as const,
   project: (id: string) => ['projects', id] as const,
   tags: () => ['tags'] as const,
+  areas: () => ['areas'] as const,
   projection: (from: string, to: string, timezone: string) =>
     ['calendar', 'projection', { from, to, timezone }] as const,
   timeBlocks: (taskId?: string | null) => ['time-blocks', { taskId: taskId ?? null }] as const,
-  summary: (range: string) => ['summary', range] as const,
   projectColumns: (projectId?: string | null) => ['projects', projectId ?? null, 'columns'] as const,
   notes: () => ['notes'] as const,
   countdowns: () => ['countdowns'] as const,

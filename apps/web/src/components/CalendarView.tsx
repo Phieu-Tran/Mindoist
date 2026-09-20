@@ -10,7 +10,7 @@ import { dayKey, monthDates, threeDayDates, weekDates, workWeekDates } from '@/f
 import { createTimeBlock, updateTimeBlock } from '@/features/calendar/api';
 import type { CalendarProjection } from '@/features/calendar/projection';
 import { useCalendarProjection } from '@/features/calendar/use-calendar-projection';
-import { CALENDAR_PROJECTION_REFRESH_EVENT } from '@/features/calendar/calendar-refresh';
+import { requestCalendarProjectionRefresh } from '@/features/calendar/calendar-refresh';
 import { CalendarPlanningPanel } from '@/features/calendar/CalendarPlanningPanel';
 import './CalendarView.css';
 
@@ -146,10 +146,6 @@ export function CalendarView({
   }, [refetchProjection, t]);
 
   useEffect(() => {
-    window.addEventListener(CALENDAR_PROJECTION_REFRESH_EVENT, loadProjection);
-    return () => window.removeEventListener(CALENDAR_PROJECTION_REFRESH_EVENT, loadProjection);
-  }, [loadProjection]);
-  useEffect(() => {
     const onPopState = () => {
       const search = new URLSearchParams(window.location.search);
       setView(VIEW_BY_URL_PARAM[search.get('view') ?? ''] ?? 'timeGridWeek');
@@ -191,6 +187,7 @@ export function CalendarView({
     try {
       const created = await createTimeBlock({ taskId, startAt: optimistic.startAt, endAt: optimistic.endAt, timeZone: optimistic.timeZone, allDay, source: 'MANUAL' });
       setProjection(current => current ? { ...current, timeBlocks: current.timeBlocks.map(block => block.id === optimisticId ? created : block) } : current);
+      requestCalendarProjectionRefresh();
     } catch {
       setProjection(current => current ? { ...current, timeBlocks: current.timeBlocks.filter(block => block.id !== optimisticId) } : current);
       setProjectionError(t('calendar.plannedTimeCreateFailed'));
@@ -208,6 +205,7 @@ export function CalendarView({
     replaceBlock(optimistic);
     try {
       replaceBlock(await updateTimeBlock(blockId, { startAt: optimistic.startAt, endAt: optimistic.endAt, timeZone: block.timeZone, allDay: false }));
+      requestCalendarProjectionRefresh();
     } catch {
       replaceBlock(block);
       setProjectionError(t('calendar.changeSaveFailed'));
@@ -226,6 +224,7 @@ export function CalendarView({
     replaceBlock(optimistic);
     try {
       replaceBlock(await updateTimeBlock(blockId, { startAt: block.startAt, endAt: optimistic.endAt, timeZone: block.timeZone, allDay: false }));
+      requestCalendarProjectionRefresh();
     } catch {
       replaceBlock(block);
       setProjectionError(t('calendar.resizeSaveFailed'));
@@ -240,6 +239,7 @@ export function CalendarView({
     replaceBlock(optimistic);
     try {
       replaceBlock(await updateTimeBlock(blockId, request));
+      requestCalendarProjectionRefresh();
     } catch {
       replaceBlock(block);
       setProjectionError(t('calendar.changeSaveFailed'));

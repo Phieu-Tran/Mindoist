@@ -6,7 +6,7 @@ import type { CalendarProjection } from './projection';
 
 type ProjectionUpdate = CalendarProjection | null | ((current: CalendarProjection | null) => CalendarProjection | null);
 
-export function useCalendarProjection(from: string, to: string, timeZone: string) {
+export function useCalendarProjection(from: string, to: string, timeZone: string, enabled = true) {
   const contextClient = useContext(QueryClientContext);
   const [localClient] = useState(() => new QueryClient({
     defaultOptions: { queries: { retry: false, staleTime: 15_000 } },
@@ -15,7 +15,8 @@ export function useCalendarProjection(from: string, to: string, timeZone: string
   const queryKey = queryKeys.projection(from, to, timeZone);
   const query = useQuery({
     queryKey,
-    queryFn: () => getCalendarProjection(from, to),
+    enabled,
+    queryFn: () => getCalendarProjection(from, to, timeZone),
   }, queryClient);
 
   const setProjection = useCallback((update: ProjectionUpdate) => {
@@ -27,7 +28,7 @@ export function useCalendarProjection(from: string, to: string, timeZone: string
   return {
     projection: query.data ?? null,
     error: query.error,
-    loading: query.isPending,
+    loading: enabled && query.isPending,
     refetch: query.refetch,
     setProjection,
   };

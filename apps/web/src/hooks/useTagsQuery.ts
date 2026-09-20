@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { CreateTagRequest, Tag, UpdateTagRequest } from '@mindoist/shared/types';
 import { apiFetch } from '@/lib/api-client';
 import { getAccessToken } from '@/lib/auth-tokens';
-import { queryKeys } from '@/lib/query-client';
+import { queryKeys, referenceStaleTime } from '@/lib/query-client';
 
 export function useTagsQuery(enabled = true) {
   const queryClient = useQueryClient();
@@ -10,6 +10,7 @@ export function useTagsQuery(enabled = true) {
     queryKey: queryKeys.tags(),
     queryFn: () => apiFetch<Tag[]>('/tags'),
     enabled,
+    staleTime: referenceStaleTime,
   });
 
   const createTag = async (request: CreateTagRequest) => {

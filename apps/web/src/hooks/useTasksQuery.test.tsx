@@ -18,7 +18,7 @@ const api = vi.hoisted(() => ({
   restoreTask: vi.fn(),
 }));
 
-vi.mock('@/features/tasks/api', () => api);
+vi.mock('@/features/tasks/api', async importOriginal => ({ ...await importOriginal<typeof import('@/features/tasks/api')>(), ...api }));
 
 const task = (overrides: Partial<Task> = {}) => ({
   id: 'task-1',

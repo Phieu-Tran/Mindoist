@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Clock3, RotateCcw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { TimeBlock } from '@mindoist/shared/types';
-import { getCalendarProjection } from '@/features/calendar/api';
+import { useCalendarProjection } from '@/features/calendar/use-calendar-projection';
 import { Button } from './ui/button';
 
 interface Props {
@@ -47,28 +47,15 @@ function formatMinutes(minutes: number) {
 
 export function SummaryPlannedActual({ from, to, taskIds, timeBlocks }: Props) {
   const { t } = useTranslation('tasks');
-  const [loadedBlocks, setLoadedBlocks] = useState<TimeBlock[]>([]);
-  const [loading, setLoading] = useState(timeBlocks === undefined);
-  const [error, setError] = useState<string | null>(null);
-
-  const load = useCallback(async () => {
-    if (timeBlocks !== undefined) return;
-    setLoading(true);
-    setError(null);
-    try {
-      setLoadedBlocks((await getCalendarProjection(from, to)).timeBlocks);
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : t('summary.plannedActualLoadFailed'));
-    } finally {
-      setLoading(false);
-    }
-  }, [from, t, timeBlocks, to]);
-
-  useEffect(() => { void load(); }, [load]);
+  const { projection, loading, error: loadError, refetch: load } = useCalendarProjection(
+    from, to, Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC', timeBlocks === undefined,
+  );
+  const loadedBlocks = projection?.timeBlocks;
+  const error = loadError ? (loadError instanceof Error ? loadError.message : t('summary.plannedActualLoadFailed')) : null;
 
   const taskIdSet = useMemo(() => new Set(taskIds), [taskIds]);
   const filteredBlocks = useMemo(
-    () => (timeBlocks ?? loadedBlocks).filter(block => taskIdSet.has(block.taskId)),
+    () => (timeBlocks ?? loadedBlocks ?? []).filter(block => taskIdSet.has(block.taskId)),
     [loadedBlocks, taskIdSet, timeBlocks],
   );
   const stats = useMemo(() => summarizeTimeBlocks(filteredBlocks), [filteredBlocks]);

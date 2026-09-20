@@ -380,11 +380,7 @@ function AuthenticatedWorkspace({ user, setPassword, logout }: AuthenticatedWork
 
   const handleAutosave = useCallback(async (id: string, req: UpdateTaskRequest) => {
     await updateTask(id, req);
-    // The Summary view keeps its own separate fetched copy of tasks
-    // (useSummaryTasks), so a save here wouldn't otherwise show up there
-    // until a full reload re-fetched everything.
-    if (isSummaryView) await summary.refetch();
-  }, [updateTask, isSummaryView, summary]);
+  }, [updateTask]);
 
   const handleUpdate = useCallback(async (id: string, req: UpdateTaskRequest) => {
     await handleAutosave(id, req);
@@ -440,10 +436,9 @@ function AuthenticatedWorkspace({ user, setPassword, logout }: AuthenticatedWork
       onUndo: async () => {
         await restoreTask(id);
         await refetchTasks();
-        if (isSummaryView) await summary.refetch();
       },
     });
-  }, [deleteTask, isSummaryView, refetchTasks, restoreTask, selectedTask, showToast, summary, t, tasks]);
+  }, [deleteTask, refetchTasks, restoreTask, selectedTask, showToast, t, tasks]);
 
   const handleDeleteWithUndoSubtask = useCallback(async (subtask: Task) => {
     await deleteTask(subtask.id);

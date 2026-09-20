@@ -1,4 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useResourceQueryClient } from '@/hooks/useApiData';
+import { queryKeys } from '@/lib/query-client';
 import type {
   CreateTimeBlockRequest,
   TimeBlock,
@@ -12,33 +15,18 @@ import {
 } from './api';
 
 export function useTimeBlocks(taskId: string, enabled = true) {
-  const [timeBlocks, setTimeBlocks] = useState<TimeBlock[]>([]);
-  const timeBlocksRef = useRef<TimeBlock[]>([]);
-  const [loading, setLoading] = useState(enabled);
-  const [error, setError] = useState<string | null>(null);
-
-  const reload = useCallback(async () => {
-    if (!enabled) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const loaded = await listTimeBlocks({ taskId });
-      timeBlocksRef.current = loaded;
-      setTimeBlocks(loaded);
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Unable to load planned time');
-    } finally {
-      setLoading(false);
-    }
-  }, [enabled, taskId]);
-
-  useEffect(() => {
-    void reload();
-  }, [reload]);
+  const queryClient = useResourceQueryClient();
+  const key = queryKeys.timeBlocks(taskId);
+  const query = useQuery({ queryKey: key, enabled, queryFn: () => listTimeBlocks({ taskId }) }, queryClient);
+  const read = () => queryClient.getQueryData<TimeBlock[]>(key) ?? [];
+  const write = (update: (current: TimeBlock[]) => TimeBlock[]) => {
+    void queryClient.cancelQueries({ queryKey: key }, { revert: false });
+    queryClient.setQueryData<TimeBlock[]>(key, current => update(current ?? []));
+  };
 
   const create = useCallback(async (input: Omit<CreateTimeBlockRequest, 'taskId'>) => {
     const now = new Date().toISOString();
-    const optimisticId = `optimistic-${taskId}-${Date.now()}`;
+    const optimisticId = `optimistic-${crypto.randomUUID()}`;
     const optimistic: TimeBlock = {
       id: optimisticId,
       userId: '',
@@ -54,52 +42,49 @@ export function useTimeBlocks(taskId: string, enabled = true) {
       completedAt: input.completedAt,
       actualMin: input.actualMin,
     };
-    timeBlocksRef.current = [...timeBlocksRef.current, optimistic];
-    setTimeBlocks(timeBlocksRef.current);
+    write(current => [...current, optimistic]);
     try {
       const created = await createTimeBlock({ ...input, taskId });
-      timeBlocksRef.current = timeBlocksRef.current.map(block => block.id === optimisticId ? created : block);
-      setTimeBlocks(timeBlocksRef.current);
+      write(current => current.map(block => block.id === optimisticId ? created : block));
       return created;
     } catch (cause) {
-      timeBlocksRef.current = timeBlocksRef.current.filter(block => block.id !== optimisticId);
-      setTimeBlocks(timeBlocksRef.current);
+      write(current => current.filter(block => block.id !== optimisticId));
       throw cause;
     }
-  }, [taskId]);
+  }, [queryClient, taskId]);
 
   const update = useCallback(async (id: string, input: UpdateTimeBlockRequest) => {
-    const previous = timeBlocksRef.current.find(block => block.id === id);
+    const previous = read().find(block => block.id === id);
     if (previous) {
-      timeBlocksRef.current = timeBlocksRef.current.map(block => block.id === id ? { ...block, ...input, updatedAt: new Date().toISOString() } : block);
-      setTimeBlocks(timeBlocksRef.current);
+      write(current => current.map(block => block.id === id ? { ...block, ...input, updatedAt: new Date().toISOString() } : block));
     }
     try {
       const updated = await updateTimeBlock(id, input);
-      timeBlocksRef.current = timeBlocksRef.current.map(block => block.id === id ? updated : block);
-      setTimeBlocks(timeBlocksRef.current);
+      write(current => current.map(block => block.id === id ? updated : block));
       return updated;
     } catch (cause) {
       if (previous) {
-        timeBlocksRef.current = timeBlocksRef.current.map(block => block.id === id ? previous : block);
-        setTimeBlocks(timeBlocksRef.current);
+        write(current => current.map(block => block.id === id ? previous : block));
       }
       throw cause;
     }
-  }, []);
+  }, [queryClient, taskId]);
 
   const remove = useCallback(async (id: string) => {
-    const previous = timeBlocksRef.current;
-    timeBlocksRef.current = previous.filter(block => block.id !== id);
-    setTimeBlocks(timeBlocksRef.current);
+    const previous = read().find(block => block.id === id);
+    write(current => current.filter(block => block.id !== id));
     try {
       await deleteTimeBlock(id);
     } catch (cause) {
-      timeBlocksRef.current = previous;
-      setTimeBlocks(previous);
+      if (previous) write(current => [...current, previous]);
       throw cause;
     }
-  }, []);
+  }, [queryClient, taskId]);
 
-  return { timeBlocks, loading, error, create, update, remove, reload };
+  return {
+    timeBlocks: enabled ? query.data ?? [] : [],
+    loading: enabled && query.isPending,
+    error: query.error instanceof Error ? query.error.message : null,
+    create, update, remove, reload: query.refetch,
+  };
 }

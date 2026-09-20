@@ -1,13 +1,11 @@
-import type { PositionedBlock, CalendarItem } from './types';
+import type { PositionedBlock } from './types';
 import { dateToY } from './time-grid';
 
-type TimedItem = Extract<CalendarItem, { kind: 'block' | 'external' }>;
-
 /** Overlapping blocks share columns within their group; gaps reset the width. */
-export function layoutTimedItems(items: TimedItem[], options: { startHour?: number; slotHeight?: number; minHeight?: number } = {}): PositionedBlock[] {
+export function layoutTimedItems<Item extends { id: string; start: Date; end: Date }>(items: Item[], options: { startHour?: number; slotHeight?: number; minHeight?: number } = {}): PositionedBlock<Item>[] {
   const { startHour = 0, slotHeight = 20, minHeight = 20 } = options;
   const sorted = [...items].sort((a, b) => a.start.getTime() - b.start.getTime() || a.end.getTime() - b.end.getTime());
-  const result: PositionedBlock[] = [];
+  const result: PositionedBlock<Item>[] = [];
   const columnEnds: number[] = [];
   let groupStart = 0;
   let groupEnd = -Infinity;

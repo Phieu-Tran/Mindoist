@@ -2,6 +2,9 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { TimeBlock } from '@mindoist/shared/types';
 import { useTimeBlocks } from './use-time-blocks';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { queryClient as defaults, queryKeys } from '@/lib/query-client';
+import type { PropsWithChildren } from 'react';
 
 const api = vi.hoisted(() => ({
   listTimeBlocks: vi.fn(),
@@ -44,6 +47,29 @@ describe('useTimeBlocks optimistic mutations', () => {
     api.listTimeBlocks.mockResolvedValue([block]);
   });
 
+  it('reuses saved blocks on reopen and keeps a late mutation in its original task cache', async () => {
+    const client = new QueryClient({ defaultOptions: defaults.getDefaultOptions() });
+    const wrapper = ({ children }: PropsWithChildren) => <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+    const first = renderHook(() => useTimeBlocks('task-1'), { wrapper });
+    await waitFor(() => expect(first.result.current.timeBlocks).toEqual([block]));
+    first.unmount();
+    const { result, rerender, unmount } = renderHook(({ taskId }) => useTimeBlocks(taskId), { wrapper, initialProps: { taskId: 'task-1' } });
+    expect(result.current.timeBlocks).toEqual([block]);
+    expect(api.listTimeBlocks).toHaveBeenCalledTimes(1);
+    const pending = deferred<TimeBlock>();
+    api.updateTimeBlock.mockReturnValue(pending.promise);
+    let mutation!: Promise<TimeBlock>;
+    act(() => { mutation = result.current.update(block.id, { actualMin: 25 }); });
+    api.listTimeBlocks.mockResolvedValue([]);
+    rerender({ taskId: 'task-2' });
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    await act(async () => { pending.resolve({ ...block, actualMin: 25 }); await mutation; });
+    expect(result.current.timeBlocks).toEqual([]);
+    expect(client.getQueryData<TimeBlock[]>(queryKeys.timeBlocks('task-1'))?.[0].actualMin).toBe(25);
+    unmount();
+    client.clear();
+  });
+
   it('shows an update before the API settles and rolls it back on failure', async () => {
     const pending = deferred<TimeBlock>();
     api.updateTimeBlock.mockReturnValue(pending.promise);
@@ -54,13 +80,13 @@ describe('useTimeBlocks optimistic mutations', () => {
     act(() => {
       mutation = result.current.update('block-1', { endAt: '2026-08-12T10:30:00.000Z' }).catch(() => undefined);
     });
-    expect(result.current.timeBlocks[0]?.endAt).toBe('2026-08-12T10:30:00.000Z');
+    await waitFor(() => expect(result.current.timeBlocks[0]?.endAt).toBe('2026-08-12T10:30:00.000Z'));
 
     await act(async () => {
       pending.reject(new Error('offline'));
       await mutation;
     });
-    expect(result.current.timeBlocks[0]?.endAt).toBe(block.endAt);
+    await waitFor(() => expect(result.current.timeBlocks[0]?.endAt).toBe(block.endAt));
   });
 
   it('inserts a temporary block immediately and replaces it with the server block', async () => {
@@ -75,7 +101,7 @@ describe('useTimeBlocks optimistic mutations', () => {
         startAt: '2026-08-12T11:00:00.000Z', endAt: '2026-08-12T11:30:00.000Z', timeZone: 'UTC', allDay: false,
       });
     });
-    expect(result.current.timeBlocks).toHaveLength(2);
+    await waitFor(() => expect(result.current.timeBlocks).toHaveLength(2));
     expect(result.current.timeBlocks[1]?.id).toMatch(/^optimistic-/);
 
     const created = { ...block, id: 'block-2', startAt: '2026-08-12T11:00:00.000Z', endAt: '2026-08-12T11:30:00.000Z' };
@@ -83,7 +109,7 @@ describe('useTimeBlocks optimistic mutations', () => {
       pending.resolve(created);
       await mutation;
     });
-    expect(result.current.timeBlocks.map(item => item.id)).toEqual(['block-1', 'block-2']);
+    await waitFor(() => expect(result.current.timeBlocks.map(item => item.id)).toEqual(['block-1', 'block-2']));
   });
 
   it('removes immediately and restores the block when deletion fails', async () => {
@@ -96,12 +122,12 @@ describe('useTimeBlocks optimistic mutations', () => {
     act(() => {
       mutation = result.current.remove('block-1').catch(() => undefined);
     });
-    expect(result.current.timeBlocks).toEqual([]);
+    await waitFor(() => expect(result.current.timeBlocks).toEqual([]));
 
     await act(async () => {
       pending.reject(new Error('offline'));
       await mutation;
     });
-    expect(result.current.timeBlocks).toEqual([block]);
+    await waitFor(() => expect(result.current.timeBlocks).toEqual([block]));
   });
 });

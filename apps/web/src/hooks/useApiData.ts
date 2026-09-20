@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useContext, useRef } from 'react';
+import { useState, useEffect, useCallback, useContext, useRef, useMemo } from 'react';
 import { QueryClient, QueryClientContext, useMutation, useQuery } from '@tanstack/react-query';
 import type {
   Task,
@@ -19,9 +19,10 @@ import type {
   Countdown,
   CreateCountdownRequest,
   UpdateCountdownRequest,
+  Area,
 } from '@mindoist/shared/types';
 import { apiFetch } from '@/lib/api-client';
-import { queryKeys } from '@/lib/query-client';
+import { queryClient as defaultQueryClient, queryKeys, referenceStaleTime } from '@/lib/query-client';
 import {
   completeTask as completeTaskRequest,
   completeTaskPomodoro,
@@ -44,10 +45,10 @@ export interface GCalEvent {
   description?: string;
 }
 
-function useResourceQueryClient() {
+export function useResourceQueryClient() {
   const contextClient = useContext(QueryClientContext);
   const [localClient] = useState(() => new QueryClient({
-    defaultOptions: { queries: { retry: false, staleTime: 30_000 }, mutations: { retry: false } },
+    defaultOptions: { ...defaultQueryClient.getDefaultOptions(), queries: { ...defaultQueryClient.getDefaultOptions().queries, retry: false } },
   }));
   return contextClient ?? localClient;
 }
@@ -203,23 +204,17 @@ export function useTasks(view: SidebarView, enabled: boolean, projectId?: string
 
 export function useSummaryTasks(enabled: boolean) {
   const queryClient = useResourceQueryClient();
-  const query = useQuery({
-    queryKey: queryKeys.summary('all'),
-    enabled,
-    queryFn: async () => {
-      const [active, completed] = await Promise.all([
-        apiFetch<Task[]>('/tasks'),
-        apiFetch<Task[]>('/tasks?filter=completed'),
-      ]);
-      const unique = new Map([...active, ...completed].map(task => [task.id, task]));
-      return Array.from(unique.values());
-    },
-  }, queryClient);
+  const active = useQuery({ queryKey: queryKeys.tasks('all'), enabled, queryFn: () => listTasks({ view: 'all' }) }, queryClient);
+  const completed = useQuery({ queryKey: queryKeys.tasks('completed'), enabled, queryFn: () => listTasks({ view: 'completed' }) }, queryClient);
+  const tasks = useMemo(() => enabled
+    ? Array.from(new Map([...(active.data ?? []), ...(completed.data ?? [])].map(task => [task.id, task])).values())
+    : [], [active.data, completed.data, enabled]);
+  const error = active.error ?? completed.error;
   return {
-    tasks: enabled ? query.data ?? [] : [],
-    loading: enabled && query.isPending,
-    error: query.error instanceof Error ? query.error.message : query.error ? 'Failed to load summary' : null,
-    refetch: query.refetch,
+    tasks,
+    loading: enabled && (active.isPending || completed.isPending),
+    error: error instanceof Error ? error.message : error ? 'Failed to load summary' : null,
+    refetch: () => Promise.all([active.refetch(), completed.refetch()]),
   };
 }
 
@@ -433,7 +428,22 @@ export function useGoogleCalendarStatus(enabled: boolean) {
     enabled,
     queryFn: () => apiFetch<{ connected: boolean }>(`${API_BASE}/gcal/status`),
   }, queryClient);
-  return { connected: query.data?.connected ?? false, loading: enabled && query.isPending };
+  const disconnect = async () => {
+    await apiFetch(`${API_BASE}/gcal/disconnect`, { method: 'POST' });
+    await Promise.all([
+      queryClient.cancelQueries({ queryKey: queryKeys.googleCalendarStatus() }),
+      queryClient.cancelQueries({ queryKey: queryKeys.googleCalendarEvents() }),
+    ]);
+    queryClient.setQueryData(queryKeys.googleCalendarStatus(), { connected: false });
+    queryClient.setQueryData(queryKeys.googleCalendarEvents(), []);
+  };
+  return { connected: enabled && (query.data?.connected ?? false), loading: enabled && query.isPending, disconnect };
+}
+
+export function useAreas(enabled: boolean) {
+  const queryClient = useResourceQueryClient();
+  const query = useQuery({ queryKey: queryKeys.areas(), enabled, staleTime: referenceStaleTime, queryFn: () => apiFetch<Area[]>('/areas') }, queryClient);
+  return { areas: enabled ? query.data ?? [] : [] };
 }
 
 // ---------------------------------------------------------------------------
@@ -476,8 +486,10 @@ export function useDriveBackups(enabled: boolean) {
       queryClient.invalidateQueries({ queryKey: ['projects'] }),
       queryClient.invalidateQueries({ queryKey: ['tags'] }),
       queryClient.invalidateQueries({ queryKey: queryKeys.notes() }),
-      queryClient.invalidateQueries({ queryKey: ['calendar'] }),
-      queryClient.invalidateQueries({ queryKey: ['summary'] }),
+      queryClient.invalidateQueries({ queryKey: ['calendar', 'projection'] }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.taskCounts() }),
+      queryClient.invalidateQueries({ queryKey: ['time-blocks'] }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.areas() }),
     ]),
   }, queryClient);
   const deleteMutation = useMutation({
@@ -518,13 +530,15 @@ export function useSettings(enabled: boolean) {
   type SettingsData = { pomodoroWorkMinutes: number; pomodoroBreakMinutes: number; workHoursPerDay: number; timeZone: string | null };
   const queryClient = useResourceQueryClient();
   const key = queryKeys.settings();
-  const query = useQuery({ queryKey: key, enabled, queryFn: () => apiFetch<SettingsData>('/settings') }, queryClient);
+  const query = useQuery({ queryKey: key, enabled, staleTime: referenceStaleTime, queryFn: () => apiFetch<SettingsData>('/settings') }, queryClient);
   const settings = query.data;
   useEffect(() => {
     if (!enabled || !settings) return;
     const detectedTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     if (detectedTimeZone && detectedTimeZone !== settings.timeZone) {
-      apiFetch('/settings', { method: 'PATCH', body: JSON.stringify({ timeZone: detectedTimeZone }) }).catch(() => {});
+      apiFetch('/settings', { method: 'PATCH', body: JSON.stringify({ timeZone: detectedTimeZone }) })
+        .then(() => queryClient.setQueryData<SettingsData>(key, current => current ? { ...current, timeZone: detectedTimeZone } : current))
+        .catch(() => {});
     }
   }, [enabled, settings]);
 
