@@ -42,8 +42,7 @@ export function deleteTimeBlock(id: string): Promise<void> {
   return apiFetch<void>(`/time-blocks/${id}`, { method: 'DELETE' });
 }
 
-export function getCalendarProjection(from: string, to: string): Promise<CalendarProjection> {
-  const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+export function getCalendarProjection(from: string, to: string, timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'): Promise<CalendarProjection> {
   const params = new URLSearchParams({ from, to, timeZone });
   return apiFetch<CalendarProjection>(`/calendar/projection?${params}`);
 }

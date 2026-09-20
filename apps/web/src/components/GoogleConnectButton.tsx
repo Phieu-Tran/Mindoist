@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link2, Unlink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useGoogleCalendarStatus } from '@/hooks/useApi';
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
 
@@ -15,21 +15,7 @@ interface Props {
 
 export function GoogleConnectButton({ className }: Props = {}) {
   const { t } = useTranslation();
-  const [connected, setConnected] = useState(false);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) { setLoading(false); return; }
-
-    fetch(`${API_BASE}/gcal/status`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then(r => r.json())
-      .then(body => { if (body.success) setConnected(body.data.connected); })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
+  const { connected, loading, disconnect } = useGoogleCalendarStatus(Boolean(localStorage.getItem('token')));
 
   const handleConnect = async () => {
     const token = localStorage.getItem('token');
@@ -44,11 +30,7 @@ export function GoogleConnectButton({ className }: Props = {}) {
   const handleDisconnect = async () => {
     const token = localStorage.getItem('token');
     if (!token) return;
-    await fetch(`${API_BASE}/gcal/disconnect`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    setConnected(false);
+    await disconnect();
   };
 
   if (loading) return null;

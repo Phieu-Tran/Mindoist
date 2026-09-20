@@ -16,8 +16,8 @@ describe('useSyncInvalidation', () => {
 
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ['tasks'] });
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ['task-counts'] });
-    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['calendar'] });
-    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['summary'] });
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['calendar', 'projection'] });
+    expect(invalidate).not.toHaveBeenCalledWith({ queryKey: ['calendar'] });
   });
 
   it('invalidates note and time-block caches independently', () => {
@@ -30,7 +30,7 @@ describe('useSyncInvalidation', () => {
 
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ['notes'] });
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ['time-blocks'] });
-    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['calendar'] });
-    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['summary'] });
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['calendar', 'projection'] });
+    expect(invalidate).not.toHaveBeenCalledWith({ queryKey: ['calendar'] });
   });
 });

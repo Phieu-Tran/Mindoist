@@ -5,7 +5,7 @@ import type {
   UpdateProjectRequest,
 } from '@mindoist/shared/types';
 import { apiFetch } from '@/lib/api-client';
-import { queryKeys } from '@/lib/query-client';
+import { queryKeys, referenceStaleTime } from '@/lib/query-client';
 
 /** Query-backed project state. The legacy useProjects hook remains available for isolated consumers. */
 export function useProjectsQuery(enabled = true) {
@@ -14,6 +14,7 @@ export function useProjectsQuery(enabled = true) {
     queryKey: queryKeys.projects(),
     queryFn: () => apiFetch<Project[]>('/projects'),
     enabled,
+    staleTime: referenceStaleTime,
   });
 
   const createProject = async (request: CreateProjectRequest) => {

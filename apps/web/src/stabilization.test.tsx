@@ -113,15 +113,15 @@ it('completeTask shows completion before the API returns', async () => {
   await act(async () => { finish(reply(completed)); await request; });
 });
 
-it('mutation started in Inbox does not append into Today after switching view', async () => {
+it('mutation started in Inbox does not append into a different task list after switching view', async () => {
   let resolveMutation!: (value: unknown) => void;
   vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(reply([task])).mockImplementationOnce(() => new Promise(resolve => { resolveMutation = resolve; })).mockResolvedValue(reply([])));
-  const { result, rerender } = renderHook(({ view }: { view: 'inbox' | 'today' }) => useTasksQuery(view, true), { initialProps: { view: 'inbox' }, wrapper });
+  const { result, rerender } = renderHook(({ view }: { view: 'inbox' | 'completed' }) => useTasksQuery(view, true), { initialProps: { view: 'inbox' }, wrapper });
   await waitFor(() => expect(result.current.loading).toBe(false));
   let mutation!: Promise<Task>;
   act(() => { mutation = result.current.updateTask(task.id, { title: 'Changed' }); });
   await waitFor(() => expect(resolveMutation).toBeDefined());
-  rerender({ view: 'today' });
+  rerender({ view: 'completed' });
   await waitFor(() => expect(result.current.loading).toBe(false));
   await act(async () => { resolveMutation(reply({ ...task, title: 'Changed' })); await mutation; });
   expect(result.current.tasks).toEqual([]);

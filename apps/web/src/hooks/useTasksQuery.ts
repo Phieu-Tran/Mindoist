@@ -52,8 +52,7 @@ export function useTasksQuery(view: SidebarView, enabled: boolean, projectId?: s
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ['tasks'] }),
       queryClient.invalidateQueries({ queryKey: queryKeys.taskCounts() }),
-      queryClient.invalidateQueries({ queryKey: ['calendar'] }),
-      queryClient.invalidateQueries({ queryKey: ['summary'] }),
+      queryClient.invalidateQueries({ queryKey: ['calendar', 'projection'] }),
     ]);
   };
 
@@ -66,8 +65,7 @@ export function useTasksQuery(view: SidebarView, enabled: boolean, projectId?: s
       // optimistic create may still be pending in that cache.
       queryClient.invalidateQueries({ queryKey: ['tasks'], refetchType: 'none' }),
       queryClient.invalidateQueries({ queryKey: queryKeys.taskCounts() }),
-      queryClient.invalidateQueries({ queryKey: ['calendar'] }),
-      queryClient.invalidateQueries({ queryKey: ['summary'] }),
+      queryClient.invalidateQueries({ queryKey: ['calendar', 'projection'] }),
     ]).catch(() => undefined);
   };
 
