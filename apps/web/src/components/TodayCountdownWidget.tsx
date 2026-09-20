@@ -1,16 +1,17 @@
-import { Clock3 } from 'lucide-react';
+import { Clock3, CalendarDays } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { Countdown } from '@mindoist/shared/types';
 import { Skeleton } from './ui/skeleton';
+import { taskColorClass } from '@/lib/task-colors';
 
 const dayMs = 86_400_000;
 
-function remainingDays(targetDate: string) {
+function countdownTarget(targetDate: string) {
   const target = new Date(targetDate);
-  const today = new Date();
-  target.setHours(0, 0, 0, 0);
-  today.setHours(0, 0, 0, 0);
-  return Math.ceil((target.getTime() - today.getTime()) / dayMs);
+  // Existing countdowns encode date-only values as UTC midnight.
+  const allDay = target.getUTCHours() === 0 && target.getUTCMinutes() === 0 && target.getUTCSeconds() === 0;
+  return { at: allDay ? new Date(`${targetDate.slice(0, 10)}T23:59:59.999`).getTime() : target.getTime(), allDay };
 }
 
 interface TodayCountdownWidgetProps {
@@ -20,9 +21,19 @@ interface TodayCountdownWidgetProps {
 
 export function TodayCountdownWidget({ countdowns, loading = false }: TodayCountdownWidgetProps) {
   const { t } = useTranslation('tasks');
-  const visible = [...countdowns]
-    .filter(item => !item.deletedAt)
-    .sort((a, b) => new Date(a.targetDate).getTime() - new Date(b.targetDate).getTime())
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!countdowns.length) return;
+    const update = () => setNow(Date.now());
+    const timer = window.setInterval(update, 30_000);
+    window.addEventListener('focus', update);
+    return () => { window.clearInterval(timer); window.removeEventListener('focus', update); };
+  }, [countdowns.length]);
+  const sorted = useMemo(() => countdowns.filter(item => !item.deletedAt)
+    .map(item => ({ item, ...countdownTarget(item.targetDate) }))
+    .filter(({ at }) => Number.isFinite(at))
+    .sort((a, b) => a.at - b.at), [countdowns]);
+  const visible = sorted.filter(({ at }) => at >= now)
     .slice(0, 3);
 
   if (!loading && visible.length === 0) return null;
@@ -39,14 +50,23 @@ export function TodayCountdownWidget({ countdowns, loading = false }: TodayCount
         </div>
       ) : (
         <div className="grid gap-2 sm:grid-cols-3">
-          {visible.map(item => {
-            const days = remainingDays(item.targetDate);
+          {visible.map(({ item, at, allDay }) => {
+            const target = new Date(at);
+            const today = new Date(now);
+            const days = Math.round((Date.UTC(target.getFullYear(), target.getMonth(), target.getDate()) - Date.UTC(today.getFullYear(), today.getMonth(), today.getDate())) / dayMs);
+            const minutes = Math.max(1, Math.ceil((at - now) / 60_000));
+            const label = days > 0 ? `${days} ${t('calendar.daysShort')}` : allDay ? t('calendar.today')
+              : t('dueCountdown.remaining', { duration: minutes >= 60 ? t('dueCountdown.hoursMinutes', { hours: Math.floor(minutes / 60), minutes: minutes % 60 }) : t('dueCountdown.minutes', { minutes }) });
             return (
-              <article key={item.id} className="rounded-control border border-border/70 bg-background px-3 py-2">
-                <p className="m-0 truncate text-sm font-medium">{item.title}</p>
-                <p className="m-0 mt-0.5 text-xs tabular-nums text-muted-foreground">
-                  {days === 0 ? t('calendar.today') : days > 0 ? `${days} ${t('calendar.daysShort')}` : t('calendar.past')}
-                </p>
+              <article key={item.id} className={`flex min-w-0 items-center gap-3 rounded-control border border-border/70 bg-background p-2 ${taskColorClass(item.color)}`}>
+                <div className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-chip bg-muted text-[var(--task-color-accent)]" aria-hidden="true">
+                  <CalendarDays className="h-7 w-7" />
+                  {item.imageUrl && <img key={item.imageUrl} src={item.imageUrl} alt="" width={64} height={64} loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover" onError={event => { event.currentTarget.hidden = true; }} />}
+                </div>
+                <div className="min-w-0">
+                  <p className="m-0 line-clamp-2 text-sm font-medium" title={item.title}>{item.title}</p>
+                  <p className="m-0 mt-1 text-sm font-semibold tabular-nums text-primary">{label}</p>
+                </div>
               </article>
             );
           })}

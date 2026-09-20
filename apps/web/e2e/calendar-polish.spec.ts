@@ -26,6 +26,42 @@ async function addTask(page: Page, value: string, title: string) {
   await expect(page.getByTestId('task-list').getByText(title, { exact: true })).toBeVisible();
 }
 
+test('My Day shows upcoming countdown covers and calendar deadlines are readable', async ({ page }) => {
+  await register(page);
+  const coverUrl = 'https://example.test/countdown-cover.svg';
+  await page.route(coverUrl, route => route.fulfill({ contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="64" height="64" fill="blue"/></svg>' }));
+  const statuses = await page.evaluate(async imageUrl => {
+    const headers = { authorization: `Bearer ${localStorage.getItem('token')}`, 'content-type': 'application/json' };
+    const requests = [
+      ['/countdowns', { title: 'Past event', targetDate: '2000-01-01' }],
+      ['/countdowns', { title: 'Later event', targetDate: '2099-02-01' }],
+      ['/countdowns', { title: 'Nearest event', targetDate: '2099-01-01', imageUrl }],
+      ['/tasks', { title: 'Readable deadline', deadline: { date: '2099-01-01', time: '09:00', timeZone: 'UTC' } }],
+      ['/tasks', { title: 'Nearby deadline', deadline: { date: '2099-01-01', time: '09:15', timeZone: 'UTC' } }],
+    ] as const;
+    return Promise.all(requests.map(async ([path, body]) => (await fetch(path, { method: 'POST', headers, body: JSON.stringify(body) })).status));
+  }, coverUrl);
+  expect(statuses.every(status => status === 201)).toBe(true);
+  await page.reload();
+  const widget = page.getByTestId('today-countdown-widget');
+  await expect(widget.getByRole('article')).toHaveCount(2);
+  await expect(widget.getByRole('article').first()).toContainText('Nearest event');
+  await expect(widget).not.toContainText('Past event');
+  await expect(widget.locator('img')).toBeVisible();
+  await expect(widget.locator('img')).toHaveJSProperty('naturalWidth', 64);
+
+  await page.goto('/calendar?view=day&date=2099-01-01&plan=0');
+  const first = page.getByRole('button', { name: 'Readable deadline, deadline 09:00' });
+  const second = page.getByRole('button', { name: 'Nearby deadline, deadline 09:15' });
+  await expect(first).toHaveCSS('height', '44px');
+  await expect(first).toHaveCSS('font-size', '13px');
+  const firstBox = await first.boundingBox();
+  const secondBox = await second.boundingBox();
+  expect(firstBox!.x + firstBox!.width).toBeLessThanOrEqual(secondBox!.x);
+  await first.click();
+  await expect(page.getByTestId('detail-title')).toHaveValue('Readable deadline');
+});
+
 test('[B1.3] calendar priority legend and event identity remain responsive', async ({ page }) => {
   mkdirSync(EVIDENCE_DIR, { recursive: true });
   const pageErrors: Error[] = [];

@@ -4,6 +4,7 @@ import { Profiler, StrictMode } from 'react';
 import type { Task, TimeBlock } from '@mindoist/shared/types';
 import type { CalendarProjection } from '../projection';
 import { CalendarGridView } from './CalendarGridView';
+import * as layout from './layout';
 
 const makeTask = (id: string, title: string, overrides: Partial<Task> = {}): Task => ({
   id, userId: 'user-1', projectId: null, projectColumnId: null, sectionId: null,
@@ -22,6 +23,34 @@ const timeBlock = (taskId: string): TimeBlock => ({
 });
 
 describe('CalendarGridView', () => {
+  it('keeps larger deadlines separate and reuses the layout until calendar data changes', () => {
+    const layoutSpy = vi.spyOn(layout, 'layoutTimedItems');
+    try {
+      const tasks = ['09:00', '09:15', '09:45'].map((time, index) => makeTask(`deadline-${index}`, `Deadline ${index}`, {
+        completedAt: null, deadline: { date: '2026-08-12', time, timeZone: 'Asia/Ho_Chi_Minh' },
+      }));
+      const projection: CalendarProjection = { timeBlocks: [], externalEvents: [], deadlines: tasks.map(task => ({
+        id: task.id, taskId: task.id, title: task.title, date: task.deadline!.date, time: task.deadline!.time!,
+        startDate: null, timeZone: 'Asia/Ho_Chi_Minh', completedAt: null, priority: 1, projectId: null, colorOverride: null,
+      })) };
+      const props = { anchorDate: new Date('2026-08-12T12:00:00'), projection, tasks, onSelectTask: vi.fn(), onCreateTask: vi.fn() };
+      const { rerender } = render(<CalendarGridView {...props} view="timeGridDay" />);
+      const first = screen.getByRole('button', { name: 'Deadline 0, deadline 09:00' });
+      const last = screen.getByRole('button', { name: 'Deadline 2, deadline 09:45' });
+      expect(first).toHaveStyle({ height: '44px', width: 'calc(50% - 6px)' });
+      expect(last).toHaveStyle({ width: 'calc(100% - 6px)' });
+      fireEvent.click(first);
+      expect(props.onSelectTask).toHaveBeenCalledWith(tasks[0]);
+      const calls = layoutSpy.mock.calls.length;
+      fireEvent.keyDown(screen.getByRole('gridcell'), { key: 'Enter' });
+      expect(layoutSpy).toHaveBeenCalledTimes(calls);
+      rerender(<CalendarGridView {...props} projection={{ ...projection, deadlines: [] }} view="timeGridDay" />);
+      expect(layoutSpy.mock.calls.length).toBeGreaterThan(calls);
+      expect(screen.queryByRole('button', { name: 'Deadline 0, deadline 09:00' })).not.toBeInTheDocument();
+    } finally {
+      layoutSpy.mockRestore();
+    }
+  });
   it('renders a Monday-Friday working week', () => {
     render(
       <CalendarGridView
