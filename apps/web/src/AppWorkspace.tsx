@@ -604,7 +604,9 @@ function AuthenticatedWorkspace({ user, setPassword, logout }: AuthenticatedWork
     onNext: () => moveSelectedTask(1),
     onPrev: () => moveSelectedTask(-1),
     onOpen: () => {
-      if (activeKeyboardTask) handleSelectTask(activeKeyboardTask);
+      if (!activeKeyboardTask) return;
+      if (isSummaryView || sidebarView === 'calendar') handleSelectTaskInPlace(activeKeyboardTask);
+      else handleSelectTask(activeKeyboardTask);
     },
     onToggleSelection: toggleKeyboardSelection,
     onExpandSelection: expandKeyboardSelection,
@@ -716,10 +718,12 @@ function AuthenticatedWorkspace({ user, setPassword, logout }: AuthenticatedWork
     }
   }, [navigate, routerLocation.pathname, routerLocation.searchStr]);
 
-  // Summary is an analysis workspace. Keep its month/list context in place
-  // while the inspector opens instead of turning a task click into a route
-  // change to /tasks/:id.
-  const handleSelectSummaryTask = useCallback((task: Task) => {
+  // Summary and Calendar are workspaces with their own context (month, week,
+  // planning panel). Open the inspector in place instead of turning a task
+  // click into a route change to /tasks/:id, which maps to the All view and
+  // throws the user out of the workspace they were in.
+  const handleSelectTaskInPlace = useCallback((task: Task) => {
+    if (task.id.startsWith('optimistic-')) return;
     setKeyboardTaskId(task.id);
     setSelectedTask(task);
   }, []);
@@ -900,7 +904,7 @@ function AuthenticatedWorkspace({ user, setPassword, logout }: AuthenticatedWork
               loading={summary.loading}
               error={summary.error}
               onRetry={summary.refetch}
-              onSelectTask={handleSelectSummaryTask}
+              onSelectTask={handleSelectTaskInPlace}
               obsidianSettings={obsidianSettings}
               onConfigureObsidian={handleOpenObsidianSettings}
             />
@@ -924,7 +928,7 @@ function AuthenticatedWorkspace({ user, setPassword, logout }: AuthenticatedWork
                     onClose={handleCloseTask}
                     onDelete={handleDeleteTask}
                     onDeleteWithUndo={handleDeleteWithUndoSubtask}
-                    onSelectTask={handleSelectSummaryTask}
+                    onSelectTask={handleSelectTaskInPlace}
                     onTasksChanged={async () => { await refetchTasks(); await summary.refetch(); }}
                     pomodoroWorkMinutes={pomodoroWorkMinutes}
                     pomodoroBreakMinutes={pomodoroBreakMinutes}
@@ -1005,7 +1009,7 @@ function AuthenticatedWorkspace({ user, setPassword, logout }: AuthenticatedWork
                 projects={projects}
                 gcalEvents={gcalEvents}
                 countdowns={countdowns}
-                onSelectTask={handleSelectTask}
+                onSelectTask={handleSelectTaskInPlace}
                 onCreateTask={handleCalendarCreate}
                 onUpdateTask={(id, req) => updateTask(id, req)}
                 workHoursPerDay={workHoursPerDay}
@@ -1032,7 +1036,7 @@ function AuthenticatedWorkspace({ user, setPassword, logout }: AuthenticatedWork
                     onClose={handleCloseTask}
                     onDelete={handleDeleteTask}
                     onDeleteWithUndo={handleDeleteWithUndoSubtask}
-                    onSelectTask={handleSelectTask}
+                    onSelectTask={handleSelectTaskInPlace}
                     onTasksChanged={refetchTasks}
                     onColorPreview={(nextColor) => setColorPreview({ id: selectedTask.id, color: nextColor })}
                     pomodoroWorkMinutes={pomodoroWorkMinutes}
@@ -1245,7 +1249,7 @@ function AuthenticatedWorkspace({ user, setPassword, logout }: AuthenticatedWork
             onClose={handleCloseTask}
             onDelete={handleDeleteTask}
             onDeleteWithUndo={handleDeleteWithUndoSubtask}
-            onSelectTask={handleSelectTask}
+            onSelectTask={isSummaryView || isCalendarView ? handleSelectTaskInPlace : handleSelectTask}
             onTasksChanged={async () => { await refetchTasks(); if (isSummaryView) await summary.refetch(); }}
             pomodoroWorkMinutes={pomodoroWorkMinutes}
             pomodoroBreakMinutes={pomodoroBreakMinutes}

@@ -311,12 +311,17 @@ test('[CALENDAR-04] selecting a time range creates a task with persisted planned
   );
   await expect(page.locator('.mindoist-deadline-marker').filter({ hasText: 'Calendar focus block' })).toHaveCount(0);
 
+  // Opening a task from the calendar must keep the calendar on screen; a
+  // /tasks/:id route change would switch the workspace to the All view.
   await page.locator('.mindoist-time-grid-block').filter({ hasText: 'Calendar focus block' }).click();
+  await expect(page).toHaveURL(/\/calendar\?/);
+  await expect(page.locator('.mindoist-calendar-grid')).toBeVisible();
   const plannedTimeEditor = page.getByRole('region', { name: 'Planned time' });
   await expect(plannedTimeEditor).toBeVisible();
   await expect(plannedTimeEditor.getByRole('button', { name: /^Edit.*09:00.*10:00/ })).toBeVisible();
 
   await page.getByTestId('detail-title-complete').click();
   await expect(page.getByTestId('task-detail')).toHaveCount(0);
+  await expect(page).toHaveURL(/\/calendar\?/);
   expect(pageErrors).toEqual([]);
 });
