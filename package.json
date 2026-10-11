@@ -24,6 +24,9 @@
     "typescript": "^5.8.0"
   },
   "pnpm": {
+    "overrides": {
+      "shell-quote": "^1.11.0"
+    },
     "onlyBuiltDependencies": [
       "esbuild",
       "@prisma/client",
