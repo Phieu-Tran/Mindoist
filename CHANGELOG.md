@@ -2,6 +2,26 @@
 
 Notable changes to Mindoist, grouped by date. This project doesn't cut versioned releases yet — entries are dated instead.
 
+## 2026-10-11
+
+### Added
+- Quick Capture has a task color row (no color plus the eight task colors). A color picked there wins over the calendar slot's color.
+- The Completed view has a search box and filters by project and by completion date (any time, this week, this month).
+- Search ignores Vietnamese diacritics, in the Completed view and in the `?` command-bar search. Completed tasks in `?` results show a check mark and their completion date.
+- Obsidian review notes include each task's description, estimate, pomodoro count and tags, and can be limited to completed tasks.
+
+### Fixed
+- The Summary calendar shows a completed task that has no deadline on the day it was completed.
+- The inbox banner and the search result count are translated instead of hardcoded English.
+
+## 2026-09-25
+
+### Fixed
+- Clicking a task in Calendar opens its details next to the calendar instead of switching to the All tasks view. This applies to time blocks, month cells, deadline markers, the planning panel, subtask links in the inspector, the keyboard open shortcut, and the narrow-screen inspector.
+
+### Validation
+- The Calendar browser check now asserts the page stays on `/calendar` after opening and completing a task from the grid. It fails on the previous code.
+
 ## 2026-09-06
 
 ### Fixed

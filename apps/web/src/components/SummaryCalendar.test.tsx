@@ -56,7 +56,7 @@ describe('SummaryCalendar', () => {
     <I18nextProvider i18n={i18n}>
       <SummaryCalendar
         tasks={[
-          makeTask('1', 'Today task', '2026-07-20', { priority: 1, dueTime: '09:00' }),
+          makeTask('1', 'Today task', '2026-07-20', { priority: 1, dueTime: '09:00', description: 'Call the vendor\n\n- confirm price' }),
           makeTask('2', 'Tomorrow task', '2026-07-21T00:00:00.000Z', { priority: 2 }),
         ]}
         onSelectTask={onSelectTask}
@@ -159,6 +159,8 @@ describe('SummaryCalendar', () => {
       await Promise.resolve();
     });
     expect(writeText).toHaveBeenCalledWith(expect.stringContaining('period: week'));
+    // Descriptions travel with their task, indented into the list item.
+    expect(writeText).toHaveBeenCalledWith(expect.stringMatching(/- \[ \] Today task[^\n]*\n {4}Call the vendor\n\n {4}- confirm price\n/));
     expect(screen.getByRole('status')).toHaveTextContent('Markdown copied.');
 
     Object.defineProperty(navigator, 'clipboard', { configurable: true, value: originalClipboard });
@@ -189,6 +191,46 @@ describe('SummaryCalendar', () => {
 
     clickSpy.mockRestore();
     Object.defineProperty(navigator, 'clipboard', { configurable: true, value: originalClipboard });
+  });
+
+  it('shows a completed task without a deadline on the day it was finished', () => {
+    render(
+      <I18nextProvider i18n={i18n}>
+        <SummaryCalendar
+          tasks={[
+            makeTask('1', 'Loose done task', '2026-07-20', { deadline: null, completedAt: '2026-07-18T03:00:00Z' }),
+            makeTask('2', 'Loose open task', '2026-07-20', { deadline: null }),
+          ]}
+        />
+      </I18nextProvider>,
+    );
+    fireEvent.click(screen.getByTestId('summary-calendar-day-2026-07-18'));
+    expect(screen.getByTestId('summary-day-tasks')).toHaveTextContent('Loose done task');
+    expect(screen.queryByText('Loose open task')).not.toBeInTheDocument();
+  });
+
+  it('exports effort, tags and an optional completed-only ledger', () => {
+    render(
+      <I18nextProvider i18n={i18n}>
+        <SummaryCalendar
+          tasks={[
+            makeTask('1', 'Done task', '2026-07-20', { completedAt: '2026-07-20T03:00:00Z', estimateMin: 90, pomodoroCount: 2, tagIds: ['t1'] }),
+            makeTask('2', 'Open task', '2026-07-21'),
+          ]}
+          tags={[{ id: 't1', name: 'deep work' } as any]}
+          obsidianSettings={obsidianSettings}
+        />
+      </I18nextProvider>,
+    );
+    fireEvent.click(screen.getByTestId('summary-view-week'));
+    fireEvent.click(screen.getByTestId('summary-preview-markdown'));
+    const preview = screen.getByTestId('summary-markdown-preview');
+    expect(preview).toHaveTextContent('- [x] Done task — P4 · Completed · 1h30m · 2 pomodoro #deep-work');
+    expect(preview).toHaveTextContent('- [ ] Open task');
+
+    fireEvent.click(screen.getByTestId('summary-export-completed-only'));
+    expect(preview).toHaveTextContent('- [x] Done task');
+    expect(preview).not.toHaveTextContent('Open task');
   });
 
   it('opens Obsidian settings instead of guessing a local vault', () => {

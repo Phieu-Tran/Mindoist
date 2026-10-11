@@ -10,7 +10,9 @@ import { TaskInspectorBoundary as TaskInspector } from './components/TaskInspect
 import { TaskSideRail } from './components/TaskSideRail';
 import { CreateProjectDialog } from './components/CreateProjectDialog';
 import { SyncCenter } from './components/SyncCenter';
+import { Search } from 'lucide-react';
 import { GlobalQuickCapture } from './components/GlobalQuickCapture';
+import { matchesTaskSearch } from './features/command-bar/model';
 import { InboxProcess } from './components/InboxProcess';
 import { ReviewTabs } from './components/ReviewTabs';
 import { TodayCountdownWidget } from './components/TodayCountdownWidget';
@@ -176,12 +178,27 @@ function AuthenticatedWorkspace({ user, setPassword, logout }: AuthenticatedWork
   useEffect(() => { setColorPreview(null); }, [selectedTask?.id]);
   const isXl = useXlBreakpoint();
   // Sub-tasks are hidden from the main list — they're managed in the detail panel.
-  const visibleTaskCount = useMemo(() => countVisibleTasks(tasks, sidebarView), [sidebarView, tasks]);
+  const [completedProjectId, setCompletedProjectId] = useState('all');
+  const [completedRange, setCompletedRange] = useState<'all' | 'week' | 'month'>('all');
   const filteredTasks = useMemo(() => {
-    const query = searchQuery.trim().toLocaleLowerCase();
-    if (!query) return tasks;
-    return tasks.filter(task => `${task.title}\n${task.description ?? ''}`.toLocaleLowerCase().includes(query));
-  }, [searchQuery, tasks]);
+    let result = tasks;
+    if (sidebarView === 'completed') {
+      if (completedProjectId !== 'all') result = result.filter(task => (task.projectId || 'none') === completedProjectId);
+      if (completedRange !== 'all') {
+        const start = new Date();
+        start.setHours(0, 0, 0, 0);
+        if (completedRange === 'month') start.setDate(1);
+        else start.setDate(start.getDate() + (start.getDay() === 0 ? -6 : 1 - start.getDay()));
+        result = result.filter(task => task.completedAt && new Date(task.completedAt) >= start);
+      }
+    }
+    if (!searchQuery.trim()) return result;
+    return result.filter(task => matchesTaskSearch(task, searchQuery));
+  }, [completedProjectId, completedRange, searchQuery, sidebarView, tasks]);
+  const filteredTaskCount = useMemo(() => countVisibleTasks(filteredTasks, sidebarView), [filteredTasks, sidebarView]);
+  // The Completed search box owns the query while it is on screen; don't let
+  // it keep filtering other views after leaving.
+  useEffect(() => () => { if (sidebarView === 'completed') setSearchQuery(''); }, [sidebarView]);
   const keyboardTasks = useMemo(() => filteredTasks.filter(task => !task.parentId && !task.id.startsWith('optimistic-')), [filteredTasks]);
   // Live-preview the color picked in TaskInspector on the calendar before Save.
   // Sub-tasks are managed from their parent's detail panel, not plotted as
@@ -364,6 +381,7 @@ function AuthenticatedWorkspace({ user, setPassword, logout }: AuthenticatedWork
         : undefined,
       priority: parsed.priority,
       estimateMin: parsed.estimateMin,
+      color: parsed.color,
       projectId: matchedProject?.id ?? projectIdOverride ?? currentProjectId,
     } as CreateTaskRequest);
 
@@ -510,7 +528,7 @@ function AuthenticatedWorkspace({ user, setPassword, logout }: AuthenticatedWork
       deadline: isTimed ? parsed.deadline : parsed.deadline ?? { date: slot.date },
       estimateMin: parsed.estimateMin ?? durationMin,
       priority: parsed.priority,
-      color: slot.color,
+      color: parsed.color ?? slot.color,
       projectId: slot.projectId ?? (parsed.projectId
         ? projects.find(project => project.name.toLocaleLowerCase() === parsed.projectId?.toLocaleLowerCase())?.id
         : undefined),
@@ -604,7 +622,9 @@ function AuthenticatedWorkspace({ user, setPassword, logout }: AuthenticatedWork
     onNext: () => moveSelectedTask(1),
     onPrev: () => moveSelectedTask(-1),
     onOpen: () => {
-      if (activeKeyboardTask) handleSelectTask(activeKeyboardTask);
+      if (!activeKeyboardTask) return;
+      if (isSummaryView || sidebarView === 'calendar') handleSelectTaskInPlace(activeKeyboardTask);
+      else handleSelectTask(activeKeyboardTask);
     },
     onToggleSelection: toggleKeyboardSelection,
     onExpandSelection: expandKeyboardSelection,
@@ -716,10 +736,12 @@ function AuthenticatedWorkspace({ user, setPassword, logout }: AuthenticatedWork
     }
   }, [navigate, routerLocation.pathname, routerLocation.searchStr]);
 
-  // Summary is an analysis workspace. Keep its month/list context in place
-  // while the inspector opens instead of turning a task click into a route
-  // change to /tasks/:id.
-  const handleSelectSummaryTask = useCallback((task: Task) => {
+  // Summary and Calendar are workspaces with their own context (month, week,
+  // planning panel). Open the inspector in place instead of turning a task
+  // click into a route change to /tasks/:id, which maps to the All view and
+  // throws the user out of the workspace they were in.
+  const handleSelectTaskInPlace = useCallback((task: Task) => {
+    if (task.id.startsWith('optimistic-')) return;
     setKeyboardTaskId(task.id);
     setSelectedTask(task);
   }, []);
@@ -897,10 +919,11 @@ function AuthenticatedWorkspace({ user, setPassword, logout }: AuthenticatedWork
             <SummaryDashboard
               tasks={summary.tasks}
               projects={projects}
+              tags={tags}
               loading={summary.loading}
               error={summary.error}
               onRetry={summary.refetch}
-              onSelectTask={handleSelectSummaryTask}
+              onSelectTask={handleSelectTaskInPlace}
               obsidianSettings={obsidianSettings}
               onConfigureObsidian={handleOpenObsidianSettings}
             />
@@ -924,7 +947,7 @@ function AuthenticatedWorkspace({ user, setPassword, logout }: AuthenticatedWork
                     onClose={handleCloseTask}
                     onDelete={handleDeleteTask}
                     onDeleteWithUndo={handleDeleteWithUndoSubtask}
-                    onSelectTask={handleSelectSummaryTask}
+                    onSelectTask={handleSelectTaskInPlace}
                     onTasksChanged={async () => { await refetchTasks(); await summary.refetch(); }}
                     pomodoroWorkMinutes={pomodoroWorkMinutes}
                     pomodoroBreakMinutes={pomodoroBreakMinutes}
@@ -1005,7 +1028,7 @@ function AuthenticatedWorkspace({ user, setPassword, logout }: AuthenticatedWork
                 projects={projects}
                 gcalEvents={gcalEvents}
                 countdowns={countdowns}
-                onSelectTask={handleSelectTask}
+                onSelectTask={handleSelectTaskInPlace}
                 onCreateTask={handleCalendarCreate}
                 onUpdateTask={(id, req) => updateTask(id, req)}
                 workHoursPerDay={workHoursPerDay}
@@ -1032,7 +1055,7 @@ function AuthenticatedWorkspace({ user, setPassword, logout }: AuthenticatedWork
                     onClose={handleCloseTask}
                     onDelete={handleDeleteTask}
                     onDeleteWithUndo={handleDeleteWithUndoSubtask}
-                    onSelectTask={handleSelectTask}
+                    onSelectTask={handleSelectTaskInPlace}
                     onTasksChanged={refetchTasks}
                     onColorPreview={(nextColor) => setColorPreview({ id: selectedTask.id, color: nextColor })}
                     pomodoroWorkMinutes={pomodoroWorkMinutes}
@@ -1151,13 +1174,13 @@ function AuthenticatedWorkspace({ user, setPassword, logout }: AuthenticatedWork
             {sidebarView === 'today' && <TodayCountdownWidget countdowns={countdowns} loading={countdownsLoading} />}
             {sidebarView === 'today' && inboxQuery.tasks.length > 0 && (
               <div className="mb-4 flex items-center justify-between gap-3 rounded-control border border-border bg-card px-3 py-2">
-                <p className="m-0 text-sm text-muted-foreground">{inboxQuery.tasks.length} inbox item{inboxQuery.tasks.length === 1 ? '' : 's'} · plan, snooze, finish, or delete.</p>
+                <p className="m-0 text-sm text-muted-foreground">{inboxQuery.tasks.length === 1 ? t('tasks:list.inboxPendingOne') : t('tasks:list.inboxPending', { count: inboxQuery.tasks.length })}</p>
                 <button
                   type="button"
                   className="min-h-10 shrink-0 rounded-control bg-primary px-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
                   onClick={() => setInboxProcessOpen(true)}
                 >
-                  Process inbox
+                  {t('tasks:list.processInbox')}
                 </button>
               </div>
             )}
@@ -1180,10 +1203,52 @@ function AuthenticatedWorkspace({ user, setPassword, logout }: AuthenticatedWork
               <div>
                 <h2 className="text-2xl font-semibold m-0">{viewTitle}</h2>
                 <p className="text-sm text-muted-foreground mt-0.5">
-                  {searchQuery ? `${filteredTasks.length} results for “${searchQuery}”` : visibleTaskCount === 1 ? t('tasks:list.taskCountOne') : t('tasks:list.taskCount', { count: visibleTaskCount })}
+                  {searchQuery ? t('tasks:list.searchResults', { count: filteredTasks.length, query: searchQuery }) : filteredTaskCount === 1 ? t('tasks:list.taskCountOne') : t('tasks:list.taskCount', { count: filteredTaskCount })}
                 </p>
               </div>
             </div>
+            {sidebarView === 'completed' && (
+              <div className="mb-3 flex flex-wrap items-center gap-2">
+              <label className="flex min-h-10 min-w-48 flex-1 items-center gap-2 rounded-control border border-border bg-card px-3 text-muted-foreground focus-within:ring-2 focus-within:ring-ring">
+                <Search className="h-4 w-4 shrink-0" aria-hidden="true" />
+                <input
+                  type="search"
+                  name="completed-search"
+                  autoComplete="off"
+                  data-testid="completed-search"
+                  aria-label={t('tasks:list.searchPlaceholder')}
+                  placeholder={t('tasks:list.searchPlaceholder')}
+                  value={searchQuery}
+                  onChange={event => setSearchQuery(event.target.value)}
+                  className="min-w-0 flex-1 border-0 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
+                />
+              </label>
+              <select
+                name="completed-project"
+                data-testid="completed-project-filter"
+                aria-label={t('tasks:list.filterProject')}
+                value={completedProjectId}
+                onChange={event => setCompletedProjectId(event.target.value)}
+                className="min-h-10 max-w-48 rounded-control border border-border bg-card px-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <option value="all">{t('tasks:list.allProjects')}</option>
+                <option value="none">{t('tasks:list.noProject')}</option>
+                {projects.map(project => <option key={project.id} value={project.id}>{project.name}</option>)}
+              </select>
+              <select
+                name="completed-range"
+                data-testid="completed-range-filter"
+                aria-label={t('tasks:list.filterRange')}
+                value={completedRange}
+                onChange={event => setCompletedRange(event.target.value as 'all' | 'week' | 'month')}
+                className="min-h-10 rounded-control border border-border bg-card px-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <option value="all">{t('tasks:list.rangeAll')}</option>
+                <option value="week">{t('tasks:list.rangeWeek')}</option>
+                <option value="month">{t('tasks:list.rangeMonth')}</option>
+              </select>
+              </div>
+            )}
             <TaskList
               tasks={filteredTasks}
               tags={tags}
@@ -1245,7 +1310,7 @@ function AuthenticatedWorkspace({ user, setPassword, logout }: AuthenticatedWork
             onClose={handleCloseTask}
             onDelete={handleDeleteTask}
             onDeleteWithUndo={handleDeleteWithUndoSubtask}
-            onSelectTask={handleSelectTask}
+            onSelectTask={isSummaryView || isCalendarView ? handleSelectTaskInPlace : handleSelectTask}
             onTasksChanged={async () => { await refetchTasks(); if (isSummaryView) await summary.refetch(); }}
             pomodoroWorkMinutes={pomodoroWorkMinutes}
             pomodoroBreakMinutes={pomodoroBreakMinutes}

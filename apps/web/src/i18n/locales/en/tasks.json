@@ -221,7 +221,18 @@
     "selectedCount": "{{count}} selected",
     "bulkComplete": "Complete",
     "bulkDelete": "Delete",
-    "clearSelection": "Clear selection"
+    "clearSelection": "Clear selection",
+    "searchResults": "{{count}} results for “{{query}}”",
+    "filterProject": "Filter by project",
+    "filterRange": "Filter by completion date",
+    "allProjects": "All projects",
+    "noProject": "No project",
+    "rangeAll": "Any time",
+    "rangeWeek": "This week",
+    "rangeMonth": "This month",
+    "inboxPendingOne": "1 inbox item · plan, snooze, finish, or delete.",
+    "inboxPending": "{{count}} inbox items · plan, snooze, finish, or delete.",
+    "processInbox": "Process inbox"
   },
   "undo": {
     "action": "Undo",
@@ -769,6 +780,8 @@
     "weeklyDigest": "{{total}} tasks this week · {{completed}} completed · {{open}} open · {{overdue}} overdue",
     "previewMarkdown": "Preview Markdown",
     "hideMarkdown": "Hide preview",
+    "exportCompletedOnly": "Completed only",
+    "pomodoroCount": "{{count}} pomodoro",
     "markdownPreviewTitle": "Obsidian Markdown template",
     "markdownPreviewHint": "This is the exact frontmatter and checkbox content prepared for the selected period.",
     "copyMarkdown": "Copy Markdown",

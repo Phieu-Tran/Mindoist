@@ -88,6 +88,17 @@ describe('GlobalQuickCapture command bar', () => {
     await waitFor(() => expect(onAdd).toHaveBeenCalledWith(expect.objectContaining({ priority: 3 })));
   });
 
+  it('creates with the picked task color and no color by default', async () => {
+    renderCapture();
+    const input = await open();
+    fireEvent.change(input, { target: { value: 'call dentist' } });
+    expect(screen.getByTestId('quick-add-color-none')).toHaveAttribute('aria-checked', 'true');
+    fireEvent.click(screen.getByTestId('quick-add-color-jade'));
+    expect(screen.getByTestId('quick-add-color-jade')).toHaveAttribute('aria-checked', 'true');
+    fireEvent.click(screen.getByTestId('global-quick-capture-submit'));
+    await waitFor(() => expect(onAdd).toHaveBeenCalledWith(expect.objectContaining({ title: 'call dentist', color: 'jade' })));
+  });
+
   it('keeps quick project and schedule choices while the title is typed', async () => {
     renderCapture();
     const input = await open();

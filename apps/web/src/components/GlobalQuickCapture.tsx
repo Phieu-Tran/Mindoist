@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Command as CommandMenu } from 'cmdk';
-import { ArrowRight, AtSign, CalendarClock, Check, Command as CommandIcon, CornerDownLeft, Flag, FolderOpen, ListChecks, Plus, Search, Timer } from 'lucide-react';
+import { ArrowRight, AtSign, Ban, CalendarClock, Check, Command as CommandIcon, CornerDownLeft, Flag, FolderOpen, ListChecks, Palette, Plus, Search, Timer } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { parseQuickAdd } from '@mindoist/shared/nlparse';
 import type { ParsedQuickAdd } from '@mindoist/shared/nlparse';
@@ -9,6 +9,7 @@ import type { SidebarView } from '../hooks/useApi';
 import { Button } from './ui/button';
 import { DatePicker, TimePicker } from './ui/date-picker';
 import { commandMode, commandQuery, rankTaskMatches } from '../features/command-bar/model';
+import { TASK_COLOR_OPTIONS, taskColorClass } from '../lib/task-colors';
 
 interface Props {
   onAdd: (parsed: ParsedQuickAdd) => void | Promise<void>;
@@ -33,6 +34,7 @@ interface PreviewEdits {
   projectId: string;
   priority: string;
   estimateMin: string;
+  color: string;
 }
 
 function localDateValue(date: Date) {
@@ -60,6 +62,7 @@ function applyPreviewEdits(parsed: ParsedQuickAdd, edits: PreviewEdits): ParsedQ
     projectId: edits.projectId || undefined,
     priority: priority >= 1 && priority <= 4 ? priority as 1 | 2 | 3 | 4 : undefined,
     estimateMin: estimateMin > 0 ? estimateMin : undefined,
+    color: edits.color || undefined,
   };
 }
 
@@ -106,6 +109,7 @@ export function GlobalQuickCapture({
     projectId: parsed?.projectId ?? '',
     priority: parsed?.priority ? String(parsed.priority) : '',
     estimateMin: parsed?.estimateMin ? String(parsed.estimateMin) : '',
+    color: '',
   }), [parsed]);
   const resolvedEdits = useMemo<PreviewEdits>(() => ({ ...parsedEdits, ...edits }), [edits, parsedEdits]);
   const preview = useMemo(() => parsed ? applyPreviewEdits(parsed, resolvedEdits) : null, [parsed, resolvedEdits]);
@@ -290,6 +294,17 @@ export function GlobalQuickCapture({
                   <span>{t('quickAdd.command.minutes')}</span>
                 </label>
               )}
+              <div role="radiogroup" aria-label={t('detail.color')} className="command-color-row" data-testid="quick-add-color">
+                <Palette className="size-3.5" aria-hidden="true" />
+                <button type="button" role="radio" aria-checked={!resolvedEdits.color} aria-label={t('detail.noColor')} title={t('detail.noColor')} data-testid="quick-add-color-none" className="command-color-option is-none" onClick={() => setEdits(current => ({ ...current, color: '' }))}>
+                  {!resolvedEdits.color ? <Check className="size-3" aria-hidden="true" /> : <Ban className="size-3" aria-hidden="true" />}
+                </button>
+                {TASK_COLOR_OPTIONS.map(option => (
+                  <button key={option.value} type="button" role="radio" aria-checked={resolvedEdits.color === option.value} aria-label={t(option.labelKey)} title={t(option.labelKey)} data-testid={`quick-add-color-${option.value}`} className={`command-color-option task-color-swatch ${taskColorClass(option.value)}`} onClick={() => setEdits(current => ({ ...current, color: option.value }))}>
+                    {resolvedEdits.color === option.value && <Check className="size-3 text-white" aria-hidden="true" />}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         )}
@@ -345,7 +360,7 @@ export function GlobalQuickCapture({
 
           {mode === 'search' && (
             <CommandMenu.Group heading={t('quickAdd.command.tasks')} className="command-group">
-              {matchingTasks.map(task => <CommandMenu.Item key={task.id} value={`?${task.title}`} onSelect={() => { void run(() => onSelectTask?.(task)); }} className="command-item"><Search className="size-4" aria-hidden="true" /><span className="min-w-0 flex-1 truncate">{task.title}</span>{task.description && <span className="max-w-40 truncate text-xs text-muted-foreground">{task.description}</span>}</CommandMenu.Item>)}
+              {matchingTasks.map(task => <CommandMenu.Item key={task.id} value={`?${task.title}`} onSelect={() => { void run(() => onSelectTask?.(task)); }} className="command-item">{task.completedAt ? <Check className="size-4" aria-label={t('summary.completed')} /> : <Search className="size-4" aria-hidden="true" />}<span className="min-w-0 flex-1 truncate">{task.title}</span>{task.description && <span className="max-w-40 truncate text-xs text-muted-foreground">{task.description}</span>}{task.completedAt && <span className="shrink-0 text-xs text-muted-foreground">{new Date(task.completedAt).toLocaleDateString(i18n.language, { day: 'numeric', month: 'short', year: 'numeric' })}</span>}</CommandMenu.Item>)}
             </CommandMenu.Group>
           )}
         </CommandMenu.List>
