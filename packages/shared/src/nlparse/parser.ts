@@ -10,6 +10,7 @@ export interface ParsedQuickAdd {
   estimateMin?: number;
   projectId?: string;
   reminderOffsetMin?: number; // minutes before the deadline the reminder fires
+  color?: string; // picked in the quick-add UI, never parsed from text
 }
 
 // ---------------------------------------------------------------------------

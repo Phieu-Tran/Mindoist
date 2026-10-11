@@ -12,7 +12,7 @@ import {
   Settings2,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import type { Project, Task } from '@mindoist/shared/types';
+import type { Project, Tag, Task } from '@mindoist/shared/types';
 import { Button } from './ui/button';
 import { cn } from '@/lib/utils';
 import {
@@ -27,6 +27,7 @@ import './SummaryDashboard.css';
 interface Props {
   tasks: Task[];
   projects?: Project[];
+  tags?: Tag[];
   onSelectTask?: (task: Task) => void;
   obsidianSettings?: ObsidianSettings;
   onConfigureObsidian?: () => void;
@@ -74,6 +75,19 @@ function inlineMarkdown(value: string) {
   return value.replace(/[\r\n]+/g, ' ').trim();
 }
 
+/** Indented so the description stays inside its task's list item in Obsidian. */
+function descriptionMarkdown(description: string | null | undefined) {
+  const text = (description ?? '').replace(/\r\n?/g, '\n').trim();
+  if (!text) return [];
+  return text.split('\n').map(line => line.trim() ? `    ${line.trimEnd()}` : '');
+}
+
+function estimateLabel(minutes: number) {
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  return hours ? `${hours}h${rest ? `${rest}m` : ''}` : `${rest}m`;
+}
+
 function startOfWeek(date: Date) {
   const start = atNoon(date);
   const day = start.getDay();
@@ -90,6 +104,7 @@ function addDays(date: Date, amount: number) {
 export function SummaryCalendar({
   tasks,
   projects = [],
+  tags = [],
   onSelectTask,
   obsidianSettings,
   onConfigureObsidian,
@@ -103,6 +118,7 @@ export function SummaryCalendar({
   const [obsidianStatus, setObsidianStatus] = useState<'idle' | 'opening' | 'ready' | 'error'>('idle');
   const [templateOpen, setTemplateOpen] = useState(false);
   const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'error'>('idle');
+  const [exportCompletedOnly, setExportCompletedOnly] = useState(false);
 
   const tasksByDay = useMemo(() => {
     const grouped = new Map<string, Task[]>();
@@ -111,7 +127,12 @@ export function SummaryCalendar({
       grouped.get(key)!.push(task);
     };
     tasks.forEach(task => {
-      if (!task.deadline) return;
+      if (!task.deadline) {
+        // Finished work without a deadline still belongs to the day it was done.
+        const completedAt = task.completedAt ? new Date(task.completedAt) : null;
+        if (completedAt && !Number.isNaN(completedAt.getTime())) addToDay(dayKey(completedAt), task);
+        return;
+      }
       const dueKey = task.deadline.date;
       const startKey = task.startDate ? task.startDate.slice(0, 10) : dueKey;
       if (startKey >= dueKey) {
@@ -155,6 +176,7 @@ export function SummaryCalendar({
     () => new Map(projects.map(project => [project.id, project.name])),
     [projects],
   );
+  const tagNames = useMemo(() => new Map(tags.map(tag => [tag.id, tag.name])), [tags]);
   const selectedTasks = tasksByDay.get(selectedKey) || [];
   const selectedDate = new Date(`${selectedKey}T12:00:00`);
   const selectedLabel = selectedDate.toLocaleDateString(i18n.language, {
@@ -201,6 +223,9 @@ export function SummaryCalendar({
     });
     return Array.from(groups, ([dateKeyValue, entries]) => ({ dateKey: dateKeyValue, entries }));
   }, [reviewEntries]);
+  const exportGroups = useMemo(() => !exportCompletedOnly ? reviewGroups : reviewGroups
+    .map(group => ({ ...group, entries: group.entries.filter(entry => Boolean(entry.task.completedAt)) }))
+    .filter(group => group.entries.length > 0), [exportCompletedOnly, reviewGroups]);
   const reviewStats = useMemo(() => {
     const completed = reviewEntries.filter(entry => Boolean(entry.task.completedAt)).length;
     const overdue = reviewEntries.filter(entry => (
@@ -234,7 +259,7 @@ export function SummaryCalendar({
       `> ${isWeekly ? t('summary.weeklyDigest', reviewStats) : t('summary.monthlyDigest', reviewStats)}`,
       '',
     ];
-    reviewGroups.forEach(group => {
+    exportGroups.forEach(group => {
       const date = new Date(`${group.dateKey}T12:00:00`);
       lines.push(`## ${date.toLocaleDateString(i18n.language, { weekday: 'long', day: 'numeric', month: 'long' })}`);
       group.entries.forEach(({ source, task }) => {
@@ -246,12 +271,25 @@ export function SummaryCalendar({
               ? t('summary.dueAt', { time: task.deadline.time })
               : t('summary.due')
             : t('summary.added');
-        const meta = [project, task.priority != null ? `P${task.priority}` : null, status].filter(Boolean).join(' · ');
-        lines.push(`- [${task.completedAt ? 'x' : ' '}] ${inlineMarkdown(task.title)}${meta ? ` — ${meta}` : ''}`);
+        const meta = [
+          project,
+          task.priority != null ? `P${task.priority}` : null,
+          status,
+          task.estimateMin ? estimateLabel(task.estimateMin) : null,
+          task.pomodoroCount ? t('summary.pomodoroCount', { count: task.pomodoroCount }) : null,
+        ].filter(Boolean).join(' · ');
+        // Obsidian tags cannot contain whitespace.
+        const tagText = (task.tagIds ?? [])
+          .map(tagId => tagNames.get(tagId))
+          .filter((name): name is string => Boolean(name))
+          .map(name => ` #${name.trim().replace(/\s+/g, '-')}`)
+          .join('');
+        lines.push(`- [${task.completedAt ? 'x' : ' '}] ${inlineMarkdown(task.title)}${meta ? ` — ${meta}` : ''}${tagText}`);
+        lines.push(...descriptionMarkdown(task.description));
       });
       lines.push('');
     });
-    if (reviewGroups.length === 0) {
+    if (exportGroups.length === 0) {
       lines.push(t(isWeekly ? 'summary.noTasksForWeek' : 'summary.noTasksForMonth'));
     }
     return lines.join('\n').trim();
@@ -259,12 +297,13 @@ export function SummaryCalendar({
     i18n.language,
     projectNames,
     reviewEndKey,
-    reviewGroups,
+    exportGroups,
     reviewKind,
     reviewLabel,
     reviewStartKey,
     reviewStats,
     t,
+    tagNames,
     todayKey,
     visibleMonthKey,
     weekEndKey,
@@ -302,7 +341,7 @@ export function SummaryCalendar({
   };
 
   const openInObsidian = async () => {
-    if (!obsidianConfigured || reviewEntries.length === 0 || obsidianStatus === 'opening') return;
+    if (!obsidianConfigured || exportGroups.length === 0 || obsidianStatus === 'opening') return;
     setObsidianStatus('opening');
     let copied = false;
     try {
@@ -503,6 +542,18 @@ export function SummaryCalendar({
               </p>
             </div>
             <div className="summary-ledger-actions">
+              <label className="flex min-h-9 items-center gap-2 text-sm text-muted-foreground">
+                <input
+                  type="checkbox"
+                  data-testid="summary-export-completed-only"
+                  checked={exportCompletedOnly}
+                  onChange={event => {
+                    setExportCompletedOnly(event.target.checked);
+                    resetReviewFeedback();
+                  }}
+                />
+                {t('summary.exportCompletedOnly')}
+              </label>
               <Button
                 type="button"
                 variant="outline"
@@ -523,7 +574,7 @@ export function SummaryCalendar({
                 variant="outline"
                 size="sm"
                 data-testid="summary-open-obsidian"
-                disabled={obsidianConfigured && (reviewEntries.length === 0 || obsidianStatus === 'opening')}
+                disabled={obsidianConfigured && (exportGroups.length === 0 || obsidianStatus === 'opening')}
                 onClick={() => {
                   if (obsidianConfigured) void openInObsidian();
                   else onConfigureObsidian?.();

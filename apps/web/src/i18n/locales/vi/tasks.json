@@ -219,7 +219,18 @@
     "selectedCount": "Đã chọn {{count}}",
     "bulkComplete": "Hoàn thành",
     "bulkDelete": "Xóa",
-    "clearSelection": "Bỏ chọn"
+    "clearSelection": "Bỏ chọn",
+    "searchResults": "{{count}} kết quả cho “{{query}}”",
+    "filterProject": "Lọc theo dự án",
+    "filterRange": "Lọc theo ngày hoàn thành",
+    "allProjects": "Tất cả dự án",
+    "noProject": "Không có dự án",
+    "rangeAll": "Mọi lúc",
+    "rangeWeek": "Tuần này",
+    "rangeMonth": "Tháng này",
+    "inboxPendingOne": "1 mục trong hộp thư đến · lên kế hoạch, hoãn, hoàn thành hoặc xoá.",
+    "inboxPending": "{{count}} mục trong hộp thư đến · lên kế hoạch, hoãn, hoàn thành hoặc xoá.",
+    "processInbox": "Xử lý hộp thư đến"
   },
   "undo": {
     "action": "Hoàn tác",
@@ -767,6 +778,8 @@
     "weeklyDigest": "{{total}} task trong tuần · {{completed}} hoàn thành · {{open}} đang mở · {{overdue}} quá hạn",
     "previewMarkdown": "Xem trước Markdown",
     "hideMarkdown": "Ẩn bản xem trước",
+    "exportCompletedOnly": "Chỉ task đã hoàn thành",
+    "pomodoroCount": "{{count}} pomodoro",
     "markdownPreviewTitle": "Template Markdown cho Obsidian",
     "markdownPreviewHint": "Đây là chính xác phần frontmatter và checkbox sẽ được tạo cho kỳ đang chọn.",
     "copyMarkdown": "Sao chép Markdown",
