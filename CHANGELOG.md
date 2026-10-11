@@ -11,6 +11,7 @@ Notable changes to Mindoist, grouped by date. This project doesn't cut versioned
 - Obsidian review notes include each task's description, estimate, pomodoro count and tags, and can be limited to completed tasks.
 
 ### Fixed
+- A tab left open across a deploy no longer dies on a bare "Something went wrong!" screen when it asks for a screen chunk that the new build replaced. It reloads once into the new version; other route errors show a translated message with a Reload button.
 - The Summary calendar shows a completed task that has no deadline on the day it was completed.
 - The inbox banner and the search result count are translated instead of hardcoded English.
 

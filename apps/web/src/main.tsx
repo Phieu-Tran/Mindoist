@@ -8,6 +8,7 @@ import './index.css';
 import './i18n';
 import { initializeAppearance } from './lib/appearance';
 import { cleanupDevServiceWorkers } from './lib/dev-service-worker';
+import { installStaleChunkRecovery } from './lib/chunk-reload';
 import { configureApiBase } from './lib/configure-api-base';
 import { installAuthFetch } from './lib/install-auth-fetch';
 import { queryClient } from './lib/query-client';
@@ -18,6 +19,7 @@ configureApiBase();
 // API paths in a split-domain deploy - the auth retry has to sit outside that.
 installAuthFetch();
 void cleanupDevServiceWorkers();
+installStaleChunkRecovery();
 initializeAppearance();
 
 createRoot(document.getElementById('root')!).render(

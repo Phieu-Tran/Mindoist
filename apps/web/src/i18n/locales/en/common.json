@@ -3,6 +3,16 @@
     "title": "Mindoist",
     "description": "A mindfulness productivity app"
   },
+  "error": {
+    "title": "Something went wrong",
+    "description": "This screen hit an unexpected error. Reloading usually fixes it; your saved tasks are safe.",
+    "updateTitle": "A new version is available",
+    "updateDescription": "Mindoist was updated while this tab was open. Reload to continue.",
+    "updating": "Updating Mindoist…",
+    "reload": "Reload",
+    "showDetails": "Show details",
+    "hideDetails": "Hide details"
+  },
   "home": {
     "welcome": "Welcome to Mindoist",
     "subtitle": "Stay mindful, stay productive"

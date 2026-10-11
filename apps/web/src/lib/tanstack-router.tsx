@@ -1,5 +1,6 @@
 import { createRootRoute, createRoute, createRouter } from '@tanstack/react-router';
 import App from '@/App';
+import { RouteError } from '@/components/RouteError';
 import { parseCalendarSearch } from './app-routing';
 
 export interface AppSearch {
@@ -45,5 +46,5 @@ const routeTree = rootRoute.addChildren([
   appRoute('/countdown'), appRoute('/settings'), appRoute('/import'), appRoute('/export'), appRoute('/admin'),
 ]);
 
-export const appRouter = createRouter({ routeTree, defaultPreload: 'intent' });
+export const appRouter = createRouter({ routeTree, defaultPreload: 'intent', defaultErrorComponent: RouteError });
 declare module '@tanstack/react-router' { interface Register { router: typeof appRouter } }

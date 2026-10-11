@@ -3,6 +3,16 @@
     "title": "Mindoist",
     "description": "Ứng dụng thiền định và năng suất"
   },
+  "error": {
+    "title": "Đã xảy ra lỗi",
+    "description": "Màn hình này gặp lỗi ngoài dự kiến. Tải lại thường sẽ hết; các task đã lưu không bị ảnh hưởng.",
+    "updateTitle": "Đã có phiên bản mới",
+    "updateDescription": "Mindoist vừa được cập nhật trong lúc tab này đang mở. Tải lại để tiếp tục.",
+    "updating": "Đang cập nhật Mindoist…",
+    "reload": "Tải lại",
+    "showDetails": "Xem chi tiết",
+    "hideDetails": "Ẩn chi tiết"
+  },
   "home": {
     "welcome": "Chào mừng đến với Mindoist",
     "subtitle": "Sống tỉnh thức, làm việc hiệu quả"
