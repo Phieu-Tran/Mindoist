@@ -271,6 +271,40 @@ test.describe('Task Management E2E', () => {
     await expect(page.getByTestId('task-list').getByText(taskTitle, { exact: true })).toBeVisible();
   });
 
+  test('a task edited in details and then deleted comes back from the undo toast', async ({ page }) => {
+    await login(page);
+    const taskTitle = `Edited undo ${Date.now()}`;
+    await addTask(page, taskTitle);
+
+    const patchAfterDelete: number[] = [];
+    let deleted = false;
+    page.on('response', response => {
+      const method = response.request().method();
+      if (!/\/tasks\/[0-9a-f-]{36}$/.test(new URL(response.url()).pathname)) return;
+      if (method === 'DELETE') deleted = true;
+      else if (method === 'PATCH' && deleted) patchAfterDelete.push(response.status());
+    });
+
+    await page.getByTestId('task-list').getByText(taskTitle, { exact: true }).click();
+    await expect(page.getByTestId('task-detail')).toBeVisible();
+    // Edit, then delete inside the autosave window.
+    await page.getByTestId('detail-priority').click();
+    await page.getByTestId('detail-priority-2').click();
+    await page.getByTestId('detail-deadline-v2').click();
+    await page.getByRole('dialog', { name: 'Pick date' }).getByRole('button', { name: 'Today', exact: true }).click();
+    await page.getByRole('button', { name: 'More actions' }).click();
+    await page.getByRole('menuitem', { name: 'Delete' }).click();
+    await page.getByTestId('detail-delete-confirm').click();
+    await expect(page.getByTestId('undo-toast')).toContainText('Deleted');
+
+    await page.getByTestId('undo-toast-action').click();
+    const row = page.getByTestId(/^task-title-/).filter({ hasText: taskTitle });
+    await expect(row).toBeVisible();
+    await page.reload();
+    await expect(page.getByTestId(/^task-title-/).filter({ hasText: taskTitle })).toBeVisible();
+    expect(patchAfterDelete, 'no save is sent for a task that is being deleted').toEqual([]);
+  });
+
   test('[TASK-02] quick add with natural language shows preview metadata', async ({ page }) => {
     await login(page);
 

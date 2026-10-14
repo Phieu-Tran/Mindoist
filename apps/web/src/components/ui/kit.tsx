@@ -8,6 +8,7 @@ import type { PopoverPanelProps } from './legacy/popover-panel';
 import type { ModalFrameProps } from './legacy/modal-frame';
 import type { ActionMenuProps } from './legacy/action-menu';
 import { applyUiKitAttribute, type UiKit } from '@/lib/ui-kit';
+import { reloadForStaleChunk } from '@/lib/chunk-reload';
 
 export type InputProps = React.InputHTMLAttributes<HTMLInputElement>;
 
@@ -58,14 +59,28 @@ export function registerUiKit(name: UiKit, components: Partial<UiKitComponents>)
  * stylesheet) is a separate chunk, so `legacy` users never download it. If
  * the chunk fails to load, the app falls back to legacy rather than blank.
  */
+/** heroui.css defines this on :root; nothing else does. */
+function herouiStylesheetApplied() {
+  return getComputedStyle(document.documentElement).getPropertyValue('--field-radius').trim() !== '';
+}
+
 export async function loadUiKit(kit: UiKit): Promise<UiKit> {
   if (kit === 'heroui') {
     try {
-      const { herouiKit } = await import('./heroui');
-      registerUiKit('heroui', herouiKit);
+      // Right after a deploy a cold CDN edge (or a stale tab) can answer the
+      // kit's chunk with index.html. A failed JS chunk resolves to undefined
+      // once the stale-chunk handler has taken over; a failed stylesheet is
+      // silently ignored by the browser and would leave HeroUI unstyled.
+      const kitModule = await import('./heroui') as { herouiKit?: Partial<UiKitComponents> } | undefined;
+      if (!kitModule?.herouiKit) throw new Error('HeroUI kit chunk did not load');
+      if (!herouiStylesheetApplied()) throw new Error('HeroUI kit stylesheet did not load');
+      registerUiKit('heroui', kitModule.herouiKit);
       return 'heroui';
     } catch (error) {
-      console.error('[ui-kit] HeroUI kit failed to load; falling back to legacy', error);
+      // Retry once with a fresh page load (shared 30 s loop guard with the
+      // stale-chunk handler). Never resolve meanwhile, so nothing renders.
+      if (reloadForStaleChunk()) return new Promise<UiKit>(() => {});
+      console.warn('[ui-kit] HeroUI kit failed to load; falling back to legacy', error);
     }
   }
   registerUiKit('legacy', {});
