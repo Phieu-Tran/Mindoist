@@ -14,6 +14,8 @@ Notable changes to Mindoist, grouped by date. This project doesn't cut versioned
 - Enter now activates the focused button, link or menu item. The global shortcut handler used to swallow Enter everywhere outside text fields, so keyboard users could not press most buttons with it.
 - On phones, Delete in the task panel's "More actions" menu now shows its confirmation. The dialog rendered underneath the task panel.
 - In dark mode, delete buttons use dark text on the red, readable at AA. White on it was 2.77:1.
+- If the HeroUI kit's script or stylesheet fails to load (for example, the CDN answers a just-deployed file with the app page), the app reloads once to retry and only then falls back to the Classic kit. Before, a failed stylesheet left HeroUI unstyled, and a failed script briefly showed the Classic kit before the stale-chunk reload.
+- Deleting a task right after editing it in the task panel no longer sends saves for the deleted task. The pending autosave used to send PATCH requests that the server answered with 404. Undo already restored the task correctly.
 
 ### Changed
 - The column color picker in a project's "Add column" form has an accessible name.
@@ -29,6 +31,7 @@ Notable changes to Mindoist, grouped by date. This project doesn't cut versioned
 - The contrast audit now covers delete buttons in both themes.
 - A `bundle-diff` CI job builds the PR base and head and reports how much the eagerly loaded bundle changed, with a warning above 2 KiB gzip. This change adds 1.74 KiB to the Classic kit (346.46 → 348.21 KiB).
 - Browser tests that selected elements by Classic-only markup (`button[...]` tags, day buttons named only by their number, an unnamed combobox) now use kit-neutral test ids, `data-state` and `data-calendar-day`.
+- Browser checks serve the HeroUI script or stylesheet as an HTML page once (it must recover with one reload) and on every request (it must fall back to Classic). Another check edits a task, deletes it, undoes, and asserts that no save was sent after the delete. Each check fails without its fix.
 
 ## 2026-10-11
 

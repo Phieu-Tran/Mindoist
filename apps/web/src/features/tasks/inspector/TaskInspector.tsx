@@ -550,8 +550,14 @@ export function TaskInspector({
     title,
   ]);
 
+  // Set once the user confirms Delete: a pending autosave/property commit must
+  // not PATCH a task the server has just deleted (it 404s and, before the undo
+  // toast restores it, would only add noise).
+  const deletingRef = useRef(false);
+  useEffect(() => { deletingRef.current = false; }, [task.id]);
   const saveDraft = useCallback(
     async (draft: UpdateTaskRequest) => {
+      if (deletingRef.current) return;
       await (onAutosave ?? onSave)(task.id, draft);
     },
     [onAutosave, onSave, task.id],
@@ -988,7 +994,12 @@ export function TaskInspector({
             variant="destructive"
             size="sm"
             data-testid="detail-delete-confirm"
-            onClick={() => { onDelete(task.id); setShowDeleteConfirm(false); }}
+            onClick={() => {
+              deletingRef.current = true;
+              // If the delete fails the panel stays open: let it save again.
+              void Promise.resolve(onDelete(task.id) as unknown).catch(() => { deletingRef.current = false; });
+              setShowDeleteConfirm(false);
+            }}
           >
             {t('detail.delete')}
           </Button>

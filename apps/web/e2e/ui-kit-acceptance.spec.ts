@@ -264,3 +264,40 @@ test('[KIT-05] Settings and ?ui-kit= switch the kit after a reload', async ({ pa
   await page.goto('/settings?ui-kit=default');
   await expect.poll(() => activeKit(page)).toBe(buildDefault);
 });
+
+// A cold CDN edge or a stale deploy can answer a hashed asset with index.html
+// (HTTP 200). Serve that for the HeroUI kit's chunk or stylesheet.
+async function breakHeroUiAsset(page: Page, kind: 'js' | 'css', times: number) {
+  let broken = 0;
+  await page.route(/\/assets\/[^/]+\.(js|css)$/, async route => {
+    const isCss = route.request().url().endsWith('.css');
+    if ((kind === 'css') !== isCss || broken >= times) return route.continue();
+    const response = await route.fetch();
+    const body = await response.text();
+    const isHeroUi = isCss ? body.includes('.mindoist-popover-panel') : body.includes('HeroUI.');
+    if (!isHeroUi) return route.fulfill({ response, body });
+    broken += 1;
+    return route.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>Mindoist</title>' });
+  });
+}
+
+const herouiStylesApplied = (page: Page) => page.evaluate(() => (
+  getComputedStyle(document.documentElement).getPropertyValue('--field-radius').trim() !== ''
+));
+
+for (const kind of ['js', 'css'] as const) {
+  test(`[KIT-06] a HeroUI ${kind} asset that fails once is retried with one reload`, async ({ page }) => {
+    await breakHeroUiAsset(page, kind, 1);
+    await page.goto('/login?ui-kit=heroui');
+    await expect(page.getByRole('button', { name: 'Register', exact: true })).toBeVisible();
+    await expect.poll(() => activeKit(page)).toBe('heroui');
+    expect(await herouiStylesApplied(page), 'HeroUI stylesheet is applied').toBe(true);
+  });
+}
+
+test('[KIT-07] a HeroUI asset that keeps failing falls back to the Classic kit', async ({ page }) => {
+  await breakHeroUiAsset(page, 'css', 100);
+  await page.goto('/login?ui-kit=heroui');
+  await expect(page.getByRole('button', { name: 'Register', exact: true })).toBeVisible();
+  expect(await activeKit(page)).toBe('legacy');
+});
