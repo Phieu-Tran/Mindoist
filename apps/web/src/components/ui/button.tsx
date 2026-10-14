@@ -1,9 +1,9 @@
 import * as React from 'react';
-import { getKit } from './kit';
-import { buttonVariants, type ButtonProps } from './legacy/button';
+import { getKitOverrides } from './kit';
+import { Button as LegacyButton, buttonVariants, type ButtonProps } from './legacy/button';
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>((props, ref) => {
-  const Impl = getKit().Button;
+  const Impl = getKitOverrides().Button ?? LegacyButton;
   return <Impl ref={ref} {...props} />;
 });
 Button.displayName = 'Button';

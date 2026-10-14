@@ -1,8 +1,8 @@
-import { getKit } from './kit';
-import type { ModalFrameProps } from './legacy/modal-frame';
+import { getKitOverrides } from './kit';
+import { ModalFrame as LegacyModalFrame, type ModalFrameProps } from './legacy/modal-frame';
 
 export function ModalFrame(props: ModalFrameProps) {
-  const Impl = getKit().ModalFrame;
+  const Impl = getKitOverrides().ModalFrame ?? LegacyModalFrame;
   return <Impl {...props} />;
 }
 

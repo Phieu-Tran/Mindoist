@@ -41,6 +41,25 @@ function useLocale(locale?: string) {
   return locale ?? i18n.resolvedLanguage ?? i18n.language ?? 'en';
 }
 
+/**
+ * Escape closes just the date popover even before React Aria has moved focus
+ * into the calendar (React Aria only sees Escape from inside the overlay).
+ * Capture phase + stopPropagation, like the legacy picker, so TaskDetail's and
+ * Quick Capture's own Escape handlers don't close their panel underneath.
+ */
+function useEscapeToClose(open: boolean, close: () => void) {
+  useEffect(() => {
+    if (!open) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      event.stopPropagation();
+      close();
+    };
+    document.addEventListener('keydown', onKeyDown, true);
+    return () => document.removeEventListener('keydown', onKeyDown, true);
+  }, [close, open]);
+}
+
 interface CalendarPanelProps {
   ariaLabel: string;
   value: string;
@@ -146,6 +165,11 @@ export function DatePicker({
     onChange(iso);
     setOpen(false);
   }, [onChange]);
+  const closePicker = useCallback(() => {
+    setOpen(false);
+    triggerRef.current?.focus();
+  }, []);
+  useEscapeToClose(open, closePicker);
 
   return (
     <div ref={containerRef} className={cn('relative', className)}>
@@ -227,6 +251,9 @@ export function DateRangePicker({
   useEffect(() => {
     setHoverDate(null);
   }, [activeField, open]);
+
+  const closeRange = useCallback(() => setOpen(false), []);
+  useEscapeToClose(open, closeRange);
 
   const openFor = (field: 'start' | 'due') => {
     if (field === 'start') setRangeMode(true);

@@ -153,9 +153,6 @@
 }
 
 :root.dark {
-  /* Dark --destructive is a light red; white text on it is ~2.8:1. Use dark
-     text like the dark --primary pair does (AA, see runHeroUiAudit). */
-  --danger-foreground: oklch(0.1984 0.0270 20);
   --success: oklch(0.7600 0.1500 158);
   --success-foreground: oklch(0.2000 0.0300 160);
   --warning: oklch(0.8200 0.1400 80);

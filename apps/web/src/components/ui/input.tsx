@@ -1,8 +1,9 @@
 import * as React from 'react';
-import { getKit, type InputProps } from './kit';
+import { getKitOverrides, type InputProps } from './kit';
+import { Input as LegacyInput } from './legacy/input';
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>((props, ref) => {
-  const Impl = getKit().Input;
+  const Impl = getKitOverrides().Input ?? LegacyInput;
   return <Impl ref={ref} {...props} />;
 });
 Input.displayName = 'Input';

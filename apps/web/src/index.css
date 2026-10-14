@@ -334,7 +334,9 @@
   --hover-surface: oklch(0.2850 0.0154 269.12);
   --hover-surface-foreground: oklch(0.8412 0.0077 260.73);
   --destructive: oklch(0.7106 0.1661 22.22);
-  --destructive-foreground: oklch(1 0 0);
+  /* Dark text on the light dark-theme red (2026-10-14): white was 2.77:1,
+     below AA; mirrors the dark --primary pair. */
+  --destructive-foreground: oklch(0.1984 0.0270 20);
   --border: var(--ds-border-default);
   --input: color-mix(in oklch, var(--muted-foreground) 75%, var(--background));
   --ring: oklch(0.7217 0.16 274.81);

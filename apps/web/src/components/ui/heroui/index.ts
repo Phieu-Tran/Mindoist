@@ -9,6 +9,7 @@ import { DatePicker, DateRangePicker } from './date-picker';
 import { PopoverPanel } from './popover-panel';
 import { ModalFrame } from './modal-frame';
 import { ActionMenu } from './action-menu';
+import { Skeleton } from './skeleton';
 
 /**
  * The HeroUI kit. Anything not listed falls back to the legacy component
@@ -25,4 +26,5 @@ export const herouiKit: Partial<UiKitComponents> = {
   PopoverPanel,
   ModalFrame,
   ActionMenu,
+  Skeleton,
 };

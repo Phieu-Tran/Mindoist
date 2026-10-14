@@ -34,6 +34,8 @@ export function applyTheme(theme: Theme) {
   const resolved = resolveTheme(theme);
   root.classList.remove('light', 'dark');
   root.classList.add(resolved);
+  // HeroUI's variants also key off data-theme; keep both in step.
+  root.dataset.theme = resolved;
   // Keep the browser chrome (address bar, task switcher) in sync with a
   // manually-picked theme too, not just the OS-preference media query the
   // static <meta> tags in index.html cover for the pre-hydration paint.

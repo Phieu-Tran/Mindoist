@@ -1,8 +1,8 @@
-import { getKit } from './kit';
-import type { ActionMenuItem, ActionMenuProps } from './legacy/action-menu';
+import { getKitOverrides } from './kit';
+import { ActionMenu as LegacyActionMenu, type ActionMenuItem, type ActionMenuProps } from './legacy/action-menu';
 
 export function ActionMenu(props: ActionMenuProps) {
-  const Impl = getKit().ActionMenu;
+  const Impl = getKitOverrides().ActionMenu ?? LegacyActionMenu;
   return <Impl {...props} />;
 }
 

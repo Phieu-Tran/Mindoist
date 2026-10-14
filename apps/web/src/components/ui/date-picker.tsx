@@ -1,18 +1,25 @@
-import { getKit } from './kit';
-import type { DatePickerProps, DateRangePickerProps, TimePickerProps } from './legacy/date-picker';
+import { getKitOverrides } from './kit';
+import {
+  DatePicker as LegacyDatePicker,
+  DateRangePicker as LegacyDateRangePicker,
+  TimePicker as LegacyTimePicker,
+  type DatePickerProps,
+  type DateRangePickerProps,
+  type TimePickerProps,
+} from './legacy/date-picker';
 
 export function DatePicker(props: DatePickerProps) {
-  const Impl = getKit().DatePicker;
+  const Impl = getKitOverrides().DatePicker ?? LegacyDatePicker;
   return <Impl {...props} />;
 }
 
 export function DateRangePicker(props: DateRangePickerProps) {
-  const Impl = getKit().DateRangePicker;
+  const Impl = getKitOverrides().DateRangePicker ?? LegacyDateRangePicker;
   return <Impl {...props} />;
 }
 
 export function TimePicker(props: TimePickerProps) {
-  const Impl = getKit().TimePicker;
+  const Impl = getKitOverrides().TimePicker ?? LegacyTimePicker;
   return <Impl {...props} />;
 }
 

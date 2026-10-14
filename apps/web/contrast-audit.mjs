@@ -200,6 +200,17 @@ function auditTheme(name, tokens, accentPresets) {
     for (const bg of SURFACES) {
       results.push(auditPair('--color-p3', themedTokens['--color-p3'], bg, themedTokens[bg], name, preset));
     }
+    // Destructive buttons: --destructive-foreground on --destructive.
+    results.push(
+      auditPair(
+        '--destructive-foreground',
+        themedTokens['--destructive-foreground'],
+        '--destructive',
+        themedTokens['--destructive'],
+        name,
+        preset,
+      ),
+    );
     // primary-foreground text on primary button background — dark presets
     // each define their own --primary-foreground (light presets don't,
     // since light always pairs primary with plain white); fall back to the

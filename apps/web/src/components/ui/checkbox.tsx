@@ -1,9 +1,9 @@
 import * as React from 'react';
-import { getKit } from './kit';
-import type { CheckboxProps } from './legacy/checkbox';
+import { getKitOverrides } from './kit';
+import { Checkbox as LegacyCheckbox, type CheckboxProps } from './legacy/checkbox';
 
 const Checkbox = React.forwardRef<HTMLButtonElement, CheckboxProps>((props, ref) => {
-  const Impl = getKit().Checkbox;
+  const Impl = getKitOverrides().Checkbox ?? LegacyCheckbox;
   return <Impl ref={ref} {...props} />;
 });
 Checkbox.displayName = 'Checkbox';

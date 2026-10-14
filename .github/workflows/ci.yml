@@ -308,6 +308,61 @@ jobs:
             test-results
           retention-days: 3
 
+  bundle-diff:
+    name: bundle-diff
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: head
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: base
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+          cache-dependency-path: |
+            head/pnpm-lock.yaml
+            base/pnpm-lock.yaml
+      - name: Build base and head web bundles
+        shell: bash
+        run: |
+          for side in base head; do
+            (cd "$side" && pnpm install --frozen-lockfile \
+              && pnpm --filter @mindoist/design-tokens build \
+              && pnpm --filter @mindoist/shared build \
+              && pnpm --filter @mindoist/web build)
+          done
+      - name: Compare the eagerly loaded bundle (Classic kit)
+        shell: bash
+        run: |
+          # Every user downloads index.html's entry + modulepreloads. Growth over
+          # 2 KiB gzip is reported, not blocked: features may legitimately need
+          # it, but it should be a conscious choice in review.
+          node --input-type=module -e '
+            import { readFileSync, appendFileSync } from "node:fs";
+            import { gzipSync } from "node:zlib";
+            const measure = dist => {
+              const html = readFileSync(`${dist}/index.html`, "utf8");
+              const files = [...html.matchAll(/(?:src|href)="\/?(assets\/[^"]+\.(?:js|css))"/g)].map(m => m[1]);
+              return files.reduce((sum, file) => sum + gzipSync(readFileSync(`${dist}/${file}`)).length, 0) / 1024;
+            };
+            const base = measure("base/apps/web/dist");
+            const head = measure("head/apps/web/dist");
+            const delta = head - base;
+            const line = `Eager bundle (gzip): base ${base.toFixed(2)} KiB -> head ${head.toFixed(2)} KiB (${delta >= 0 ? "+" : ""}${delta.toFixed(2)} KiB)`;
+            console.log(line);
+            if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${line}\n`);
+            if (delta > 2) console.log(`::warning title=Eager bundle grew::${line}`);
+          '
+
   security:
     name: security
     runs-on: ubuntu-24.04

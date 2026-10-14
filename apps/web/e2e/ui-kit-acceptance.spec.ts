@@ -193,3 +193,74 @@ test('[KIT-03] TaskDetail popovers, menu and confirmation fit a 390px phone', as
   });
   expect(onTop, 'the delete confirmation is above the task panel').toBe(true);
 });
+
+for (const timezoneId of ['America/Los_Angeles', 'Pacific/Kiritimati']) {
+  test.describe(`[KIT-04] dates in ${timezoneId}`, () => {
+    test.use({ timezoneId });
+
+    test('Today and a picked day keep their calendar date across a reload', async ({ page }) => {
+      await page.setViewportSize({ width: 1280, height: 860 });
+      await register(page);
+      await addTask(page, 'Zoned task');
+      await page.getByRole('button', { name: 'Zoned task', exact: true }).click();
+      const deadline = page.getByTestId('detail-deadline-v2');
+
+      const local = await page.evaluate(() => {
+        const now = new Date();
+        const pad = (value: number) => String(value).padStart(2, '0');
+        return {
+          today: `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()}`,
+          pickIso: `${now.getFullYear()}-${pad(now.getMonth() + 1)}-15`,
+          pickShown: `15/${pad(now.getMonth() + 1)}/${now.getFullYear()}`,
+        };
+      });
+
+      await deadline.click();
+      const picker = page.getByRole('dialog', { name: 'Pick date' });
+      await picker.getByRole('button', { name: 'Today', exact: true }).click();
+      await expect(picker).toBeHidden();
+      await expect(deadline).toContainText(local.today);
+
+      await deadline.click();
+      await picker.locator(`[data-calendar-day="${local.pickIso}"]`).click();
+      await expect(picker).toBeHidden();
+      await expect(deadline).toContainText(local.pickShown);
+
+      await page.reload();
+      await expect(page.getByTestId('task-detail')).toBeVisible();
+      await expect(page.getByTestId('detail-deadline-v2')).toContainText(local.pickShown);
+    });
+  });
+}
+
+test('[KIT-05] Settings and ?ui-kit= switch the kit after a reload', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 860 });
+  await register(page);
+  const buildDefault = await activeKit(page);
+
+  const openAppearance = async () => {
+    await page.goto('/settings');
+    await page.getByRole('button', { name: 'Appearance', exact: true }).click();
+    await expect(page.getByTestId('ui-kit-toggle')).toBeVisible();
+  };
+
+  await openAppearance();
+  await expect(page.getByTestId('ui-kit-default')).toHaveAttribute('aria-checked', 'true');
+  await Promise.all([page.waitForEvent('load'), page.getByTestId('ui-kit-heroui').click()]);
+  await expect.poll(() => activeKit(page)).toBe('heroui');
+
+  await openAppearance();
+  await expect(page.getByTestId('ui-kit-heroui')).toHaveAttribute('aria-checked', 'true');
+  await Promise.all([page.waitForEvent('load'), page.getByTestId('ui-kit-legacy').click()]);
+  await expect.poll(() => activeKit(page)).toBe('legacy');
+
+  await openAppearance();
+  await Promise.all([page.waitForEvent('load'), page.getByTestId('ui-kit-default').click()]);
+  await expect.poll(() => activeKit(page)).toBe(buildDefault);
+
+  await page.goto('/settings?ui-kit=heroui');
+  await expect.poll(() => activeKit(page)).toBe('heroui');
+  expect(new URL(page.url()).searchParams.has('ui-kit')).toBe(false);
+  await page.goto('/settings?ui-kit=default');
+  await expect.poll(() => activeKit(page)).toBe(buildDefault);
+});

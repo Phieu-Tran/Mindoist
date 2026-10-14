@@ -7,21 +7,27 @@ Notable changes to Mindoist, grouped by date. This project doesn't cut versioned
 ### Added
 - A second UI kit built on HeroUI v3 (React Aria). Settings › Appearance › UI kit switches between Default, Classic and HeroUI (beta) on that device; `?ui-kit=heroui|legacy|default` in any URL does the same. The page reloads to switch, and only the chosen kit is downloaded — Classic users get no extra code.
 - Each web environment picks its own default with the `VITE_UI_KIT` GitHub environment variable (`legacy` when unset), and can hide the Settings switch with `VITE_UI_KIT_SWITCHER=off`. Changing either needs a redeploy of the same commit, not a code change.
-- The HeroUI kit covers buttons, inputs, checkboxes, switches, selects, the date and date-range pickers, the TaskDetail priority/color/tags/recurrence popovers, the keyboard-shortcut dialog, the delete/discard/complete confirmations, and the TaskDetail "More actions" and project-board "Move to" menus (arrow keys, Home/End and typeahead). It keeps Mindoist's colors, accent presets, dark mode, density and radius scale. The time picker, accent picker, new-project dialog, review tabs and undo toast stay on the classic components.
+- The HeroUI kit covers buttons, inputs, checkboxes, switches, selects, loading skeletons, the date and date-range pickers, the TaskDetail priority/color/tags/recurrence popovers, the keyboard-shortcut dialog, the delete/discard/complete confirmations, and the TaskDetail "More actions" and project-board "Move to" menus (arrow keys, Home/End and typeahead). It keeps Mindoist's colors, accent presets, dark mode, density and radius scale. The time picker, accent picker, new-project dialog, review tabs and undo toast stay on the classic components.
 - With HeroUI, date pickers start the week on Monday, show the neighbouring months' days and support arrow-key/PageUp/PageDown navigation; popovers are no longer clipped by the detail panel and flip above their trigger near the bottom of the screen.
 
 ### Fixed
 - Enter now activates the focused button, link or menu item. The global shortcut handler used to swallow Enter everywhere outside text fields, so keyboard users could not press most buttons with it.
 - On phones, Delete in the task panel's "More actions" menu now shows its confirmation. The dialog rendered underneath the task panel.
+- In dark mode, delete buttons use dark text on the red, readable at AA. White on it was 2.77:1.
 
 ### Changed
 - The column color picker in a project's "Add column" form has an accessible name.
+- `<html>` carries `data-theme="light|dark"` next to the `light`/`dark` class.
+- The unused `Badge` and `Progress` components are removed.
 - The shadcn-style `--accent` color token is now `--hover-surface` (`bg-hover-surface`), freeing `--accent` for HeroUI. No visual change.
 
 ### Validation
 - Unit tests run the same scenarios against both kits. CI gains an `e2e-heroui` lane that runs the full Playwright suite with HeroUI as the default, and `build-bundle` fails if HeroUI code reaches the eagerly loaded bundle.
 - The contrast audit also checks the HeroUI kit: 11 text/fill pairs in both themes and every accent preset. It caught two failing pairs (success text on green, dark-theme danger text), both fixed. Design enforcement now also fails if HeroUI's default theme is imported, if HeroUI is imported outside the lazy kit, if the adapter is missing a variable the kit reads, or if a kit wrapper hardcodes a color.
 - New browser checks (`ui-kit-acceptance.spec.ts`) run in both CI lanes. They cover the accent preset, keyboard-only use of the task panel (checkbox, priority, actions menu, confirmation, date picker, calendar view, shortcuts), and phone-width fit of every popover, menu and confirmation.
+- Browser checks also pick dates with the browser set to UTC−7 and UTC+14 (Today and a picked day keep their date across a reload), and switch kits from Settings and from `?ui-kit=`.
+- The contrast audit now covers delete buttons in both themes.
+- A `bundle-diff` CI job builds the PR base and head and reports how much the eagerly loaded bundle changed, with a warning above 2 KiB gzip. This change adds 1.74 KiB to the Classic kit (346.46 → 348.21 KiB).
 - Browser tests that selected elements by Classic-only markup (`button[...]` tags, day buttons named only by their number, an unnamed combobox) now use kit-neutral test ids, `data-state` and `data-calendar-day`.
 
 ## 2026-10-11

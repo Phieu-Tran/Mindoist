@@ -1,8 +1,8 @@
-import { getKit } from './kit';
-import type { SelectOption, SelectProps } from './legacy/select';
+import { getKitOverrides } from './kit';
+import { Select as LegacySelect, type SelectOption, type SelectProps } from './legacy/select';
 
 export function Select(props: SelectProps) {
-  const Impl = getKit().Select;
+  const Impl = getKitOverrides().Select ?? LegacySelect;
   return <Impl {...props} />;
 }
 

@@ -1,28 +1,20 @@
 import type { ComponentType, ForwardRefExoticComponent, RefAttributes } from 'react';
-import { Button as LegacyButton, type ButtonProps } from './legacy/button';
-import { Input as LegacyInput } from './legacy/input';
-import { Checkbox as LegacyCheckbox, type CheckboxProps } from './legacy/checkbox';
-import { Switch as LegacySwitch, type SwitchProps } from './legacy/switch';
-import { Select as LegacySelect, type SelectProps } from './legacy/select';
-import {
-  DatePicker as LegacyDatePicker,
-  DateRangePicker as LegacyDateRangePicker,
-  TimePicker as LegacyTimePicker,
-  type DatePickerProps,
-  type DateRangePickerProps,
-  type TimePickerProps,
-} from './legacy/date-picker';
-import { PopoverPanel as LegacyPopoverPanel, type PopoverPanelProps } from './legacy/popover-panel';
-import { ModalFrame as LegacyModalFrame, type ModalFrameProps } from './legacy/modal-frame';
-import { ActionMenu as LegacyActionMenu, type ActionMenuProps } from './legacy/action-menu';
+import type { ButtonProps } from './legacy/button';
+import type { CheckboxProps } from './legacy/checkbox';
+import type { SwitchProps } from './legacy/switch';
+import type { SelectProps } from './legacy/select';
+import type { DatePickerProps, DateRangePickerProps, TimePickerProps } from './legacy/date-picker';
+import type { PopoverPanelProps } from './legacy/popover-panel';
+import type { ModalFrameProps } from './legacy/modal-frame';
+import type { ActionMenuProps } from './legacy/action-menu';
 import { applyUiKitAttribute, type UiKit } from '@/lib/ui-kit';
 
 export type InputProps = React.InputHTMLAttributes<HTMLInputElement>;
 
 /**
- * The swappable primitives. Facades in components/ui/*.tsx render whichever
- * implementation is registered here, so call sites never branch on the kit.
- * A kit may leave entries out; those keep the legacy implementation.
+ * The swappable primitives. Facades in components/ui/*.tsx render the active
+ * kit's override when there is one, else their legacy implementation, so call
+ * sites never branch on the kit.
  */
 export interface UiKitComponents {
   Button: ForwardRefExoticComponent<ButtonProps & RefAttributes<HTMLButtonElement>>;
@@ -36,27 +28,18 @@ export interface UiKitComponents {
   PopoverPanel: ComponentType<PopoverPanelProps>;
   ModalFrame: ComponentType<ModalFrameProps>;
   ActionMenu: ComponentType<ActionMenuProps>;
+  Skeleton: ComponentType<React.HTMLAttributes<HTMLDivElement>>;
 }
 
-export const legacyKit: UiKitComponents = {
-  Button: LegacyButton,
-  Input: LegacyInput,
-  Checkbox: LegacyCheckbox,
-  Switch: LegacySwitch,
-  Select: LegacySelect,
-  DatePicker: LegacyDatePicker,
-  DateRangePicker: LegacyDateRangePicker,
-  TimePicker: LegacyTimePicker,
-  PopoverPanel: LegacyPopoverPanel,
-  ModalFrame: LegacyModalFrame,
-  ActionMenu: LegacyActionMenu,
-};
-
-let activeKit: UiKitComponents = legacyKit;
+// Only the active kit's *overrides* live here. Each facade imports its own
+// legacy implementation, so legacy code stays in the chunks that use it
+// (importing every legacy primitive here pulled lazy-only ones, like the
+// framer-motion Select, into the entry bundle).
+let overrides: Partial<UiKitComponents> = {};
 let activeKitName: UiKit = 'legacy';
 
-export function getKit(): UiKitComponents {
-  return activeKit;
+export function getKitOverrides(): Partial<UiKitComponents> {
+  return overrides;
 }
 
 export function getActiveUiKit(): UiKit {
@@ -65,7 +48,7 @@ export function getActiveUiKit(): UiKit {
 
 /** Test/bootstrap hook: install a kit synchronously. */
 export function registerUiKit(name: UiKit, components: Partial<UiKitComponents>) {
-  activeKit = { ...legacyKit, ...components };
+  overrides = components;
   activeKitName = name;
   if (typeof document !== 'undefined') applyUiKitAttribute(name);
 }
