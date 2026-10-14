@@ -14,6 +14,7 @@ import {
 } from './legacy/date-picker';
 import { PopoverPanel as LegacyPopoverPanel, type PopoverPanelProps } from './legacy/popover-panel';
 import { ModalFrame as LegacyModalFrame, type ModalFrameProps } from './legacy/modal-frame';
+import { ActionMenu as LegacyActionMenu, type ActionMenuProps } from './legacy/action-menu';
 import { applyUiKitAttribute, type UiKit } from '@/lib/ui-kit';
 
 export type InputProps = React.InputHTMLAttributes<HTMLInputElement>;
@@ -34,6 +35,7 @@ export interface UiKitComponents {
   TimePicker: ComponentType<TimePickerProps>;
   PopoverPanel: ComponentType<PopoverPanelProps>;
   ModalFrame: ComponentType<ModalFrameProps>;
+  ActionMenu: ComponentType<ActionMenuProps>;
 }
 
 export const legacyKit: UiKitComponents = {
@@ -47,6 +49,7 @@ export const legacyKit: UiKitComponents = {
   TimePicker: LegacyTimePicker,
   PopoverPanel: LegacyPopoverPanel,
   ModalFrame: LegacyModalFrame,
+  ActionMenu: LegacyActionMenu,
 };
 
 let activeKit: UiKitComponents = legacyKit;

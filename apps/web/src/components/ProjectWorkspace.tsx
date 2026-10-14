@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CalendarSync, Check, CheckCircle2, GripVertical, LayoutDashboard, List, MoreHorizontal, Pencil, Plus, RotateCcw, Tag as TagIcon, Trash2, X } from 'lucide-react';
 import type { Project, ProjectColumn, Tag as TagType, Task } from '@mindoist/shared/types';
@@ -9,6 +9,7 @@ import { DueCountdown } from './DueCountdown';
 import { Select } from './ui/select';
 import { Button } from './ui/button';
 import { ModalFrame } from './ui/modal-frame';
+import { ActionMenu } from './ui/action-menu';
 import './ProjectWorkspace.css';
 
 interface Props {
@@ -67,6 +68,9 @@ export function ProjectWorkspace({
   const [deletingProject, setDeletingProject] = useState(false);
   const [calendarSyncSaving, setCalendarSyncSaving] = useState(false);
   const [openTaskMenuId, setOpenTaskMenuId] = useState<string | null>(null);
+  const taskMenuTriggerRef = useRef<HTMLButtonElement>(null);
+  const taskMenuContainerRef = useRef<HTMLDivElement>(null);
+  const taskMenuPanelRef = useRef<HTMLDivElement>(null);
   const tagMap = useMemo(() => new Map(tags.map(tag => [tag.id, tag])), [tags]);
   const topLevelTasks = useMemo(() => tasks.filter(task => !task.parentId), [tasks]);
   const taskMap = useMemo(() => new Map(tasks.map(task => [task.id, task])), [tasks]);
@@ -108,6 +112,7 @@ export function ProjectWorkspace({
   useEffect(() => {
     if (!openTaskMenuId) return;
     const handlePointerDown = (event: MouseEvent) => {
+      if (taskMenuPanelRef.current?.contains(event.target as Node)) return;
       const menu = (event.target as HTMLElement).closest('[data-project-task-menu]');
       if (menu?.getAttribute('data-project-task-menu') !== openTaskMenuId) setOpenTaskMenuId(null);
     };
@@ -606,8 +611,9 @@ export function ProjectWorkspace({
                         >
                           {task.title}
                         </button>
-                        <div className="project-task-menu" data-project-task-menu={task.id}>
+                        <div className="project-task-menu" data-project-task-menu={task.id} ref={openTaskMenuId === task.id ? taskMenuContainerRef : undefined}>
                           <button
+                            ref={openTaskMenuId === task.id ? taskMenuTriggerRef : undefined}
                             type="button"
                             aria-label={t('workspace.moveTask', { title: task.title })}
                             aria-haspopup="menu"
@@ -620,24 +626,30 @@ export function ProjectWorkspace({
                           >
                             <MoreHorizontal className="h-3.5 w-3.5" aria-hidden="true" />
                           </button>
-                          {openTaskMenuId === task.id && <div role="menu">
-                            <span>{t('workspace.moveTo')}</span>
-                            {columns.map(destination => (
-                              <button
-                                key={destination.id}
-                                type="button"
-                                role="menuitem"
-                                disabled={destination.id === column.id}
-                                onClick={() => {
-                                  void moveTask(task, destination);
-                                  setOpenTaskMenuId(null);
-                                }}
-                              >
+                          <ActionMenu
+                            open={openTaskMenuId === task.id}
+                            onClose={() => setOpenTaskMenuId(null)}
+                            onAction={key => {
+                              const destination = columnMap.get(key);
+                              if (destination) void moveTask(task, destination);
+                              setOpenTaskMenuId(null);
+                            }}
+                            aria-label={t('workspace.moveTask', { title: task.title })}
+                            heading={t('workspace.moveTo')}
+                            anchorRef={taskMenuTriggerRef}
+                            containerRef={taskMenuContainerRef}
+                            panelRef={taskMenuPanelRef}
+                            heroClassName="min-w-44"
+                            items={columns.map(destination => ({
+                              key: destination.id,
+                              textValue: destination.name,
+                              disabled: destination.id === column.id,
+                              content: <>
                                 {destination.id === column.id && <Check className="h-3.5 w-3.5" aria-hidden="true" />}
                                 <span>{destination.name}</span>
-                              </button>
-                            ))}
-                          </div>}
+                              </>,
+                            }))}
+                          />
                         </div>
                       </div>
                       {hasMeta && (

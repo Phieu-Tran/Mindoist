@@ -76,10 +76,12 @@
   --field-border-width: 1px;
   --field-radius: var(--radius-control);
 
-  --success: var(--color-project-jade, oklch(0.62 0.15 160));
+  /* Status fills are HeroUI-only (Mindoist has no success/warning token);
+     values are checked for AA by contrast-audit.mjs (runHeroUiAudit). */
+  --success: oklch(0.5200 0.1300 155);
   --success-foreground: oklch(1 0 0);
-  --warning: var(--color-priority-p2);
-  --warning-foreground: oklch(0.2 0.02 70);
+  --warning: oklch(0.8200 0.1450 80);
+  --warning-foreground: oklch(0.2600 0.0400 60);
   --danger: var(--destructive);
   --danger-foreground: var(--destructive-foreground);
 
@@ -151,6 +153,13 @@
 }
 
 :root.dark {
+  /* Dark --destructive is a light red; white text on it is ~2.8:1. Use dark
+     text like the dark --primary pair does (AA, see runHeroUiAudit). */
+  --danger-foreground: oklch(0.1984 0.0270 20);
+  --success: oklch(0.7600 0.1500 158);
+  --success-foreground: oklch(0.2000 0.0300 160);
+  --warning: oklch(0.8200 0.1400 80);
+  --warning-foreground: oklch(0.2400 0.0400 60);
   --overlay-shadow: 0 0 0 1px color-mix(in oklab, var(--foreground) 12%, transparent), 0 12px 32px -8px oklch(0 0 0 / 0.5);
   --surface-shadow: 0 0 0 0 transparent;
   --backdrop: oklch(0 0 0 / 0.6);

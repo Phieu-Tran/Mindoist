@@ -230,6 +230,61 @@ export function runAudit() {
   ];
 }
 
+// ── HeroUI kit adapter (src/styles/heroui.css) ──
+// The HeroUI kit maps its semantic variables onto Mindoist tokens. Most are
+// plain references, but the adapter also defines its own literals (status
+// fills), so every text/fill pair HeroUI renders is audited here, per theme
+// and accent preset, against the adapter merged over the app tokens.
+
+const HEROUI_CSS_PATH = join(__dirname, 'src', 'styles', 'heroui.css');
+
+const HEROUI_PAIRS = [
+  ['--accent-foreground', '--accent'],
+  ['--danger-foreground', '--danger'],
+  ['--success-foreground', '--success'],
+  ['--warning-foreground', '--warning'],
+  ['--default-foreground', '--default'],
+  ['--surface-foreground', '--surface'],
+  ['--overlay-foreground', '--overlay'],
+  ['--field-foreground', '--field-background'],
+  ['--field-placeholder', '--field-background'],
+  ['--muted-foreground', '--overlay'],
+  ['--link', '--overlay'],
+];
+
+function resolveOne(tokens, name, stack = []) {
+  if (stack.includes(name)) throw new Error(`Circular token reference: ${[...stack, name].join(' -> ')}`);
+  const value = tokens[name];
+  if (value == null) throw new Error(`Missing token reference: ${name}`);
+  return value.replace(
+    /var\((--[\w-]+)(?:,\s*([^)]+))?\)/g,
+    (_match, reference, fallback) =>
+      tokens[reference] != null ? resolveOne(tokens, reference, [...stack, name]) : fallback?.trim(),
+  );
+}
+
+function auditHeroUiTheme(name, baseTokens, presets, adapter) {
+  const results = [];
+  const variants = [[undefined, {}], ...Object.entries(presets)];
+  for (const [preset, overrides] of variants) {
+    const tokens = { ...baseTokens, ...overrides, ...adapter };
+    for (const [fg, bg] of HEROUI_PAIRS) {
+      results.push(auditPair(fg, resolveOne(tokens, fg), bg, resolveOne(tokens, bg), `heroui-${name}`, preset));
+    }
+  }
+  return results;
+}
+
+export function runHeroUiAudit(cssPath = HEROUI_CSS_PATH) {
+  const css = readFileSync(cssPath, 'utf8');
+  const lightAdapter = mergeBlocks(css, /(?:^|\n)\s*:root\s*\{([^}]*)\}/g);
+  const darkAdapter = { ...lightAdapter, ...mergeBlocks(css, /(?:^|\n)\s*:root\.dark\s*\{([^}]*)\}/g) };
+  return [
+    ...auditHeroUiTheme('light', LIGHT, ACCENT_PRESETS_LIGHT, lightAdapter),
+    ...auditHeroUiTheme('dark', DARK, ACCENT_PRESETS_DARK, darkAdapter),
+  ];
+}
+
 export { LIGHT, DARK, ACCENT_PRESETS_LIGHT, ACCENT_PRESETS_DARK, auditTheme };
 
 // ── CLI ── (only runs when this file is executed directly, e.g.
