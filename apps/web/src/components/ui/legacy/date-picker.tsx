@@ -68,11 +68,11 @@ function firstDayOfMonth(year: number, month: number) {
   return new Date(year, month, 1).getDay();
 }
 
-function formatDateISO(year: number, month: number, day: number): string {
+export function formatDateISO(year: number, month: number, day: number): string {
   return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 }
 
-function formatDateDisplay(dateStr: string): string {
+export function formatDateDisplay(dateStr: string): string {
   if (!dateStr) return '';
   const [y, m, d] = dateStr.split('-').map(Number);
   return `${String(d).padStart(2, '0')}/${String(m).padStart(2, '0')}/${y}`;
@@ -325,6 +325,121 @@ export function DatePicker({
   );
 }
 
+export interface DateRangeTriggersProps {
+  compact: boolean;
+  startValue: string;
+  dueValue: string;
+  startLabel: string;
+  dueLabel: string;
+  startTestId?: string;
+  dueTestId?: string;
+  dueIsOverdue: boolean;
+  open: boolean;
+  activeField: 'start' | 'due';
+  onOpenFor: (field: 'start' | 'due') => void;
+}
+
+/** The start/due trigger buttons, shared by the legacy and HeroUI pickers. */
+export function DateRangeTriggers({
+  compact,
+  startValue,
+  dueValue,
+  startLabel,
+  dueLabel,
+  startTestId,
+  dueTestId,
+  dueIsOverdue,
+  open,
+  activeField,
+  onOpenFor: openFor,
+}: DateRangeTriggersProps) {
+  return (
+    <>
+      {compact ? (
+        <button
+          type="button"
+          data-testid={dueTestId}
+          onClick={event => {
+            const target = event.target as HTMLElement;
+            const clickedStart = Boolean(target.closest('[data-range-field="start"]'));
+            openFor(clickedStart || (Boolean(startValue) && !dueValue) ? 'start' : 'due');
+          }}
+          aria-label={startValue && dueValue
+            ? `${startLabel}: ${formatDateDisplay(startValue)}; ${dueLabel}: ${formatDateDisplay(dueValue)}`
+            : startValue
+              ? `${startLabel}: ${formatDateDisplay(startValue)}`
+              : dueValue
+                ? `${dueLabel}: ${formatDateDisplay(dueValue)}`
+                : dueLabel}
+          className={cn(
+            'flex h-7 shrink-0 items-center gap-1 whitespace-nowrap rounded-control border bg-background px-1.5 text-xs transition-colors hover:border-muted-foreground hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+            open ? 'border-primary' : 'border-input',
+            dueValue && dueIsOverdue && 'border-destructive/40 font-medium',
+          )}
+        >
+          <Calendar className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          {startValue && dueValue ? (
+            <>
+              <span data-range-field="start" data-testid={startTestId}>
+                {formatDateDisplay(startValue)}
+              </span>
+              <span className="text-muted-foreground" aria-hidden="true">→</span>
+              <span className={cn(dueIsOverdue && 'text-destructive')}>
+                {formatDateDisplay(dueValue)}
+              </span>
+            </>
+          ) : startValue ? (
+            <span data-range-field="start" data-testid={startTestId}>
+              {formatDateDisplay(startValue)}
+            </span>
+          ) : (
+            <>
+              <span data-testid={startTestId} className="sr-only">{startLabel}</span>
+              <span className={cn(
+                !dueValue && 'text-muted-foreground',
+                dueValue && dueIsOverdue && 'text-destructive',
+              )}>
+                {dueValue ? formatDateDisplay(dueValue) : dueLabel}
+              </span>
+            </>
+          )}
+        </button>
+      ) : (
+        <>
+          <button
+            type="button"
+            data-testid={startTestId}
+            onClick={() => openFor('start')}
+            className={cn(
+              'flex h-7 shrink-0 items-center gap-1 whitespace-nowrap rounded-control border bg-background px-1.5 text-xs text-left transition-colors hover:border-muted-foreground hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+              open && activeField === 'start' ? 'border-primary' : 'border-input',
+              !startValue && 'text-muted-foreground'
+            )}
+          >
+            <Calendar className="h-3.5 w-3.5 shrink-0" />
+            <span>{startValue ? formatDateDisplay(startValue) : startLabel}</span>
+          </button>
+          <span className="shrink-0 text-xs text-muted-foreground">–</span>
+          <button
+            type="button"
+            data-testid={dueTestId}
+            onClick={() => openFor('due')}
+            className={cn(
+              'flex h-7 shrink-0 items-center gap-1 whitespace-nowrap rounded-control border bg-background px-1.5 text-xs text-left transition-colors hover:border-muted-foreground hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+              open && activeField === 'due' ? 'border-primary' : 'border-input',
+              !dueValue && 'text-muted-foreground',
+              dueValue && dueIsOverdue && 'border-destructive/40 font-medium text-destructive'
+            )}
+          >
+            <Calendar className="h-3.5 w-3.5 shrink-0" />
+            <span>{dueValue ? formatDateDisplay(dueValue) : dueLabel}</span>
+          </button>
+        </>
+      )}
+    </>
+  );
+}
+
 export interface DateRangePickerProps {
   startValue: string;
   dueValue: string;
@@ -459,87 +574,19 @@ export function DateRangePicker({
 
   return (
     <div ref={ref} className={cn('relative flex shrink-0 items-center gap-1', className)}>
-      {compact ? (
-        <button
-          type="button"
-          data-testid={dueTestId}
-          onClick={event => {
-            const target = event.target as HTMLElement;
-            const clickedStart = Boolean(target.closest('[data-range-field="start"]'));
-            openFor(clickedStart || (Boolean(startValue) && !dueValue) ? 'start' : 'due');
-          }}
-          aria-label={startValue && dueValue
-            ? `${startLabel}: ${formatDateDisplay(startValue)}; ${dueLabel}: ${formatDateDisplay(dueValue)}`
-            : startValue
-              ? `${startLabel}: ${formatDateDisplay(startValue)}`
-              : dueValue
-                ? `${dueLabel}: ${formatDateDisplay(dueValue)}`
-                : dueLabel}
-          className={cn(
-            'flex h-7 shrink-0 items-center gap-1 whitespace-nowrap rounded-control border bg-background px-1.5 text-xs transition-colors hover:border-muted-foreground hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
-            open ? 'border-primary' : 'border-input',
-            dueValue && dueIsOverdue && 'border-destructive/40 font-medium',
-          )}
-        >
-          <Calendar className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-          {startValue && dueValue ? (
-            <>
-              <span data-range-field="start" data-testid={startTestId}>
-                {formatDateDisplay(startValue)}
-              </span>
-              <span className="text-muted-foreground" aria-hidden="true">→</span>
-              <span className={cn(dueIsOverdue && 'text-destructive')}>
-                {formatDateDisplay(dueValue)}
-              </span>
-            </>
-          ) : startValue ? (
-            <span data-range-field="start" data-testid={startTestId}>
-              {formatDateDisplay(startValue)}
-            </span>
-          ) : (
-            <>
-              <span data-testid={startTestId} className="sr-only">{startLabel}</span>
-              <span className={cn(
-                !dueValue && 'text-muted-foreground',
-                dueValue && dueIsOverdue && 'text-destructive',
-              )}>
-                {dueValue ? formatDateDisplay(dueValue) : dueLabel}
-              </span>
-            </>
-          )}
-        </button>
-      ) : (
-        <>
-          <button
-            type="button"
-            data-testid={startTestId}
-            onClick={() => openFor('start')}
-            className={cn(
-              'flex h-7 shrink-0 items-center gap-1 whitespace-nowrap rounded-control border bg-background px-1.5 text-xs text-left transition-colors hover:border-muted-foreground hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
-              open && activeField === 'start' ? 'border-primary' : 'border-input',
-              !startValue && 'text-muted-foreground'
-            )}
-          >
-            <Calendar className="h-3.5 w-3.5 shrink-0" />
-            <span>{startValue ? formatDateDisplay(startValue) : startLabel}</span>
-          </button>
-          <span className="shrink-0 text-xs text-muted-foreground">–</span>
-          <button
-            type="button"
-            data-testid={dueTestId}
-            onClick={() => openFor('due')}
-            className={cn(
-              'flex h-7 shrink-0 items-center gap-1 whitespace-nowrap rounded-control border bg-background px-1.5 text-xs text-left transition-colors hover:border-muted-foreground hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
-              open && activeField === 'due' ? 'border-primary' : 'border-input',
-              !dueValue && 'text-muted-foreground',
-              dueValue && dueIsOverdue && 'border-destructive/40 font-medium text-destructive'
-            )}
-          >
-            <Calendar className="h-3.5 w-3.5 shrink-0" />
-            <span>{dueValue ? formatDateDisplay(dueValue) : dueLabel}</span>
-          </button>
-        </>
-      )}
+      <DateRangeTriggers
+        compact={compact}
+        startValue={startValue}
+        dueValue={dueValue}
+        startLabel={startLabel}
+        dueLabel={dueLabel}
+        startTestId={startTestId}
+        dueTestId={dueTestId}
+        dueIsOverdue={dueIsOverdue}
+        open={open}
+        activeField={activeField}
+        onOpenFor={openFor}
+      />
 
       {open && createPortal(
         <div

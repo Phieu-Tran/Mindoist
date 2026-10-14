@@ -5,6 +5,7 @@ import { Input } from './input';
 import { Checkbox } from './checkbox';
 import { Switch } from './switch';
 import { Select } from './select';
+import { DatePicker, DateRangePicker } from './date-picker';
 
 /**
  * The HeroUI kit. Anything not listed falls back to the legacy component
@@ -16,4 +17,6 @@ export const herouiKit: Partial<UiKitComponents> = {
   Checkbox,
   Switch,
   Select,
+  DatePicker,
+  DateRangePicker,
 };

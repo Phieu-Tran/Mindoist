@@ -1,5 +1,5 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { registerUiKit, type UiKitComponents } from './kit';
 import { herouiKit } from './heroui';
@@ -8,6 +8,7 @@ import { Input } from './input';
 import { Checkbox } from './checkbox';
 import { Switch } from './switch';
 import { Select } from './select';
+import { DatePicker } from './date-picker';
 
 const kits: Array<[name: 'legacy' | 'heroui', components: Partial<UiKitComponents>]> = [
   ['legacy', {}],
@@ -106,5 +107,31 @@ describe.each(kits)('UI kit: %s', (name, components) => {
     await userEvent.click(screen.getByTestId('project'));
     await userEvent.click(await screen.findByRole('option', { name: 'Work' }));
     await waitFor(() => expect(onChange).toHaveBeenCalledWith('p1'));
+  });
+
+  it('DatePicker opens a "Pick date" dialog and returns ISO dates', async () => {
+    const onChange = vi.fn();
+    const { rerender } = render(<DatePicker value="" onChange={onChange} testId="due" locale="en" />);
+    expect(screen.getByTestId('due')).toHaveTextContent('dd/mm/yyyy');
+
+    await userEvent.click(screen.getByTestId('due'));
+    const dialog = await screen.findByRole('dialog', { name: 'Pick date' });
+    await userEvent.click(within(dialog).getByRole('button', { name: /^Today$/ }));
+    const now = new Date();
+    const iso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    expect(onChange).toHaveBeenLastCalledWith(iso);
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Pick date' })).not.toBeInTheDocument());
+
+    rerender(<DatePicker value="2026-03-04" onChange={onChange} testId="due" locale="en" />);
+    expect(screen.getByTestId('due')).toHaveTextContent('04/03/2026');
+    await userEvent.click(screen.getByTestId('due'));
+    const reopened = await screen.findByRole('dialog', { name: 'Pick date' });
+    await userEvent.click(reopened.querySelector<HTMLElement>('[data-calendar-day="2026-03-18"]')!);
+    expect(onChange).toHaveBeenLastCalledWith('2026-03-18');
+
+    await userEvent.click(screen.getByTestId('due'));
+    const again = await screen.findByRole('dialog', { name: 'Pick date' });
+    await userEvent.click(within(again).getByRole('button', { name: /^Clear$/ }));
+    expect(onChange).toHaveBeenLastCalledWith('');
   });
 });

@@ -194,4 +194,22 @@
   .mindoist-select .select__value { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: inherit; }
   .mindoist-select .select__indicator { position: static; margin: 0; width: 0.875rem; height: 0.875rem; }
   .mindoist-select--sm .select__indicator { width: 0.75rem; height: 0.75rem; }
+
+  /* Date popovers: Mindoist panel surface and compact calendar cells. */
+  .mindoist-date-popover {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-panel);
+    background: var(--card);
+  }
+  .mindoist-calendar { width: 100%; }
+  .mindoist-calendar .calendar__cell { font-size: 0.8125rem; }
+  .mindoist-calendar .calendar__cell.mindoist-range-band {
+    background: color-mix(in oklch, var(--primary) 10%, transparent);
+    border-radius: 0;
+  }
+  .mindoist-calendar .calendar__cell.mindoist-range-edge:not([data-selected]) {
+    background: var(--primary);
+    color: var(--primary-foreground);
+    border-radius: 9999px;
+  }
 }
