@@ -2,6 +2,22 @@
 
 Notable changes to Mindoist, grouped by date. This project doesn't cut versioned releases yet — entries are dated instead.
 
+## 2026-10-14
+
+### Added
+- A second UI kit built on HeroUI v3 (React Aria). Settings › Appearance › UI kit switches between Default, Classic and HeroUI (beta) on that device; `?ui-kit=heroui|legacy|default` in any URL does the same. The page reloads to switch, and only the chosen kit is downloaded — Classic users get no extra code.
+- Each web environment picks its own default with the `VITE_UI_KIT` GitHub environment variable (`legacy` when unset), and can hide the Settings switch with `VITE_UI_KIT_SWITCHER=off`. Changing either needs a redeploy of the same commit, not a code change.
+- The HeroUI kit covers buttons, inputs, checkboxes, switches, selects, the date and date-range pickers, the TaskDetail priority/color/tags/recurrence popovers, the keyboard-shortcut dialog and the delete/discard/complete confirmations. It keeps Mindoist's colors, accent presets, dark mode, density and radius scale. The time picker, accent picker, new-project dialog, review tabs and undo toast stay on the classic components.
+- With HeroUI, date pickers start the week on Monday, show the neighbouring months' days and support arrow-key/PageUp/PageDown navigation; popovers are no longer clipped by the detail panel and flip above their trigger near the bottom of the screen.
+
+### Changed
+- The column color picker in a project's "Add column" form has an accessible name.
+- The shadcn-style `--accent` color token is now `--hover-surface` (`bg-hover-surface`), freeing `--accent` for HeroUI. No visual change.
+
+### Validation
+- Unit tests run the same scenarios against both kits. CI gains an `e2e-heroui` lane that runs the full Playwright suite with HeroUI as the default, and `build-bundle` fails if HeroUI code reaches the eagerly loaded bundle.
+- Browser tests that selected elements by Classic-only markup (`button[...]` tags, day buttons named only by their number, an unnamed combobox) now use kit-neutral test ids, `data-state` and `data-calendar-day`.
+
 ## 2026-10-11
 
 ### Added

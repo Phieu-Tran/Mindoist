@@ -694,6 +694,8 @@ export function ProjectWorkspace({
                   label: t(`workspace.columnColors.${c}`),
                 }))}
                 onChange={setNewColumnColor}
+                aria-label={t('workspace.columnColor')}
+                data-testid="project-new-column-color"
               />
               <div>
                 <button type="button" onClick={() => setAddColumnOpen(false)}>{t('projects.cancel')}</button>

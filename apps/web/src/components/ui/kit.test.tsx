@@ -90,6 +90,24 @@ describe.each(kits)('UI kit: %s', (name, components) => {
     await userEvent.click(screen.getByTestId('view'));
     await userEvent.click(await screen.findByRole('option', { name: 'Day' }));
     await waitFor(() => expect(onChange).toHaveBeenCalledWith('day'));
+    expect(onChange).toHaveBeenCalledTimes(1);
+  });
+
+  it('Select reports re-picking the current option', async () => {
+    const onChange = vi.fn();
+    render(
+      <Select
+        value="week"
+        onChange={onChange}
+        aria-label="View"
+        data-testid="view"
+        options={[{ value: 'day', label: 'Day' }, { value: 'week', label: 'Week' }]}
+      />,
+    );
+    await userEvent.click(screen.getByTestId('view'));
+    await userEvent.click(await screen.findByRole('option', { name: 'Week' }));
+    await waitFor(() => expect(onChange).toHaveBeenCalledWith('week'));
+    expect(onChange).toHaveBeenCalledTimes(1);
   });
 
   it('Select treats an empty-string option as a real choice', async () => {

@@ -26,6 +26,11 @@ export function Select({
   size = 'default',
   align = 'left',
 }: SelectProps) {
+  const repick = (option: HTMLElement | null) => {
+    const key = option?.dataset.optionKey;
+    if (key != null && fromKey(key) === value) onChange(value);
+  };
+
   return (
     <HeroSelect
       aria-label={ariaLabel}
@@ -40,17 +45,30 @@ export function Select({
         <HeroSelect.Indicator />
       </HeroSelect.Trigger>
       <HeroSelect.Popover placement={align === 'right' ? 'bottom end' : 'bottom start'} className="min-w-[8rem]">
-        <ListBox aria-label={ariaLabel}>
-          {options.map(option => (
-            <ListBox.Item key={option.value} id={toKey(option.value)} textValue={option.label}>
-              {option.dotColor && (
-                <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: option.dotColor }} aria-hidden="true" />
-              )}
-              <span className="flex-1 truncate">{option.label}</span>
-              <ListBox.ItemIndicator />
-            </ListBox.Item>
-          ))}
-        </ListBox>
+        {/* React Aria doesn't report re-picking the selected option; the
+            legacy Select did, and callers rely on it (CalendarView persists
+            the view on any explicit pick). Changes still arrive through
+            onChange above, so only the unchanged pick is reported here —
+            in the capture phase, before the popover closes and unmounts. */}
+        <div
+          className="contents"
+          onPointerUpCapture={event => repick((event.target as HTMLElement).closest<HTMLElement>('[data-option-key]'))}
+          onKeyDownCapture={event => {
+            if (event.key === 'Enter' || event.key === ' ') repick((event.target as HTMLElement).closest<HTMLElement>('[data-option-key]'));
+          }}
+        >
+          <ListBox aria-label={ariaLabel}>
+            {options.map(option => (
+              <ListBox.Item key={option.value} id={toKey(option.value)} textValue={option.label} data-option-key={toKey(option.value)}>
+                {option.dotColor && (
+                  <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: option.dotColor }} aria-hidden="true" />
+                )}
+                <span className="flex-1 truncate">{option.label}</span>
+                <ListBox.ItemIndicator />
+              </ListBox.Item>
+            ))}
+          </ListBox>
+        </div>
       </HeroSelect.Popover>
     </HeroSelect>
   );

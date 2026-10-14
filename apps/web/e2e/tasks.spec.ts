@@ -165,7 +165,7 @@ test.describe('Task Management E2E', () => {
 
     // Find the checkbox in the same task row
     const taskRow = titleEl.locator('xpath=ancestor::div[starts-with(@data-testid,"task-")]');
-    const checkbox = taskRow.locator('button[data-testid^="task-toggle-"]');
+    const checkbox = taskRow.locator('[data-testid^="task-toggle-"]');
 
     // Complete the task
     await checkbox.click();
@@ -178,7 +178,7 @@ test.describe('Task Management E2E', () => {
     const completedTitle = page.getByText(taskTitle, { exact: true });
     await expect(completedTitle).toHaveCSS('text-decoration-line', 'line-through');
     const completedRow = completedTitle.locator('xpath=ancestor::div[starts-with(@data-testid,"task-")]');
-    await completedRow.locator('button[data-testid^="task-toggle-"]').click();
+    await completedRow.locator('[data-testid^="task-toggle-"]').click();
     await expect(completedTitle).not.toBeVisible();
     await page.goto('/tasks/inbox');
     await expect(titleEl).toBeVisible();
@@ -193,7 +193,7 @@ test.describe('Task Management E2E', () => {
 
     const titleEl = page.getByTestId('task-list').getByText(taskTitle, { exact: true });
     const taskRow = titleEl.locator('xpath=ancestor::div[starts-with(@data-testid,"task-")]');
-    const checkbox = taskRow.locator('button[data-testid^="task-toggle-"]');
+    const checkbox = taskRow.locator('[data-testid^="task-toggle-"]');
 
     await checkbox.click();
     await expect(page.getByTestId('undo-toast')).toContainText('Completed');
@@ -337,7 +337,7 @@ test.describe('Task Management E2E', () => {
 
     await page.getByTestId('detail-tags').click();
     await page.getByLabel('Tag name').fill('Deep work');
-    await page.getByTestId('task-property-registry').getByRole('button', { name: 'Add tag' }).click();
+    await page.getByRole('dialog', { name: 'Manage tags' }).getByRole('button', { name: 'Add tag' }).click();
 
     await expect(page.getByTestId('detail-tags')).toContainText('Deep work');
     mkdirSync(DISCOVERABILITY_EVIDENCE_DIR, { recursive: true });

@@ -704,6 +704,7 @@ export function DateRangePicker({
                 <button
                   key={dateStr}
                   type="button"
+                  data-calendar-day={dateStr}
                   disabled={disabled}
                   onClick={() => handleSelect(day)}
                   onMouseEnter={() => setHoverDate(dateStr)}

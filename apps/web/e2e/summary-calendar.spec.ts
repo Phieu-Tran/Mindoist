@@ -32,7 +32,7 @@ test('[MORE-01] Summary keeps task details in context and offers weekly/monthly 
   await addTask(page, 'Completed plan today p3', 'Completed plan');
   await addTask(page, 'Follow-up yesterday p2', 'Follow-up');
   const completedRow = page.getByTestId(/^task-[0-9a-f-]{36}$/).filter({ hasText: 'Completed plan' });
-  await completedRow.locator('button[data-testid^="task-toggle-"]').click();
+  await completedRow.locator('[data-testid^="task-toggle-"]').click();
 
   await page.getByTestId('sidebar-summary').click();
   await expect(page).toHaveURL(/\/review(?:\?.*)?$/);

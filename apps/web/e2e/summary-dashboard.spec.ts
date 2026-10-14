@@ -28,9 +28,9 @@ async function addTask(page: Page, value: string, title: string) {
 
 async function completeTask(page: Page, title: string) {
   const row = page.getByTestId(/^task-[0-9a-f-]{36}$/).filter({ hasText: title });
-  const checkbox = row.locator('button[data-testid^="task-toggle-"]');
+  const checkbox = row.locator('[data-testid^="task-toggle-"]');
   await checkbox.click();
-  await expect(checkbox).toBeChecked();
+  await expect(checkbox).toHaveAttribute('data-state', 'checked');
 }
 
 test('[MORE-01] Summary keeps week, month, year, project filter, trend, and calendar overview', async ({ page }) => {

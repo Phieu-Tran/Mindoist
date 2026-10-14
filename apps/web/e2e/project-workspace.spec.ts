@@ -67,9 +67,7 @@ test('[PROJECTS-01] project workspace defaults to List, persists Board opt-in, a
   // Add a third column with Rose color using custom combobox
   await page.getByRole('button', { name: 'Add column', exact: true }).first().click();
   await page.getByLabel('New column').fill('Review');
-  // The color Select has no aria-label; open it by role=combobox within the form
-  const colorCombobox = page.locator('form').getByRole('combobox');
-  await colorCombobox.click();
+  await page.getByTestId('project-new-column-color').click();
   await page.getByRole('option', { name: 'Rose' }).click();
   await page.getByRole('button', { name: 'Add', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Review' })).toBeVisible();

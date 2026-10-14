@@ -31,7 +31,7 @@ test.describe('T6: Search & Completed History E2E', () => {
 
     // Complete the task via checkbox
     const taskRow = page.getByText('File tax receipt', { exact: true }).locator('xpath=ancestor::div[starts-with(@data-testid,"task-")]');
-    const checkbox = taskRow.locator('button[data-testid^="task-toggle-"]');
+    const checkbox = taskRow.locator('[data-testid^="task-toggle-"]');
     await checkbox.click();
 
     // Completion reconciles the active list before displaying the undo toast.
@@ -48,7 +48,7 @@ test.describe('T6: Search & Completed History E2E', () => {
 
     // Reopen from completed view
     const completedRow = page.getByText('File tax receipt', { exact: true }).locator('xpath=ancestor::div[starts-with(@data-testid,"task-")]');
-    const completedCheckbox = completedRow.locator('button[data-testid^="task-toggle-"]');
+    const completedCheckbox = completedRow.locator('[data-testid^="task-toggle-"]');
     await completedCheckbox.click();
 
     // Reopening removes the task from the Completed result immediately.
@@ -70,7 +70,7 @@ test.describe('T6: Search & Completed History E2E', () => {
 
     // Verify checkbox is unchecked
     const inboxRow = page.getByText('File tax receipt', { exact: true }).locator('xpath=ancestor::div[starts-with(@data-testid,"task-")]');
-    const inboxCheckbox = inboxRow.locator('button[data-testid^="task-toggle-"]');
+    const inboxCheckbox = inboxRow.locator('[data-testid^="task-toggle-"]');
     await expect(inboxCheckbox).toHaveAttribute('data-state', 'unchecked');
   });
 

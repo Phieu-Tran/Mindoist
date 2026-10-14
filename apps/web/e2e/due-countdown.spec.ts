@@ -26,6 +26,7 @@ async function setDeadlineInFortyFiveMinutes(page: Page) {
     const pad = (value: number) => String(value).padStart(2, '0');
     return {
       day: date.getDate(),
+      iso: `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`,
       monthLabel: date.toLocaleString('en', { month: 'long', year: 'numeric' }),
       time: `${pad(date.getHours())}:${pad(date.getMinutes())}`,
     };
@@ -38,7 +39,7 @@ async function setDeadlineInFortyFiveMinutes(page: Page) {
     if (await popup.getByText(deadline.monthLabel, { exact: true }).isVisible()) break;
     await popup.getByRole('button', { name: 'Next month' }).click();
   }
-  await popup.getByRole('button', { name: String(deadline.day), exact: true }).click();
+  await popup.locator(`[data-calendar-day="${deadline.iso}"]`).click();
   await expect(popup).not.toBeVisible();
 
   await page.getByTestId('detail-deadline-time-v2').click();

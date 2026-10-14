@@ -20,7 +20,7 @@ export const Checkbox = React.forwardRef<HTMLButtonElement, CheckboxProps>(
       className={cn('mindoist-checkbox', className)}
       {...(rest as Omit<HeroCheckboxProps, 'className' | 'children'>)}
     >
-      <HeroCheckbox.Content data-testid={testId} onClick={onClick as never}>
+      <HeroCheckbox.Content data-testid={testId} data-state={checked ? 'checked' : 'unchecked'} onClick={onClick as never}>
         <HeroCheckbox.Control>
           <HeroCheckbox.Indicator />
         </HeroCheckbox.Control>
