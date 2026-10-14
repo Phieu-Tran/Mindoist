@@ -36,8 +36,8 @@ export function ReviewTabs({ active, onSelect }: ReviewTabsProps) {
             onClick={() => onSelect(tab.view)}
             className={cn(
               'flex min-h-10 min-w-max flex-1 items-center justify-center gap-2 rounded-control px-3 text-sm font-medium transition-colors',
-              'hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-              selected && 'bg-accent font-semibold text-foreground',
+              'hover:bg-hover-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+              selected && 'bg-hover-surface font-semibold text-foreground',
             )}
           >
             <Icon className="h-4 w-4" aria-hidden="true" />

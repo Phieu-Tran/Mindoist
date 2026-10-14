@@ -142,7 +142,7 @@ export function AdminPage() {
       <nav className="mb-6 flex gap-1 overflow-x-auto rounded-control border border-border bg-card p-1" aria-label={t('title')}>
         {(['overview', 'users', 'providers', 'audit'] as Tab[]).map(item => (
           <button key={item} type="button" onClick={() => setTab(item)} aria-current={tab === item ? 'page' : undefined}
-            className={cn('min-h-10 whitespace-nowrap rounded-control px-3 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring', tab === item ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent hover:text-foreground')}>
+            className={cn('min-h-10 whitespace-nowrap rounded-control px-3 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring', tab === item ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-hover-surface hover:text-foreground')}>
             {t(`tabs.${item}`)}
           </button>
         ))}
@@ -211,7 +211,7 @@ export function AdminPage() {
                         onClick={() => setForm(current => ({ ...current, provider: option.type }))}
                         className={cn(
                           'relative flex min-h-20 items-center gap-3 rounded-control border px-3 py-3 text-left transition-colors',
-                          'hover:border-muted-foreground/50 hover:bg-accent/60 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+                          'hover:border-muted-foreground/50 hover:bg-hover-surface/60 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
                           selected ? 'border-primary bg-primary/5' : 'border-border bg-background',
                         )}
                       >

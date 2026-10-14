@@ -355,7 +355,7 @@ export function Onboarding({ user, onComplete }: Props) {
                     <button
                       type="button"
                       onClick={() => setShowPassword(current => !current)}
-                      className="absolute right-0 top-0 flex h-11 w-11 cursor-pointer items-center justify-center rounded-control text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      className="absolute right-0 top-0 flex h-11 w-11 cursor-pointer items-center justify-center rounded-control text-muted-foreground transition-colors hover:bg-hover-surface hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       aria-label={showPassword ? t('onboarding.password.hide') : t('onboarding.password.show')}
                     >
                       {showPassword ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}

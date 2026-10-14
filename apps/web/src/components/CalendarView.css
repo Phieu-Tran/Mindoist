@@ -98,7 +98,7 @@
   .calendar-panel-toggle { display: none; }
   .calendar-mobile-mode { display: inline-flex; margin-left: auto; overflow: hidden; border: 1px solid var(--border); border-radius: var(--radius-control); }
   .calendar-mobile-mode button { min-height: 2.75rem; padding: 0 0.65rem; color: var(--muted-foreground); font-size: 0.75rem; }
-  .calendar-mobile-mode button[aria-pressed='true'] { background: var(--accent); color: var(--foreground); font-weight: 600; }
+  .calendar-mobile-mode button[aria-pressed='true'] { background: var(--hover-surface); color: var(--foreground); font-weight: 600; }
   .calendar-toolbar-title { min-width: 100%; order: -1; }
   .calendar-legend { width: 100%; flex-wrap: nowrap; overflow-x: auto; }
 }

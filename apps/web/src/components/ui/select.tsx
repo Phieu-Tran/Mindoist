@@ -134,8 +134,8 @@ export function Select({
                   onClick={() => { onChange(option.value); close(); }}
                   className={cn(
                     'flex w-full items-center gap-2 rounded-control px-2.5 py-1.5 text-xs text-left cursor-pointer',
-                    'transition-colors hover:bg-accent focus-visible:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                    isSelected && 'bg-accent font-medium',
+                    'transition-colors hover:bg-hover-surface focus-visible:bg-hover-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                    isSelected && 'bg-hover-surface font-medium',
                   )}
                 >
                   {option.dotColor && (

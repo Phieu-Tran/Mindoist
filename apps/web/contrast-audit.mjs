@@ -9,7 +9,7 @@
  *
  * Token values are parsed directly out of src/index.css (not hand-copied)
  * so this audit can't silently drift from what actually ships — a stale
- * copy of light --accent (and per-preset dark --primary-foreground values
+ * copy of light --hover-surface (and per-preset dark --primary-foreground values
  * that differ per preset but were checked against only one) both slipped
  * through undetected before this file read CSS as its source of truth.
  *
@@ -161,12 +161,12 @@ const TEXT_FOREGROUNDS = [
   '--foreground',
   '--muted-foreground',
   '--sidebar-foreground',
-  '--accent-foreground',
+  '--hover-surface-foreground',
   '--color-p1', '--color-p2', '--color-p3', '--color-p4',
 ];
 
 // Surfaces: backgrounds these foregrounds appear on
-const SURFACES = ['--background', '--card', '--sidebar', '--accent'];
+const SURFACES = ['--background', '--card', '--sidebar', '--hover-surface'];
 
 // ── Audit ──
 

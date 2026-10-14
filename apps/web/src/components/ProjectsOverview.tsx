@@ -48,7 +48,7 @@ export function ProjectsOverview({ projects, onCreate, onSelect }: Props) {
                 key={project.id}
                 type="button"
                 onClick={() => onSelect(project.id)}
-                className="group flex min-h-28 items-center gap-4 rounded-panel border border-border bg-card p-4 text-left transition-colors hover:border-primary/40 hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="group flex min-h-28 items-center gap-4 rounded-panel border border-border bg-card p-4 text-left transition-colors hover:border-primary/40 hover:bg-hover-surface/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <span className={`h-10 w-2 shrink-0 rounded-full ${projectColorClass(project.color)}`} aria-hidden="true" />
                 <span className="min-w-0 flex-1">

@@ -36,7 +36,7 @@ export function LandingPage() {
                 <a href="/register" className="inline-flex min-h-11 items-center justify-center rounded-control bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
                   {copy.primaryAction}
                 </a>
-                <a href={GITHUB_URL} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center justify-center rounded-control border border-border bg-background px-5 text-sm font-semibold text-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                <a href={GITHUB_URL} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center justify-center rounded-control border border-border bg-background px-5 text-sm font-semibold text-foreground hover:bg-hover-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
                   {copy.secondaryAction}
                 </a>
               </div>
@@ -146,7 +146,7 @@ export function LandingPage() {
                 href={statusPageUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-control border border-border bg-background px-4 text-sm font-semibold text-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-control border border-border bg-background px-4 text-sm font-semibold text-foreground hover:bg-hover-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
                 {copy.statusLink}
                 <ExternalLink size={16} aria-hidden="true" />
@@ -161,7 +161,7 @@ export function LandingPage() {
             <p className="mt-3 leading-7 text-muted-foreground">{copy.ctaBody}</p>
             <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
               <a href="/register" className="inline-flex min-h-11 items-center justify-center rounded-control bg-primary px-5 text-sm font-semibold text-primary-foreground hover:bg-primary/90">{copy.primaryAction}</a>
-              <a href="/login" className="inline-flex min-h-11 items-center justify-center rounded-control border border-border bg-background px-5 text-sm font-semibold text-foreground hover:bg-accent">{publicCopy[getPublicLocale(i18n.resolvedLanguage)].nav.login}</a>
+              <a href="/login" className="inline-flex min-h-11 items-center justify-center rounded-control border border-border bg-background px-5 text-sm font-semibold text-foreground hover:bg-hover-surface">{publicCopy[getPublicLocale(i18n.resolvedLanguage)].nav.login}</a>
             </div>
           </div>
         </section>

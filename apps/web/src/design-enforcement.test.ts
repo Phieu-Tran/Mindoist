@@ -85,7 +85,7 @@ describe('DESIGN.md §12 — Enforcement', () => {
     // to values the OKLab→linear-sRGB matrix had already linearized —
     // double-transforming every mid-tone ratio — and (b) hand-copied token
     // values instead of parsing index.css, which had silently drifted from
-    // the real --accent value. Together they made ~21 dark-theme pairs
+    // the real --hover-surface value. Together they made ~21 dark-theme pairs
     // look like failures and hid 26 real light-theme ones. Fixed 2026-07-26
     // (see MASTERPLAN.md X3): the script now parses tokens straight out of
     // index.css, and every token that was actually failing AA was darkened

@@ -70,7 +70,7 @@ export function NoteEditor({ note, onSave, onClose, onDelete }: Props) {
       {/* Header */}
       <div className="flex items-center gap-2 px-4 py-3 border-b border-border shrink-0" aria-label={t('notes.editor')}>
         <button
-          className="md:hidden min-h-11 min-w-11 rounded hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="md:hidden min-h-11 min-w-11 rounded hover:bg-hover-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           onClick={handleClose}
           aria-label={t('notes.back')}
         >
@@ -90,7 +90,7 @@ export function NoteEditor({ note, onSave, onClose, onDelete }: Props) {
           <Trash2 className="w-4 h-4" />
         </button>
         <button
-          className="min-h-11 min-w-11 rounded hover:bg-accent text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="min-h-11 min-w-11 rounded hover:bg-hover-surface text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           onClick={handleClose}
           aria-label={t('notes.close')}
         >

@@ -197,7 +197,7 @@ export function SettingsPage({
               aria-current={active ? 'page' : undefined}
               className={cn(
                 'flex shrink-0 items-center gap-2.5 rounded-control px-3 py-2 text-left text-sm transition-colors',
-                'hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+                'hover:bg-hover-surface hover:text-hover-surface-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
                 active && 'bg-sidebar-accent font-semibold text-foreground'
               )}
             >

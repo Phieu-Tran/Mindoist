@@ -151,7 +151,7 @@ export function Sidebar({
             className={cn(
               "flex min-w-0 flex-1 items-center gap-2.5 text-left pr-1 py-1.5 text-sm rounded-lg transition-colors cursor-pointer",
               PROJECT_INDENTS[Math.min(depth, PROJECT_INDENTS.length - 1)],
-              "hover:bg-accent hover:text-accent-foreground",
+              "hover:bg-hover-surface hover:text-hover-surface-foreground",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
               current === 'projects' && currentProjectId === project.id && "bg-sidebar-accent font-semibold text-foreground"
             )}
@@ -163,7 +163,7 @@ export function Sidebar({
           {onCreateProject && (
             <button
               type="button"
-              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-sidebar-foreground opacity-60 transition-colors hover:bg-accent hover:text-foreground focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring group-hover:opacity-100"
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-sidebar-foreground opacity-60 transition-colors hover:bg-hover-surface hover:text-foreground focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring group-hover:opacity-100"
               onClick={() => openCreateProject(project.id)}
               aria-label={t('projects.addSubproject', { name: project.name })}
               data-testid={`sidebar-add-subproject-${project.id}`}
@@ -222,9 +222,9 @@ export function Sidebar({
               aria-current={isActive ? 'page' : undefined}
               className={cn(
                 "flex items-center gap-2.5 w-full text-left px-2.5 py-2.5 text-sm rounded-lg transition-colors cursor-pointer",
-                "hover:bg-accent hover:text-accent-foreground",
+                "hover:bg-hover-surface hover:text-hover-surface-foreground",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
-                "active:bg-accent/80 active:scale-[0.98]",
+                "active:bg-hover-surface/80 active:scale-[0.98]",
                 isActive && "bg-sidebar-accent font-semibold text-foreground"
               )}
             >
@@ -257,7 +257,7 @@ export function Sidebar({
           <button
             data-testid="sidebar-projects-toggle"
             onClick={() => setProjectsOpen(o => !o)}
-            className="flex min-w-0 flex-1 items-center gap-2 text-left px-2.5 py-2 text-sm font-medium text-foreground/60 rounded-lg hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer"
+            className="flex min-w-0 flex-1 items-center gap-2 text-left px-2.5 py-2 text-sm font-medium text-foreground/60 rounded-lg hover:bg-hover-surface hover:text-hover-surface-foreground transition-colors cursor-pointer"
           >
             <FolderOpen className="h-4 w-4 shrink-0" />
             <span className="flex-1 truncate">{t('sidebar.projects')}</span>
@@ -267,7 +267,7 @@ export function Sidebar({
             <button
               type="button"
               onClick={() => openCreateProject(null)}
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sidebar-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sidebar-foreground transition-colors hover:bg-hover-surface hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               aria-label={t('projects.addProject')}
               data-testid="sidebar-add-project"
             >
@@ -295,7 +295,7 @@ export function Sidebar({
             aria-expanded={tagsOpen}
             className={cn(
               'flex min-w-0 flex-1 items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm font-medium transition-colors',
-              'text-foreground/60 hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+              'text-foreground/60 hover:bg-hover-surface hover:text-hover-surface-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
               current === 'tags' && currentTagId && 'bg-sidebar-accent text-foreground',
             )}
           >
@@ -308,7 +308,7 @@ export function Sidebar({
             <button
               type="button"
               onClick={openCreateTag}
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sidebar-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sidebar-foreground transition-colors hover:bg-hover-surface hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               aria-label={t('tags.addTag')}
               data-testid="sidebar-add-tag"
             >
@@ -342,7 +342,7 @@ export function Sidebar({
                 <button
                   type="button"
                   onClick={() => { setTagCreateOpen(false); setTagName(''); setTagError(''); }}
-                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-sidebar-foreground hover:bg-accent hover:text-foreground"
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-sidebar-foreground hover:bg-hover-surface hover:text-foreground"
                   aria-label={t('tags.cancel')}
                 >
                   <X className="h-3.5 w-3.5" aria-hidden="true" />
@@ -363,7 +363,7 @@ export function Sidebar({
                 aria-current={current === 'tags' && currentTagId === tag.id ? 'page' : undefined}
                 className={cn(
                   'flex min-w-0 items-center gap-2 rounded-lg px-2.5 py-1.5 pl-9 text-left text-sm transition-colors',
-                  'hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset',
+                  'hover:bg-hover-surface hover:text-hover-surface-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset',
                   current === 'tags' && currentTagId === tag.id && 'bg-sidebar-accent font-medium text-foreground',
                 )}
               >

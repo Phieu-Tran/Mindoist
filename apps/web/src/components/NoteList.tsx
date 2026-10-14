@@ -83,9 +83,9 @@ export function NoteList({ notes, loading, error, selectedNoteId, onSelect, onCr
           role="listitem"
           className={cn(
             'group flex items-start gap-2 rounded-lg border p-1 transition-colors',
-            'hover:bg-accent/50',
+            'hover:bg-hover-surface/50',
             selectedNoteId === note.id
-              ? 'border-primary bg-accent/30'
+              ? 'border-primary bg-hover-surface/30'
               : 'border-transparent'
           )}
         >

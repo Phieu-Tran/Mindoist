@@ -33,8 +33,8 @@
   --color-popover-foreground: var(--foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
+  --color-hover-surface: var(--hover-surface);
+  --color-hover-surface-foreground: var(--hover-surface-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
   --color-border: var(--border);
@@ -89,13 +89,13 @@
   --secondary: oklch(0.9638 0.0058 264.53);
   --secondary-foreground: oklch(0.2430 0.0164 264.20);
   --muted: oklch(0.9638 0.0058 264.53);
-  /* 0.5130→0.5070 (2026-07-26): re-verified against the real --accent value
+  /* 0.5130→0.5070 (2026-07-26): re-verified against the real --hover-surface value
      (0.9210 — this token was a stale 0.9420 in the audit script's hand-copy,
      not what actually ships) with a from-scratch OKLCH→linear-sRGB script;
      0.5130 rounded to exactly the AA edge (~4.5:1) instead of clearing it. */
   --muted-foreground: oklch(0.5070 0.0350 265.11);
-  --accent: oklch(0.9210 0.0058 264.53);
-  --accent-foreground: oklch(0.2430 0.0164 264.20);
+  --hover-surface: oklch(0.9210 0.0058 264.53);
+  --hover-surface-foreground: oklch(0.2430 0.0164 264.20);
   --destructive: oklch(0.5771 0.2152 27.33);
   --destructive-foreground: oklch(1 0 0);
   --border: var(--ds-border-default);
@@ -199,7 +199,7 @@
 }
 .mindoist-calendar-quick-create button[type="submit"] { border-radius: 999px; background: var(--calendar-draft-identity-color, var(--primary)); color: white; }
 .mindoist-calendar-quick-create-row > button[type="button"] { border-radius: 999px; background: color-mix(in oklch, var(--muted) 74%, transparent); }
-.mindoist-calendar-quick-create button:hover:not(:disabled) { background: var(--accent); color: var(--foreground); }
+.mindoist-calendar-quick-create button:hover:not(:disabled) { background: var(--hover-surface); color: var(--foreground); }
 .mindoist-calendar-quick-create button[type="submit"]:hover:not(:disabled) { background: var(--calendar-draft-identity-color, var(--primary)); color: white; opacity: .84; }
 .mindoist-calendar-quick-create button:disabled { cursor: default; opacity: .45; }
 .mindoist-calendar-quick-create button svg { width: .82rem; height: .82rem; }
@@ -328,11 +328,11 @@
   --muted: oklch(0.2450 0.0155 274.17);
   /* 0.6496→0.6600 (2026-07-26): the only 2 real dark-theme AA failures
      found once contrast-audit.mjs's double-gamma-decode bug was fixed (it
-     had made ~21 pairs look like failures when only these 2 vs --accent
+     had made ~21 pairs look like failures when only these 2 vs --hover-surface
      actually were, at 4.43:1). See MASTERPLAN.md X3. */
   --muted-foreground: oklch(0.6600 0.0141 266.65);
-  --accent: oklch(0.2850 0.0154 269.12);
-  --accent-foreground: oklch(0.8412 0.0077 260.73);
+  --hover-surface: oklch(0.2850 0.0154 269.12);
+  --hover-surface-foreground: oklch(0.8412 0.0077 260.73);
   --destructive: oklch(0.7106 0.1661 22.22);
   --destructive-foreground: oklch(1 0 0);
   --border: var(--ds-border-default);
@@ -877,12 +877,12 @@ body {
   transition: background var(--motion-instant) var(--ease-out), transform var(--motion-instant) var(--ease-out);
 }
 .command-item + .command-item { margin-top: 0.15rem; }
-.command-item:hover { background: color-mix(in oklch, var(--accent) 65%, transparent); }
+.command-item:hover { background: color-mix(in oklch, var(--hover-surface) 65%, transparent); }
 .command-item:active { transform: scale(0.995); }
 
 .command-item[aria-selected='true'] {
-  background: var(--accent);
-  color: var(--accent-foreground);
+  background: var(--hover-surface);
+  color: var(--hover-surface-foreground);
 }
 .command-item-icon { width: 2rem; height: 2rem; }
 .command-item[aria-selected='true'] .command-item-icon { background: var(--primary); color: var(--primary-foreground); }
