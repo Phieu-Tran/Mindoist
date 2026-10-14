@@ -8,7 +8,7 @@ import { projectColorClass } from '@/lib/project-colors';
 import { DueCountdown } from './DueCountdown';
 import { Select } from './ui/select';
 import { Button } from './ui/button';
-import { useDialogA11y } from './ui/dialog';
+import { ModalFrame } from './ui/modal-frame';
 import './ProjectWorkspace.css';
 
 interface Props {
@@ -75,13 +75,6 @@ export function ProjectWorkspace({
     () => columns.map(column => ({ value: column.id, label: column.name })),
     [columns],
   );
-  const deleteProjectDialogRef = useDialogA11y<HTMLDivElement>({
-    open: showDeleteProjectConfirm,
-    onClose: () => {
-      if (!deletingProject) setShowDeleteProjectConfirm(false);
-    },
-    closeOnEscape: !deletingProject,
-  });
   const [viewMode, setViewMode] = useState<'board' | 'list'>(() => localStorage.getItem(`mindoist:project-view:${project.id}`) === 'board' ? 'board' : 'list');
   const changeViewMode = (mode: 'board' | 'list') => {
     setViewMode(mode);
@@ -405,41 +398,35 @@ export function ProjectWorkspace({
         </div>
       </header>
 
-      {showDeleteProjectConfirm && (
-        <div
-          className="frosted-backdrop fixed inset-0 z-[60] flex items-center justify-center bg-black/50"
-          onClick={() => !deletingProject && setShowDeleteProjectConfirm(false)}
-        >
-          <div
-            ref={deleteProjectDialogRef}
-            className="frosted-surface bg-card rounded-xl border border-border p-6 w-[90vw] max-w-sm shadow-lg"
-            onClick={e => e.stopPropagation()}
-            role="alertdialog"
-            aria-modal="true"
-            aria-labelledby="delete-project-confirm-title"
-            aria-describedby="delete-project-confirm-description"
+      <ModalFrame
+        open={showDeleteProjectConfirm}
+        onClose={() => { if (!deletingProject) setShowDeleteProjectConfirm(false); }}
+        dismissable={!deletingProject}
+        role="alertdialog"
+        aria-labelledby="delete-project-confirm-title"
+        aria-describedby="delete-project-confirm-description"
+        overlayClassName="frosted-backdrop fixed inset-0 z-[60] flex items-center justify-center bg-black/50"
+        className="frosted-surface bg-card rounded-xl border border-border p-6 w-[90vw] max-w-sm shadow-lg"
+      >
+        <h3 id="delete-project-confirm-title" className="font-semibold text-base mb-2">{t('workspace.deleteProject')}</h3>
+        <p id="delete-project-confirm-description" className="text-sm text-muted-foreground mb-4">
+          {t('workspace.deleteProjectConfirm', { name: project.name })}
+        </p>
+        <div className="flex gap-2 justify-end">
+          <Button variant="outline" size="sm" disabled={deletingProject} onClick={() => setShowDeleteProjectConfirm(false)}>
+            {t('workspace.cancel')}
+          </Button>
+          <Button
+            variant="destructive"
+            size="sm"
+            data-testid="project-workspace-delete-confirm"
+            disabled={deletingProject}
+            onClick={() => { void handleDeleteProject(); }}
           >
-            <h3 id="delete-project-confirm-title" className="font-semibold text-base mb-2">{t('workspace.deleteProject')}</h3>
-            <p id="delete-project-confirm-description" className="text-sm text-muted-foreground mb-4">
-              {t('workspace.deleteProjectConfirm', { name: project.name })}
-            </p>
-            <div className="flex gap-2 justify-end">
-              <Button variant="outline" size="sm" disabled={deletingProject} onClick={() => setShowDeleteProjectConfirm(false)}>
-                {t('workspace.cancel')}
-              </Button>
-              <Button
-                variant="destructive"
-                size="sm"
-                data-testid="project-workspace-delete-confirm"
-                disabled={deletingProject}
-                onClick={() => { void handleDeleteProject(); }}
-              >
-                {t('workspace.deleteProject')}
-              </Button>
-            </div>
-          </div>
+            {t('workspace.deleteProject')}
+          </Button>
         </div>
-      )}
+      </ModalFrame>
 
       {actionError && <p className="project-workspace-error" role="alert">{actionError}</p>}
 

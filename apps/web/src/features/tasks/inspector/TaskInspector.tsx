@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useDialogA11y } from '@/components/ui/dialog';
+import { ModalFrame } from '@/components/ui/modal-frame';
 import { cn } from '@/lib/utils';
 import type { Task, UpdateTaskRequest, Tag as TagType } from '@mindoist/shared/types';
 import { buildRrule } from '@mindoist/shared/recurrence/utils';
@@ -82,18 +83,6 @@ export function TaskInspector({
   // the subtask request and a checkbox mutation crossed in flight.
   const subtaskMutationVersion = useRef(0);
   const formId = `task-detail-form-${task.id}`;
-  const discardConfirmDialogRef = useDialogA11y({
-    open: showDiscardConfirm,
-    onClose: () => setShowDiscardConfirm(false),
-  });
-  const deleteConfirmDialogRef = useDialogA11y({
-    open: showDeleteConfirm,
-    onClose: () => setShowDeleteConfirm(false),
-  });
-  const completeConfirmDialogRef = useDialogA11y({
-    open: showCompleteConfirm,
-    onClose: () => setShowCompleteConfirm(false),
-  });
   const reminderMenuRef = useRef<HTMLDivElement>(null);
   const taskMenuRef = useRef<HTMLDivElement>(null);
   const { subtasks, checklistItems, reminders, setSubtasks, setChecklistItems, setReminders } = useTaskRelated(task.id);
@@ -942,111 +931,90 @@ export function TaskInspector({
       </div>
 
       {/* Discard confirm dialog */}
-      {showDiscardConfirm && (
-        <div
-          className="frosted-backdrop fixed inset-0 z-[60] flex items-center justify-center bg-black/50"
-          onClick={() => setShowDiscardConfirm(false)}
-        >
-          <div
-            ref={discardConfirmDialogRef}
-            className="frosted-surface bg-card rounded-xl border border-border p-6 w-[90vw] max-w-sm shadow-lg"
-            onClick={e => e.stopPropagation()}
-            role="alertdialog"
-            aria-modal="true"
-            aria-labelledby="discard-confirm-title"
-            aria-describedby="discard-confirm-description"
+      <ModalFrame
+        open={showDiscardConfirm}
+        onClose={() => setShowDiscardConfirm(false)}
+        role="alertdialog"
+        aria-labelledby="discard-confirm-title"
+        aria-describedby="discard-confirm-description"
+        overlayClassName="frosted-backdrop fixed inset-0 z-[60] flex items-center justify-center bg-black/50"
+        className="frosted-surface bg-card rounded-xl border border-border p-6 w-[90vw] max-w-sm shadow-lg"
+      >
+        <h3 id="discard-confirm-title" className="font-semibold text-base mb-2">{t('detail.discardChanges')}</h3>
+        <p id="discard-confirm-description" className="text-sm text-muted-foreground mb-4">
+          {t('detail.discardMessage')}
+        </p>
+        <div className="flex gap-2 justify-end">
+          <Button variant="outline" size="sm" onClick={() => setShowDiscardConfirm(false)}>
+            {t('detail.keepEditing')}
+          </Button>
+          <Button
+            variant="destructive"
+            size="sm"
+            data-testid="detail-discard-confirm"
+            onClick={() => { setShowDiscardConfirm(false); onClose(); }}
           >
-            <h3 id="discard-confirm-title" className="font-semibold text-base mb-2">{t('detail.discardChanges')}</h3>
-            <p id="discard-confirm-description" className="text-sm text-muted-foreground mb-4">
-              {t('detail.discardMessage')}
-            </p>
-            <div className="flex gap-2 justify-end">
-              <Button variant="outline" size="sm" onClick={() => setShowDiscardConfirm(false)}>
-                {t('detail.keepEditing')}
-              </Button>
-              <Button
-                variant="destructive"
-                size="sm"
-                data-testid="detail-discard-confirm"
-                onClick={() => { setShowDiscardConfirm(false); onClose(); }}
-              >
-                {t('detail.discard')}
-              </Button>
-            </div>
-          </div>
+            {t('detail.discard')}
+          </Button>
         </div>
-      )}
+      </ModalFrame>
 
       {/* Delete confirm dialog */}
-      {showDeleteConfirm && (
-        <div
-          className="frosted-backdrop fixed inset-0 z-[60] flex items-center justify-center bg-black/50"
-          onClick={() => setShowDeleteConfirm(false)}
-        >
-          <div
-            ref={deleteConfirmDialogRef}
-            className="frosted-surface bg-card rounded-xl border border-border p-6 w-[90vw] max-w-sm shadow-lg"
-            onClick={e => e.stopPropagation()}
-            role="alertdialog"
-            aria-modal="true"
-            aria-labelledby="delete-confirm-title"
-            aria-describedby="delete-confirm-description"
+      <ModalFrame
+        open={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        role="alertdialog"
+        aria-labelledby="delete-confirm-title"
+        aria-describedby="delete-confirm-description"
+        overlayClassName="frosted-backdrop fixed inset-0 z-[60] flex items-center justify-center bg-black/50"
+        className="frosted-surface bg-card rounded-xl border border-border p-6 w-[90vw] max-w-sm shadow-lg"
+      >
+        <h3 id="delete-confirm-title" className="font-semibold text-base mb-2">{t('detail.delete')}</h3>
+        <p id="delete-confirm-description" className="text-sm text-muted-foreground mb-4">
+          {t('detail.deleteTaskMessage')}
+        </p>
+        <div className="flex gap-2 justify-end">
+          <Button variant="outline" size="sm" onClick={() => setShowDeleteConfirm(false)}>
+            {t('detail.cancel')}
+          </Button>
+          <Button
+            variant="destructive"
+            size="sm"
+            data-testid="detail-delete-confirm"
+            onClick={() => { onDelete(task.id); setShowDeleteConfirm(false); }}
           >
-            <h3 id="delete-confirm-title" className="font-semibold text-base mb-2">{t('detail.delete')}</h3>
-            <p id="delete-confirm-description" className="text-sm text-muted-foreground mb-4">
-              {t('detail.deleteTaskMessage')}
-            </p>
-            <div className="flex gap-2 justify-end">
-              <Button variant="outline" size="sm" onClick={() => setShowDeleteConfirm(false)}>
-                {t('detail.cancel')}
-              </Button>
-              <Button
-                variant="destructive"
-                size="sm"
-                data-testid="detail-delete-confirm"
-                onClick={() => { onDelete(task.id); setShowDeleteConfirm(false); }}
-              >
-                {t('detail.delete')}
-              </Button>
-            </div>
-          </div>
+            {t('detail.delete')}
+          </Button>
         </div>
-      )}
+      </ModalFrame>
 
       {/* Complete parent with incomplete subtasks confirm */}
-      {showCompleteConfirm && (
-        <div
-          className="frosted-backdrop fixed inset-0 z-[60] flex items-center justify-center bg-black/50"
-          onClick={() => setShowCompleteConfirm(false)}
-        >
-          <div
-            ref={completeConfirmDialogRef}
-            className="frosted-surface bg-card rounded-xl border border-border p-6 w-[90vw] max-w-sm shadow-lg"
-            onClick={e => e.stopPropagation()}
-            role="alertdialog"
-            aria-modal="true"
-            aria-labelledby="complete-confirm-title"
-            aria-describedby="complete-confirm-desc"
+      <ModalFrame
+        open={showCompleteConfirm}
+        onClose={() => setShowCompleteConfirm(false)}
+        role="alertdialog"
+        aria-labelledby="complete-confirm-title"
+        aria-describedby="complete-confirm-desc"
+        overlayClassName="frosted-backdrop fixed inset-0 z-[60] flex items-center justify-center bg-black/50"
+        className="frosted-surface bg-card rounded-xl border border-border p-6 w-[90vw] max-w-sm shadow-lg"
+      >
+        <h3 id="complete-confirm-title" className="font-semibold text-base mb-2">{t('detail.complete')}</h3>
+        <p id="complete-confirm-desc" className="text-sm text-muted-foreground mb-4">
+          {t('detail.completeWithIncompleteSubtasks', { count: subtasks.filter(st => !st.completedAt).length })}
+        </p>
+        <div className="flex gap-2 justify-end">
+          <Button variant="outline" size="sm" onClick={() => setShowCompleteConfirm(false)}>
+            {t('detail.keepEditing')}
+          </Button>
+          <Button
+            size="sm"
+            data-testid="detail-complete-confirm"
+            onClick={handleCompleteParent}
           >
-            <h3 id="complete-confirm-title" className="font-semibold text-base mb-2">{t('detail.complete')}</h3>
-            <p id="complete-confirm-desc" className="text-sm text-muted-foreground mb-4">
-              {t('detail.completeWithIncompleteSubtasks', { count: subtasks.filter(st => !st.completedAt).length })}
-            </p>
-            <div className="flex gap-2 justify-end">
-              <Button variant="outline" size="sm" onClick={() => setShowCompleteConfirm(false)}>
-                {t('detail.keepEditing')}
-              </Button>
-              <Button
-                size="sm"
-                data-testid="detail-complete-confirm"
-                onClick={handleCompleteParent}
-              >
-                {t('detail.complete')}
-              </Button>
-            </div>
-          </div>
+            {t('detail.complete')}
+          </Button>
         </div>
-      )}
+      </ModalFrame>
     </motion.div>
   );
 }

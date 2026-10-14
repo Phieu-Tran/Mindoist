@@ -6,6 +6,8 @@ import { Checkbox } from './checkbox';
 import { Switch } from './switch';
 import { Select } from './select';
 import { DatePicker, DateRangePicker } from './date-picker';
+import { PopoverPanel } from './popover-panel';
+import { ModalFrame } from './modal-frame';
 
 /**
  * The HeroUI kit. Anything not listed falls back to the legacy component
@@ -19,4 +21,6 @@ export const herouiKit: Partial<UiKitComponents> = {
   Select,
   DatePicker,
   DateRangePicker,
+  PopoverPanel,
+  ModalFrame,
 };
