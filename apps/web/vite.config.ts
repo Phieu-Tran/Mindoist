@@ -114,6 +114,14 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
+          // HeroUI and its React Aria stack are only imported by the lazy
+          // `heroui` UI kit. Leave them to Rollup's natural splitting (so they
+          // stay in that lazy chunk) — the '/react/' rule below would
+          // otherwise match '@heroui/react' and pull the whole kit into the
+          // eagerly loaded vendor-react chunk for every user. Forcing them
+          // into a named chunk instead drags shared deps (clsx,
+          // use-sync-external-store) along and makes the entry preload it.
+          if (/[\/](@heroui|react-aria|react-aria-components|@react-aria|react-stately|@react-stately|@internationalized|tailwind-variants)[\/]/.test(id)) return undefined;
           if (id.includes('lucide-react')) return 'vendor-icons';
           if (id.includes('@radix-ui')) return 'vendor-radix';
           if (id.includes('dexie')) return 'vendor-storage';

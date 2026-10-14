@@ -8,6 +8,8 @@ import { ThemeToggle } from './ThemeToggle';
 import { AccentPicker } from './AccentPicker';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { DensityToggle } from './DensityToggle';
+import { UiKitToggle } from './UiKitToggle';
+import { featureFlags } from '@/lib/feature-flags';
 import { GoogleConnectButton } from './GoogleConnectButton';
 import { GoogleDriveBackup } from './GoogleDriveBackup';
 import { TelegramConnectCard } from '@/features/telegram/TelegramConnectCard';
@@ -306,6 +308,15 @@ export function SettingsPage({
               </div>
               <DensityToggle />
             </div>
+            {featureFlags.uiKitSwitcher && (
+              <div className="flex flex-wrap items-center justify-between gap-4 rounded-panel border border-border/70 bg-card p-4">
+                <div>
+                  <span className="block text-sm font-medium">{t('settingsPage.uiKit')}</span>
+                  <span className="text-xs text-muted-foreground">{t('settingsPage.uiKitHint')}</span>
+                </div>
+                <UiKitToggle />
+              </div>
+            )}
           </div>
         )}
 

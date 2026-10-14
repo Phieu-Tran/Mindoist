@@ -28,12 +28,14 @@ describe('feature flags', () => {
 
     expect(flags).toEqual({
       designTokensV2: true,
+      uiKitDefault: 'legacy',
+      uiKitSwitcher: true,
     });
     expect(Object.isFrozen(flags)).toBe(true);
   });
 
   it('enables the completed rollout by default while preserving explicit rollback values', () => {
-    expect(resolveFeatureFlags({}, true)).toEqual({
+    expect(resolveFeatureFlags({}, true)).toMatchObject({
       designTokensV2: true,
     });
     expect(
@@ -43,8 +45,15 @@ describe('feature flags', () => {
         },
         true,
       ),
-    ).toEqual({
+    ).toMatchObject({
       designTokensV2: false,
     });
+  });
+
+  it('resolves the UI kit default and switcher per environment', () => {
+    expect(resolveFeatureFlags({})).toMatchObject({ uiKitDefault: 'legacy', uiKitSwitcher: true });
+    expect(resolveFeatureFlags({ VITE_UI_KIT: 'HeroUI', VITE_UI_KIT_SWITCHER: 'off' }))
+      .toMatchObject({ uiKitDefault: 'heroui', uiKitSwitcher: false });
+    expect(resolveFeatureFlags({ VITE_UI_KIT: 'material' })).toMatchObject({ uiKitDefault: 'legacy' });
   });
 });

@@ -1,0 +1,197 @@
+/*
+ * HeroUI v3 kit — its own Tailwind compilation, loaded only when the
+ * `heroui` UI kit is active (imported from components/ui/heroui/index.ts,
+ * which is a lazy chunk). Nothing here ships to `legacy` users.
+ *
+ * Why a separate entry instead of `@import "@heroui/styles"` in index.css:
+ *  - HeroUI's own theme declares `--accent`, `--muted`, `--radius-sm…xl`
+ *    with different meanings than Mindoist's (e.g. HeroUI `muted` is a text
+ *    colour, Mindoist `muted` is a surface). A shared @theme would repaint
+ *    the legacy UI.
+ *  - HeroUI component CSS is written with @apply, so it must be compiled by
+ *    Tailwind against a theme where those names mean what HeroUI expects.
+ *
+ * So: compile HeroUI's base/components/utilities here against HeroUI's
+ * shared @theme, then remap every HeroUI semantic variable onto Mindoist's
+ * tokens. Accent presets (`data-accent`), dark mode (`.dark`) and density
+ * (`data-density`) all flow through because everything resolves to the same
+ * CSS variables the legacy kit uses.
+ */
+
+@layer theme, base, components, utilities;
+
+@import "tailwindcss/theme.css" layer(theme);
+/* source(none): generate only what @apply needs — the app's own utilities
+   already come from index.css and must not be emitted twice. */
+@import "tailwindcss/utilities.css" layer(utilities) source(none);
+@import "tw-animate-css";
+
+@import "@heroui/styles/themes/shared/theme.css";
+@import "@heroui/styles/base/base.css" layer(base);
+@import "@heroui/styles/components/index.css" layer(components);
+@import "@heroui/styles/utilities";
+@import "@heroui/styles/variants";
+
+/* Mindoist meanings for the names HeroUI shares with the legacy theme. */
+@theme inline {
+  /* HeroUI `text-muted` = secondary text, i.e. Mindoist --muted-foreground. */
+  --color-muted: var(--muted-foreground);
+  /* Mindoist's single radius scale (DESIGN.md D5) instead of HeroUI's
+     pill-heavy defaults. */
+  --radius-xs: 4px;
+  --radius-sm: var(--radius-chip);
+  --radius-md: var(--radius-control);
+  --radius-lg: var(--radius-control);
+  --radius-xl: var(--radius-control);
+  --radius-2xl: var(--radius-panel);
+  --radius-3xl: var(--radius-control);
+  --radius-4xl: var(--radius-panel);
+  --radius-field: var(--radius-control);
+  --font-sans: "Geist Variable", "system-ui", -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+/* HeroUI semantic variables → Mindoist tokens. Every value is a reference,
+   so theme/accent switches need no extra rules here. */
+:root {
+  --accent: var(--primary);
+  --accent-foreground: var(--primary-foreground);
+
+  --surface: var(--card);
+  --surface-foreground: var(--foreground);
+  --surface-secondary: var(--secondary);
+  --surface-secondary-foreground: var(--secondary-foreground);
+  --surface-tertiary: var(--muted);
+  --surface-tertiary-foreground: var(--foreground);
+
+  --overlay: var(--card);
+  --overlay-foreground: var(--foreground);
+
+  --default: var(--secondary);
+  --default-foreground: var(--secondary-foreground);
+
+  --field-background: var(--background);
+  --field-foreground: var(--foreground);
+  --field-placeholder: var(--muted-foreground);
+  --field-border: var(--input);
+  --field-border-width: 1px;
+  --field-radius: var(--radius-control);
+
+  --success: var(--color-project-jade, oklch(0.62 0.15 160));
+  --success-foreground: oklch(1 0 0);
+  --warning: var(--color-priority-p2);
+  --warning-foreground: oklch(0.2 0.02 70);
+  --danger: var(--destructive);
+  --danger-foreground: var(--destructive-foreground);
+
+  --segment: var(--card);
+  --segment-foreground: var(--foreground);
+  --separator: var(--border);
+  --focus: var(--ring);
+  --link: var(--primary);
+  --backdrop: oklch(0 0 0 / 0.45);
+
+  --border-width: 1px;
+  --disabled-opacity: 0.5;
+  --ring-offset-width: 2px;
+  --cursor-interactive: pointer;
+  --cursor-disabled: not-allowed;
+  --skeleton-animation: pulse;
+  --tooltip-delay: 600ms;
+  --tooltip-close-delay: 150ms;
+
+  --surface-shadow: 0 1px 2px 0 oklch(0 0 0 / 0.06);
+  --overlay-shadow: 0 10px 30px -8px oklch(0 0 0 / 0.18), 0 2px 6px oklch(0 0 0 / 0.08);
+  --field-shadow: 0 0 0 0 transparent;
+
+  /* Calculated colours — same formulas as HeroUI's default theme, now fed
+     by Mindoist tokens. */
+  --surface-hover: var(--hover-surface);
+  --background-secondary: color-mix(in oklab, var(--background) 96%, var(--foreground) 4%);
+  --background-tertiary: color-mix(in oklab, var(--background) 92%, var(--foreground) 8%);
+  --background-inverse: var(--foreground);
+
+  --default-hover: var(--hover-surface);
+  --accent-hover: color-mix(in oklab, var(--accent) 90%, var(--accent-foreground) 10%);
+  --success-hover: color-mix(in oklab, var(--success) 90%, var(--success-foreground) 10%);
+  --warning-hover: color-mix(in oklab, var(--warning) 90%, var(--warning-foreground) 10%);
+  --danger-hover: color-mix(in oklab, var(--danger) 90%, var(--danger-foreground) 10%);
+
+  --field-hover: var(--field-background);
+  --field-focus: var(--field-background);
+  --field-border-hover: var(--muted-foreground);
+  --field-border-focus: var(--ring);
+
+  --default-soft: color-mix(in oklab, var(--default) 60%, transparent);
+  --default-soft-foreground: var(--default-foreground);
+  --default-soft-hover: var(--hover-surface);
+  --accent-soft: color-mix(in oklab, var(--accent) 14%, transparent);
+  --accent-soft-foreground: color-mix(in oklab, var(--accent) 75%, var(--foreground) 25%);
+  --accent-soft-hover: color-mix(in oklab, var(--accent) 20%, transparent);
+  --danger-soft: color-mix(in oklab, var(--danger) 14%, transparent);
+  --danger-soft-foreground: color-mix(in oklab, var(--danger) 75%, var(--foreground) 25%);
+  --danger-soft-hover: color-mix(in oklab, var(--danger) 20%, transparent);
+  --warning-soft: color-mix(in oklab, var(--warning) 14%, transparent);
+  --warning-soft-foreground: color-mix(in oklab, var(--warning) 75%, var(--foreground) 25%);
+  --warning-soft-hover: color-mix(in oklab, var(--warning) 20%, transparent);
+  --success-soft: color-mix(in oklab, var(--success) 14%, transparent);
+  --success-soft-foreground: color-mix(in oklab, var(--success) 75%, var(--foreground) 25%);
+  --success-soft-hover: color-mix(in oklab, var(--success) 20%, transparent);
+
+  --separator-secondary: color-mix(in oklab, var(--card) 85%, var(--foreground) 15%);
+  --separator-tertiary: color-mix(in oklab, var(--card) 81%, var(--foreground) 19%);
+  --border-secondary: color-mix(in oklab, var(--card) 78%, var(--foreground) 22%);
+  --border-tertiary: color-mix(in oklab, var(--card) 66%, var(--foreground) 34%);
+
+  --scrollbar-thumb: color-mix(in oklch, var(--foreground) 15%, transparent);
+  --scrollbar-track: transparent;
+  --scrollbar-gutter: auto;
+  --scrollbar-width: thin;
+  --scrollbar: var(--scrollbar-thumb);
+  --scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+:root.dark {
+  --overlay-shadow: 0 0 0 1px color-mix(in oklab, var(--foreground) 12%, transparent), 0 12px 32px -8px oklch(0 0 0 / 0.5);
+  --surface-shadow: 0 0 0 0 transparent;
+  --backdrop: oklch(0 0 0 / 0.6);
+}
+
+/* Mindoist proportions: controls follow the density row height instead of
+   HeroUI's fixed 40px/36px, and keep the app's compact type scale. */
+@layer components {
+  .button {
+    height: auto;
+    min-height: calc(var(--density-task-row, 36px) - 0px);
+    border-radius: var(--radius-control);
+    padding-inline: 1rem;
+  }
+  .button--sm { min-height: calc(var(--density-task-row, 36px) - 4px); padding-inline: 0.75rem; font-size: 0.75rem; }
+  .button--lg { min-height: calc(var(--density-task-row, 36px) + 4px); padding-inline: 2rem; }
+  .button--icon-only { padding-inline: 0; width: var(--density-task-row, 36px); min-width: var(--density-task-row, 36px); }
+
+  .input,
+  .text-field .input {
+    min-height: var(--density-task-row, 36px);
+    border-radius: var(--radius-control);
+    font-size: 0.875rem;
+  }
+
+  /* Select keeps the legacy trigger proportions (h-8 / sm h-7, text-xs) and
+     an inline chevron, so caller trigger classes that reset padding (e.g.
+     TaskDetail's borderless project field) can't push the value under it. */
+  .mindoist-select .select__trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    min-height: 2rem;
+    padding-block: 0;
+    padding-inline: 0.625rem;
+    font-size: 0.75rem;
+    border-radius: var(--radius-control);
+  }
+  .mindoist-select .select__trigger:has(.select__indicator) { padding-inline-end: 0.5rem; }
+  .mindoist-select--sm .select__trigger { min-height: 1.75rem; padding-inline: 0.5rem; font-size: 0.68rem; }
+  .mindoist-select .select__value { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: inherit; }
+  .mindoist-select .select__indicator { position: static; margin: 0; width: 0.875rem; height: 0.875rem; }
+  .mindoist-select--sm .select__indicator { width: 0.75rem; height: 0.75rem; }
+}
