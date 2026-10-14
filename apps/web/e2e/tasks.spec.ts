@@ -262,7 +262,7 @@ test.describe('Task Management E2E', () => {
     await expect(page.getByTestId('task-detail')).toBeVisible();
 
     await page.getByTestId('task-detail').getByRole('button', { name: 'More actions' }).click();
-    await page.getByTestId('task-detail').getByRole('menuitem', { name: 'Delete' }).click();
+    await page.getByRole('menuitem', { name: 'Delete' }).click();
     await page.getByTestId('detail-delete-confirm').click();
     await expect(listTitle).not.toBeVisible();
     await expect(page.getByTestId('undo-toast')).toContainText('Deleted');

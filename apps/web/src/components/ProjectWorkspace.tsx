@@ -410,7 +410,7 @@ export function ProjectWorkspace({
         role="alertdialog"
         aria-labelledby="delete-project-confirm-title"
         aria-describedby="delete-project-confirm-description"
-        overlayClassName="frosted-backdrop fixed inset-0 z-[60] flex items-center justify-center bg-black/50"
+        overlayClassName="frosted-backdrop fixed inset-0 z-[90] flex items-center justify-center bg-black/50"
         className="frosted-surface bg-card rounded-xl border border-border p-6 w-[90vw] max-w-sm shadow-lg"
       >
         <h3 id="delete-project-confirm-title" className="font-semibold text-base mb-2">{t('workspace.deleteProject')}</h3>

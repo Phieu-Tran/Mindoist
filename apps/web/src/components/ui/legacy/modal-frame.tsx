@@ -1,4 +1,5 @@
 import type { ReactNode, RefObject } from 'react';
+import { createPortal } from 'react-dom';
 import { useDialogA11y } from '../dialog';
 
 export interface ModalFrameProps {
@@ -24,7 +25,8 @@ export interface ModalFrameProps {
 }
 
 /**
- * Legacy modal shell — the markup the dialogs rendered by hand: a backdrop
+ * Legacy modal shell — the markup the dialogs rendered by hand (now portalled
+ * to <body>): a backdrop
  * that dismisses on click, a panel that stops propagation, and the shared
  * focus-trap/Escape/restore-focus behaviour from useDialogA11y.
  */
@@ -48,7 +50,10 @@ export function ModalFrame({
   if (!open) return null;
   const backdropHandler = { [dismissOn === 'click' ? 'onClick' : 'onMouseDown']: () => { if (dismissable) onClose(); } };
   const stop = { [dismissOn === 'click' ? 'onClick' : 'onMouseDown']: (event: React.SyntheticEvent) => event.stopPropagation() };
-  return (
+  // Portalled to <body>: rendered inside the task panel, the fixed backdrop
+  // was trapped in the panel's stacking context and painted *under* it on
+  // phones, so the delete confirmation never appeared.
+  return createPortal(
     <div className={overlayClassName} {...backdropHandler}>
       <Panel
         ref={dialogRef as RefObject<HTMLDivElement>}
@@ -64,6 +69,7 @@ export function ModalFrame({
       >
         {children}
       </Panel>
-    </div>
+    </div>,
+    document.body,
   );
 }

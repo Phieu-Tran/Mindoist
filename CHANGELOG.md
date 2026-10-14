@@ -7,8 +7,12 @@ Notable changes to Mindoist, grouped by date. This project doesn't cut versioned
 ### Added
 - A second UI kit built on HeroUI v3 (React Aria). Settings › Appearance › UI kit switches between Default, Classic and HeroUI (beta) on that device; `?ui-kit=heroui|legacy|default` in any URL does the same. The page reloads to switch, and only the chosen kit is downloaded — Classic users get no extra code.
 - Each web environment picks its own default with the `VITE_UI_KIT` GitHub environment variable (`legacy` when unset), and can hide the Settings switch with `VITE_UI_KIT_SWITCHER=off`. Changing either needs a redeploy of the same commit, not a code change.
-- The HeroUI kit covers buttons, inputs, checkboxes, switches, selects, the date and date-range pickers, the TaskDetail priority/color/tags/recurrence popovers, the keyboard-shortcut dialog and the delete/discard/complete confirmations. It keeps Mindoist's colors, accent presets, dark mode, density and radius scale. The time picker, accent picker, new-project dialog, review tabs and undo toast stay on the classic components.
+- The HeroUI kit covers buttons, inputs, checkboxes, switches, selects, the date and date-range pickers, the TaskDetail priority/color/tags/recurrence popovers, the keyboard-shortcut dialog, the delete/discard/complete confirmations, and the TaskDetail "More actions" and project-board "Move to" menus (arrow keys, Home/End and typeahead). It keeps Mindoist's colors, accent presets, dark mode, density and radius scale. The time picker, accent picker, new-project dialog, review tabs and undo toast stay on the classic components.
 - With HeroUI, date pickers start the week on Monday, show the neighbouring months' days and support arrow-key/PageUp/PageDown navigation; popovers are no longer clipped by the detail panel and flip above their trigger near the bottom of the screen.
+
+### Fixed
+- Enter now activates the focused button, link or menu item. The global shortcut handler used to swallow Enter everywhere outside text fields, so keyboard users could not press most buttons with it.
+- On phones, Delete in the task panel's "More actions" menu now shows its confirmation. The dialog rendered underneath the task panel.
 
 ### Changed
 - The column color picker in a project's "Add column" form has an accessible name.
@@ -16,6 +20,8 @@ Notable changes to Mindoist, grouped by date. This project doesn't cut versioned
 
 ### Validation
 - Unit tests run the same scenarios against both kits. CI gains an `e2e-heroui` lane that runs the full Playwright suite with HeroUI as the default, and `build-bundle` fails if HeroUI code reaches the eagerly loaded bundle.
+- The contrast audit also checks the HeroUI kit: 11 text/fill pairs in both themes and every accent preset. It caught two failing pairs (success text on green, dark-theme danger text), both fixed. Design enforcement now also fails if HeroUI's default theme is imported, if HeroUI is imported outside the lazy kit, if the adapter is missing a variable the kit reads, or if a kit wrapper hardcodes a color.
+- New browser checks (`ui-kit-acceptance.spec.ts`) run in both CI lanes. They cover the accent preset, keyboard-only use of the task panel (checkbox, priority, actions menu, confirmation, date picker, calendar view, shortcuts), and phone-width fit of every popover, menu and confirmation.
 - Browser tests that selected elements by Classic-only markup (`button[...]` tags, day buttons named only by their number, an unnamed combobox) now use kit-neutral test ids, `data-state` and `data-calendar-day`.
 
 ## 2026-10-11

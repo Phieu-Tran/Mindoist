@@ -205,11 +205,6 @@
   .mindoist-select--sm .select__indicator { width: 0.75rem; height: 0.75rem; }
 
   /* Date popovers: Mindoist panel surface and compact calendar cells. */
-  .mindoist-date-popover {
-    border: 1px solid var(--border);
-    border-radius: var(--radius-panel);
-    background: var(--card);
-  }
   .mindoist-calendar { width: 100%; }
   .mindoist-calendar .calendar__cell { font-size: 0.8125rem; }
   .mindoist-calendar .calendar__cell.mindoist-range-band {
@@ -221,4 +216,24 @@
     color: var(--primary-foreground);
     border-radius: 9999px;
   }
+
+  /* Standalone HeroUI Popover.Content (anchored to a native trigger, no
+     Popover root) gets no slot classes, so the panel surface is defined here
+     for PopoverPanel, ActionMenu and the date pickers alike. */
+  .mindoist-popover-panel,
+  .mindoist-date-popover {
+    background: var(--card);
+    color: var(--foreground);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-panel);
+    box-shadow: var(--overlay-shadow);
+    outline: none;
+    max-height: var(--visual-viewport-height, 100vh);
+    overflow-y: auto;
+  }
+  .mindoist-popover-panel[data-entering] { animation: mindoist-popover-in 140ms ease-out; }
+  @keyframes mindoist-popover-in {
+    from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+  }
+  .mindoist-menu-item { font-size: 0.8125rem; border-radius: var(--radius-control); }
 }

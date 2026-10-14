@@ -944,7 +944,7 @@ export function TaskInspector({
         role="alertdialog"
         aria-labelledby="discard-confirm-title"
         aria-describedby="discard-confirm-description"
-        overlayClassName="frosted-backdrop fixed inset-0 z-[60] flex items-center justify-center bg-black/50"
+        overlayClassName="frosted-backdrop fixed inset-0 z-[90] flex items-center justify-center bg-black/50"
         className="frosted-surface bg-card rounded-xl border border-border p-6 w-[90vw] max-w-sm shadow-lg"
       >
         <h3 id="discard-confirm-title" className="font-semibold text-base mb-2">{t('detail.discardChanges')}</h3>
@@ -973,7 +973,7 @@ export function TaskInspector({
         role="alertdialog"
         aria-labelledby="delete-confirm-title"
         aria-describedby="delete-confirm-description"
-        overlayClassName="frosted-backdrop fixed inset-0 z-[60] flex items-center justify-center bg-black/50"
+        overlayClassName="frosted-backdrop fixed inset-0 z-[90] flex items-center justify-center bg-black/50"
         className="frosted-surface bg-card rounded-xl border border-border p-6 w-[90vw] max-w-sm shadow-lg"
       >
         <h3 id="delete-confirm-title" className="font-semibold text-base mb-2">{t('detail.delete')}</h3>
@@ -1002,7 +1002,7 @@ export function TaskInspector({
         role="alertdialog"
         aria-labelledby="complete-confirm-title"
         aria-describedby="complete-confirm-desc"
-        overlayClassName="frosted-backdrop fixed inset-0 z-[60] flex items-center justify-center bg-black/50"
+        overlayClassName="frosted-backdrop fixed inset-0 z-[90] flex items-center justify-center bg-black/50"
         className="frosted-surface bg-card rounded-xl border border-border p-6 w-[90vw] max-w-sm shadow-lg"
       >
         <h3 id="complete-confirm-title" className="font-semibold text-base mb-2">{t('detail.complete')}</h3>

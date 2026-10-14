@@ -38,7 +38,9 @@ export function ActionMenu({
           aria-label={ariaLabel}
           autoFocus="first"
           disabledKeys={items.filter(item => item.disabled).map(item => item.key)}
-          onAction={key => onAction(String(key))}
+          // Standard menu behaviour: picking an item closes the menu before
+          // the action runs (e.g. a confirm dialog opens over a closed menu).
+          onAction={key => { onClose(); onAction(String(key)); }}
         >
           {items.map(item => (
             <HeroMenu.Item

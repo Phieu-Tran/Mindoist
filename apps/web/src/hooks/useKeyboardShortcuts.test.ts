@@ -22,6 +22,18 @@ describe('useKeyboardShortcuts', () => {
     expect(onOpen).toHaveBeenCalledOnce();
   });
 
+  it('leaves Enter to a focused button so it can be activated', () => {
+    const onOpen = vi.fn();
+    renderHook(() => useKeyboardShortcuts({ onOpen }));
+    const button = document.createElement('button');
+    document.body.appendChild(button);
+    const event = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
+    act(() => { button.dispatchEvent(event); });
+    expect(onOpen).not.toHaveBeenCalled();
+    expect(event.defaultPrevented).toBe(false);
+    button.remove();
+  });
+
   it('forwards navigation and shift expansion callbacks', () => {
     const onNext = vi.fn();
     const onPrev = vi.fn();
