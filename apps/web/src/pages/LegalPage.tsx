@@ -22,7 +22,7 @@ export function LegalPage({ kind }: { kind: LegalKind }) {
         <aside className="hidden lg:block">
           <nav className="sticky top-8 space-y-1 text-sm" aria-label={page.title}>
             {sections.map(section => (
-              <a key={section.id} href={`#${section.id}`} className="block rounded-control px-3 py-2 text-muted-foreground hover:bg-accent hover:text-foreground">
+              <a key={section.id} href={`#${section.id}`} className="block rounded-control px-3 py-2 text-muted-foreground hover:bg-hover-surface hover:text-foreground">
                 {section.title.replace(/^\d+\.\s*/, '')}
               </a>
             ))}

@@ -23,7 +23,7 @@ export function PublicHeader() {
         </nav>
         <div className="flex items-center gap-2">
           <LanguageSwitcher />
-          <a href="/login" className="hidden min-h-10 items-center rounded-control px-3 text-sm font-medium text-foreground transition-colors hover:bg-accent sm:inline-flex">
+          <a href="/login" className="hidden min-h-10 items-center rounded-control px-3 text-sm font-medium text-foreground transition-colors hover:bg-hover-surface sm:inline-flex">
             {copy.login}
           </a>
           <a href="/register" className="inline-flex min-h-10 items-center rounded-control bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">

@@ -84,7 +84,7 @@
 
 .project-workspace-rename-trigger { opacity: .62; }
 .project-workspace-rename-trigger:hover,
-.project-workspace-rename button:hover:not(:disabled) { background: var(--accent); color: var(--foreground); opacity: 1; }
+.project-workspace-rename button:hover:not(:disabled) { background: var(--hover-surface); color: var(--foreground); opacity: 1; }
 .project-workspace-rename button:active:not(:disabled),
 .project-workspace-rename-trigger:active { transform: scale(.94); }
 .project-workspace-rename button:disabled { cursor: not-allowed; opacity: .4; }
@@ -144,7 +144,7 @@
 .project-workspace-add-column:hover,
 .project-workspace-state button:hover {
   border-color: color-mix(in oklch, var(--primary) 40%, transparent);
-  background: var(--accent);
+  background: var(--hover-surface);
 }
 
 .project-workspace-delete {
@@ -255,7 +255,7 @@
 }
 
 .project-column-drag-handle:hover {
-  background: var(--accent);
+  background: var(--hover-surface);
   color: var(--foreground);
 }
 
@@ -331,7 +331,7 @@
 
 .project-column-actions button:hover,
 .project-column-rename button:hover {
-  background: var(--accent);
+  background: var(--hover-surface);
   color: var(--foreground);
 }
 
@@ -381,7 +381,7 @@
 .project-column-confirm p { margin: 0 0 .4rem; color: var(--foreground); font-size: .72rem; line-height: 1.4; }
 .project-column-confirm div { display: flex; justify-content: flex-end; gap: .3rem; }
 .project-column-confirm button { border-radius: var(--radius-chip); color: var(--muted-foreground); padding: .25rem .45rem; font-size: .7rem; transition: background var(--motion-instant), color var(--motion-instant); }
-.project-column-confirm button:hover { background: var(--accent); color: var(--foreground); }
+.project-column-confirm button:hover { background: var(--hover-surface); color: var(--foreground); }
 .project-column-confirm button.is-danger { background: var(--destructive); color: var(--destructive-foreground); }
 
 /* ── Task cards ── */
@@ -416,7 +416,7 @@
 
 .project-task-card:hover {
   border-color: color-mix(in oklch, var(--primary) 25%, transparent);
-  background: var(--accent);
+  background: var(--hover-surface);
 }
 
 .project-task-card.is-dragging {
@@ -535,7 +535,7 @@
 
 .project-task-menu > button:hover,
 .project-task-menu > button:focus-visible {
-  background: var(--accent);
+  background: var(--hover-surface);
   color: var(--foreground);
   outline: none;
 }
@@ -580,7 +580,7 @@
 
 .project-task-menu > div button:hover,
 .project-task-menu > div button:focus-visible {
-  background: var(--accent);
+  background: var(--hover-surface);
   outline: none;
 }
 
@@ -614,7 +614,7 @@
 }
 
 .project-column-add > button:hover {
-  background: var(--accent);
+  background: var(--hover-surface);
   color: var(--foreground);
 }
 
@@ -646,7 +646,7 @@
 }
 
 .project-workspace-list-row:last-child { border-bottom: 0; }
-.project-workspace-list-row:hover { background: color-mix(in oklch, var(--accent) 35%, transparent); }
+.project-workspace-list-row:hover { background: color-mix(in oklch, var(--hover-surface) 35%, transparent); }
 
 .project-workspace-list-row > button {
   overflow: hidden;

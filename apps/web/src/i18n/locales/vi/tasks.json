@@ -469,6 +469,11 @@
     "detach": "Gỡ bỏ"
   },
   "settingsPage": {
+    "uiKit": "Bộ giao diện",
+    "uiKitHint": "Dùng thử bộ component HeroUI mới trên thiết bị này. Đổi sẽ tải lại trang.",
+    "uiKitDefault": "Mặc định ({{kit}})",
+    "uiKit_legacy": "Cổ điển",
+    "uiKit_heroui": "HeroUI (beta)",
     "title": "Cài đặt",
     "subtitle": "Quản lý không gian làm việc, tích hợp và tùy chọn tập trung.",
     "category": "Nhóm cài đặt",

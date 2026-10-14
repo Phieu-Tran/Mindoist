@@ -101,6 +101,26 @@ jobs:
           bundle_kb="$(du -sk apps/web/dist | cut -f1)"
           echo "web bundle: ${bundle_kb} KiB"
           test "$bundle_kb" -lt 204800
+      - name: Check the HeroUI kit stays out of the eager bundle
+        shell: bash
+        run: |
+          # Every user downloads index.html's entry + modulepreloads. HeroUI is
+          # a lazy UI kit; if it ever lands in that set, legacy users pay for it.
+          node --input-type=module -e '
+            import { readFileSync } from "node:fs";
+            import { gzipSync } from "node:zlib";
+            const html = readFileSync("apps/web/dist/index.html", "utf8");
+            const files = [...html.matchAll(/(?:src|href)="\/?(assets\/[^"]+\.(?:js|css))"/g)].map(m => m[1]);
+            let gz = 0;
+            const offenders = [];
+            for (const file of files) {
+              const code = readFileSync(`apps/web/dist/${file}`);
+              gz += gzipSync(code).length;
+              if (/HeroUI\.|react-aria-clear-focus/.test(code.toString())) offenders.push(file);
+            }
+            console.log(`eager assets: ${files.length}, ${(gz / 1024).toFixed(1)} KiB gzip`);
+            if (offenders.length) { console.error("HeroUI code in eager bundle:", offenders); process.exit(1); }
+          '
 
   edge-db:
     name: edge-db
@@ -235,6 +255,113 @@ jobs:
             playwright-report
             test-results
           retention-days: 3
+
+  e2e-heroui:
+    name: e2e-heroui
+    runs-on: ubuntu-24.04
+    needs: [build-bundle]
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: mindoist_user
+          POSTGRES_PASSWORD: mindoist_pass
+          POSTGRES_DB: mindoist_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U mindoist_user -d mindoist_test"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @mindoist/design-tokens build
+      - run: pnpm --filter @mindoist/shared build
+      - run: pnpm --filter @mindoist/api build
+      - name: Build web with the HeroUI kit as the default
+        env:
+          VITE_UI_KIT: heroui
+        run: pnpm --filter @mindoist/web build
+      - name: Apply Prisma migrations to E2E database
+        env:
+          DATABASE_URL: postgresql://mindoist_user:mindoist_pass@127.0.0.1:5432/mindoist_test
+        run: pnpm --filter @mindoist/api prisma migrate deploy
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm e2e
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-heroui
+          path: |
+            playwright-report
+            test-results
+          retention-days: 3
+
+  bundle-diff:
+    name: bundle-diff
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: head
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: base
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+          cache-dependency-path: |
+            head/pnpm-lock.yaml
+            base/pnpm-lock.yaml
+      - name: Build base and head web bundles
+        shell: bash
+        run: |
+          for side in base head; do
+            (cd "$side" && pnpm install --frozen-lockfile \
+              && pnpm --filter @mindoist/design-tokens build \
+              && pnpm --filter @mindoist/shared build \
+              && pnpm --filter @mindoist/web build)
+          done
+      - name: Compare the eagerly loaded bundle (Classic kit)
+        shell: bash
+        run: |
+          # Every user downloads index.html's entry + modulepreloads. Growth over
+          # 2 KiB gzip is reported, not blocked: features may legitimately need
+          # it, but it should be a conscious choice in review.
+          node --input-type=module -e '
+            import { readFileSync, appendFileSync } from "node:fs";
+            import { gzipSync } from "node:zlib";
+            const measure = dist => {
+              const html = readFileSync(`${dist}/index.html`, "utf8");
+              const files = [...html.matchAll(/(?:src|href)="\/?(assets\/[^"]+\.(?:js|css))"/g)].map(m => m[1]);
+              return files.reduce((sum, file) => sum + gzipSync(readFileSync(`${dist}/${file}`)).length, 0) / 1024;
+            };
+            const base = measure("base/apps/web/dist");
+            const head = measure("head/apps/web/dist");
+            const delta = head - base;
+            const line = `Eager bundle (gzip): base ${base.toFixed(2)} KiB -> head ${head.toFixed(2)} KiB (${delta >= 0 ? "+" : ""}${delta.toFixed(2)} KiB)`;
+            console.log(line);
+            if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${line}\n`);
+            if (delta > 2) console.log(`::warning title=Eager bundle grew::${line}`);
+          '
 
   security:
     name: security

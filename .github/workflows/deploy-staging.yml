@@ -96,6 +96,10 @@ jobs:
         env:
           VITE_API_URL: ${{ vars.VITE_API_URL }}
           VITE_STATUS_PAGE_URL: ${{ vars.VITE_STATUS_PAGE_URL }}
+          # UI kit default for this environment (legacy | heroui) and whether
+          # Settings lets users switch. Unset = legacy + switcher shown.
+          VITE_UI_KIT: ${{ vars.VITE_UI_KIT }}
+          VITE_UI_KIT_SWITCHER: ${{ vars.VITE_UI_KIT_SWITCHER }}
         run: |
           pnpm --filter @mindoist/design-tokens build
           pnpm --filter @mindoist/shared build

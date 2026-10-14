@@ -9,7 +9,7 @@
  *
  * Token values are parsed directly out of src/index.css (not hand-copied)
  * so this audit can't silently drift from what actually ships — a stale
- * copy of light --accent (and per-preset dark --primary-foreground values
+ * copy of light --hover-surface (and per-preset dark --primary-foreground values
  * that differ per preset but were checked against only one) both slipped
  * through undetected before this file read CSS as its source of truth.
  *
@@ -161,12 +161,12 @@ const TEXT_FOREGROUNDS = [
   '--foreground',
   '--muted-foreground',
   '--sidebar-foreground',
-  '--accent-foreground',
+  '--hover-surface-foreground',
   '--color-p1', '--color-p2', '--color-p3', '--color-p4',
 ];
 
 // Surfaces: backgrounds these foregrounds appear on
-const SURFACES = ['--background', '--card', '--sidebar', '--accent'];
+const SURFACES = ['--background', '--card', '--sidebar', '--hover-surface'];
 
 // ── Audit ──
 
@@ -200,6 +200,17 @@ function auditTheme(name, tokens, accentPresets) {
     for (const bg of SURFACES) {
       results.push(auditPair('--color-p3', themedTokens['--color-p3'], bg, themedTokens[bg], name, preset));
     }
+    // Destructive buttons: --destructive-foreground on --destructive.
+    results.push(
+      auditPair(
+        '--destructive-foreground',
+        themedTokens['--destructive-foreground'],
+        '--destructive',
+        themedTokens['--destructive'],
+        name,
+        preset,
+      ),
+    );
     // primary-foreground text on primary button background — dark presets
     // each define their own --primary-foreground (light presets don't,
     // since light always pairs primary with plain white); fall back to the
@@ -227,6 +238,61 @@ export function runAudit() {
   return [
     ...auditTheme('light', LIGHT, ACCENT_PRESETS_LIGHT),
     ...auditTheme('dark', DARK, ACCENT_PRESETS_DARK),
+  ];
+}
+
+// ── HeroUI kit adapter (src/styles/heroui.css) ──
+// The HeroUI kit maps its semantic variables onto Mindoist tokens. Most are
+// plain references, but the adapter also defines its own literals (status
+// fills), so every text/fill pair HeroUI renders is audited here, per theme
+// and accent preset, against the adapter merged over the app tokens.
+
+const HEROUI_CSS_PATH = join(__dirname, 'src', 'styles', 'heroui.css');
+
+const HEROUI_PAIRS = [
+  ['--accent-foreground', '--accent'],
+  ['--danger-foreground', '--danger'],
+  ['--success-foreground', '--success'],
+  ['--warning-foreground', '--warning'],
+  ['--default-foreground', '--default'],
+  ['--surface-foreground', '--surface'],
+  ['--overlay-foreground', '--overlay'],
+  ['--field-foreground', '--field-background'],
+  ['--field-placeholder', '--field-background'],
+  ['--muted-foreground', '--overlay'],
+  ['--link', '--overlay'],
+];
+
+function resolveOne(tokens, name, stack = []) {
+  if (stack.includes(name)) throw new Error(`Circular token reference: ${[...stack, name].join(' -> ')}`);
+  const value = tokens[name];
+  if (value == null) throw new Error(`Missing token reference: ${name}`);
+  return value.replace(
+    /var\((--[\w-]+)(?:,\s*([^)]+))?\)/g,
+    (_match, reference, fallback) =>
+      tokens[reference] != null ? resolveOne(tokens, reference, [...stack, name]) : fallback?.trim(),
+  );
+}
+
+function auditHeroUiTheme(name, baseTokens, presets, adapter) {
+  const results = [];
+  const variants = [[undefined, {}], ...Object.entries(presets)];
+  for (const [preset, overrides] of variants) {
+    const tokens = { ...baseTokens, ...overrides, ...adapter };
+    for (const [fg, bg] of HEROUI_PAIRS) {
+      results.push(auditPair(fg, resolveOne(tokens, fg), bg, resolveOne(tokens, bg), `heroui-${name}`, preset));
+    }
+  }
+  return results;
+}
+
+export function runHeroUiAudit(cssPath = HEROUI_CSS_PATH) {
+  const css = readFileSync(cssPath, 'utf8');
+  const lightAdapter = mergeBlocks(css, /(?:^|\n)\s*:root\s*\{([^}]*)\}/g);
+  const darkAdapter = { ...lightAdapter, ...mergeBlocks(css, /(?:^|\n)\s*:root\.dark\s*\{([^}]*)\}/g) };
+  return [
+    ...auditHeroUiTheme('light', LIGHT, ACCENT_PRESETS_LIGHT, lightAdapter),
+    ...auditHeroUiTheme('dark', DARK, ACCENT_PRESETS_DARK, darkAdapter),
   ];
 }
 

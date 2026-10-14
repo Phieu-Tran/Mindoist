@@ -11,7 +11,7 @@ import { join, extname } from 'node:path';
 import { hues, projectColors } from '@mindoist/design-tokens';
 // @ts-expect-error — plain-JS sibling script, no .d.ts (kept dependency-free
 // on purpose so `node apps/web/contrast-audit.mjs` still works standalone).
-import { runAudit } from '../contrast-audit.mjs';
+import { runAudit, runHeroUiAudit } from '../contrast-audit.mjs';
 
 interface ContrastPair {
   theme: string;
@@ -85,7 +85,7 @@ describe('DESIGN.md §12 — Enforcement', () => {
     // to values the OKLab→linear-sRGB matrix had already linearized —
     // double-transforming every mid-tone ratio — and (b) hand-copied token
     // values instead of parsing index.css, which had silently drifted from
-    // the real --accent value. Together they made ~21 dark-theme pairs
+    // the real --hover-surface value. Together they made ~21 dark-theme pairs
     // look like failures and hid 26 real light-theme ones. Fixed 2026-07-26
     // (see MASTERPLAN.md X3): the script now parses tokens straight out of
     // index.css, and every token that was actually failing AA was darkened
@@ -208,5 +208,53 @@ describe('DESIGN.md §12 — Enforcement', () => {
     const globalCss = stripComments(readFileSync(join(SRC_DIR, 'index.css'), 'utf8'));
     expect(keyframeFiles.length).toBeGreaterThan(0);
     expect(globalCss).toMatch(/@media\s*\(prefers-reduced-motion:\s*reduce\)[\s\S]*animation-duration:\s*0\.01ms\s*!important/);
+  });
+
+  describe('12. HeroUI UI kit stays on Mindoist tokens', () => {
+    const HEROUI_CSS = join(SRC_DIR, 'styles', 'heroui.css');
+    const herouiCss = stripComments(readFileSync(HEROUI_CSS, 'utf8'));
+    const herouiDir = join(SRC_DIR, 'components', 'ui', 'heroui');
+    const herouiSources = walk(herouiDir, ['.tsx', '.ts']).filter(file => !/\.test\.tsx?$/.test(file));
+
+    it('every text/fill pair HeroUI renders passes AA in both themes and all accent presets', () => {
+      const failures = (runHeroUiAudit() as ContrastPair[]).filter(pair => !pair.pass);
+      expect(failures, JSON.stringify(failures, null, 2)).toEqual([]);
+    });
+
+    it("never pulls in HeroUI's default theme, and only the lazy kit imports HeroUI styles", () => {
+      // The default theme redefines --accent/--muted/--radius-* with other
+      // meanings; importing it anywhere would repaint the Classic UI.
+      expect(herouiCss).not.toMatch(/@import\s+["']@heroui\/styles["']/);
+      expect(herouiCss).not.toMatch(/themes\/default/);
+      const offenders = allSourceFiles
+        .filter(file => file !== HEROUI_CSS)
+        .filter(file => /@heroui\/styles/.test(stripComments(readFileSync(file, 'utf8'))));
+      expect(offenders).toEqual([]);
+      const tsImporters = walk(SRC_DIR, ['.ts', '.tsx'])
+        .filter(file => !/\.test\.tsx?$/.test(file) && !file.startsWith(herouiDir))
+        .filter(file => /from ['"]@heroui\/react['"]|styles\/heroui\.css/.test(readFileSync(file, 'utf8')));
+      expect(tsImporters, 'HeroUI must only be imported by components/ui/heroui (lazy chunk)').toEqual([]);
+    });
+
+    it('defines every HeroUI semantic variable the kit components read', () => {
+      const required = [
+        '--accent', '--accent-foreground', '--surface', '--surface-foreground', '--overlay', '--overlay-foreground',
+        '--default', '--default-foreground', '--default-hover', '--field-background', '--field-foreground',
+        '--field-placeholder', '--field-border', '--field-hover', '--field-focus', '--field-border-hover',
+        '--field-border-focus', '--success', '--success-foreground', '--warning', '--warning-foreground',
+        '--danger', '--danger-foreground', '--focus', '--separator', '--link', '--backdrop', '--border-width',
+        '--disabled-opacity', '--cursor-interactive', '--cursor-disabled', '--overlay-shadow', '--field-shadow',
+        '--accent-hover', '--danger-hover', '--accent-soft', '--accent-soft-foreground', '--danger-soft',
+        '--danger-soft-foreground', '--default-soft', '--default-soft-foreground',
+      ];
+      const missing = required.filter(name => !new RegExp(`(^|[\\s{;])${name}:`).test(herouiCss));
+      expect(missing).toEqual([]);
+    });
+
+    it('kit wrappers take colours from tokens, never literals', () => {
+      const literal = /#[0-9a-f]{3,8}\b|\brgba?\(|\boklch\(|\bhsla?\(/i;
+      const offenders = herouiSources.filter(file => literal.test(stripComments(readFileSync(file, 'utf8'))));
+      expect(offenders).toEqual([]);
+    });
   });
 });

@@ -6,6 +6,10 @@
  */
 import { test, expect, type Page } from '@playwright/test';
 
+function isoDay(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
 const EVIDENCE_DIR = '../../docs/design/evidence/B1.15-task-detail-ux';
 
 const VIEWPORTS = [
@@ -42,7 +46,7 @@ async function pickDeadline(page: Page, due: Date) {
     if (await popup.getByText(dueMonthLabel, { exact: true }).isVisible()) break;
     await popup.getByRole('button', { name: 'Next month' }).click();
   }
-  await popup.getByRole('button', { name: String(due.getDate()), exact: true }).click();
+  await popup.locator(`[data-calendar-day="${isoDay(due)}"]`).click();
   await expect(popup).not.toBeVisible();
 }
 
@@ -84,8 +88,8 @@ async function arrangeDetailScene(page: Page) {
   await page.getByTestId('subtask-input').press('Enter');
   await expect(page.getByText('Book room', { exact: true }).first()).toBeVisible();
   const firstSubtask = page.locator('[data-testid="detail-subtasks"] [data-testid^="subtask-"]').first();
-  await firstSubtask.locator('button[role="checkbox"]').click();
-  await expect(firstSubtask.locator('button[role="checkbox"]')).toHaveAttribute('data-state', 'checked');
+  await firstSubtask.locator('[data-testid^="subtask-toggle-"]').click();
+  await expect(firstSubtask.locator('[data-testid^="subtask-toggle-"]')).toHaveAttribute('data-state', 'checked');
   await expect(page.getByTestId(`task-subtasks-${parentId}`)).toContainText('1/2');
 
   await expect(page.getByTestId('detail-save')).toBeEnabled();

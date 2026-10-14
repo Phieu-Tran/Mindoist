@@ -1,12 +1,8 @@
-import { cn } from "@/lib/utils"
+import type { HTMLAttributes } from 'react';
+import { getKitOverrides } from './kit';
+import { Skeleton as LegacySkeleton } from './legacy/skeleton';
 
-function Skeleton({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return (
-    <div
-      className={cn("animate-pulse rounded-md bg-muted", className)}
-      {...props}
-    />
-  )
+export function Skeleton(props: HTMLAttributes<HTMLDivElement>) {
+  const Impl = getKitOverrides().Skeleton ?? LegacySkeleton;
+  return <Impl {...props} />;
 }
-
-export { Skeleton }

@@ -49,7 +49,7 @@
 
 .create-project-dialog h2 { margin: .18rem 0 0; color: var(--foreground); font-size: 1.35rem; letter-spacing: -.025em; }
 .create-project-dialog > header button { display: grid; width: 2rem; height: 2rem; place-items: center; border-radius: var(--radius-control); color: var(--muted-foreground); }
-.create-project-dialog > header button:hover { background: var(--accent); color: var(--foreground); }
+.create-project-dialog > header button:hover { background: var(--hover-surface); color: var(--foreground); }
 .create-project-dialog form { display: grid; gap: 1rem; }
 
 .create-project-field { display: grid; gap: .38rem; }
@@ -63,7 +63,7 @@
 .create-project-colors { min-width: 0; border: 0; padding: 0; }
 .create-project-templates > div { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .55rem; margin-top: .45rem; }
 .create-project-templates button { display: grid; min-width: 0; grid-template-columns: auto 1fr; gap: .08rem .55rem; border: 1px solid var(--border); border-radius: var(--radius-panel); background: var(--card); padding: .68rem; text-align: left; transition: border-color var(--motion-quick) var(--ease-out), background var(--motion-quick) var(--ease-out), box-shadow var(--motion-quick) var(--ease-out); }
-.create-project-templates button:hover { border-color: color-mix(in oklch, var(--primary) 35%, transparent); background: color-mix(in oklch, var(--accent) 50%, transparent); }
+.create-project-templates button:hover { border-color: color-mix(in oklch, var(--primary) 35%, transparent); background: color-mix(in oklch, var(--hover-surface) 50%, transparent); }
 .create-project-templates button.is-selected { border-color: color-mix(in oklch, var(--primary) 62%, transparent); background: color-mix(in oklch, var(--primary) 6%, transparent); box-shadow: 0 0 0 2px color-mix(in oklch, var(--primary) 9%, transparent); }
 .create-project-template-icon { display: grid; grid-row: 1 / span 3; width: 2rem; height: 2rem; place-items: center; border-radius: var(--radius-control); background: var(--muted); color: var(--muted-foreground); }
 .create-project-templates button.is-selected .create-project-template-icon { background: color-mix(in oklch, var(--primary) 12%, transparent); color: var(--primary); }
@@ -90,7 +90,7 @@
 .create-project-error { margin: 0; border-radius: var(--radius-control); background: color-mix(in oklch, var(--destructive) 8%, transparent); color: var(--destructive); padding: .55rem .65rem; font-size: .75rem; }
 .create-project-dialog footer { display: flex; justify-content: flex-end; gap: .5rem; border-top: 1px solid var(--border); padding-top: .85rem; }
 .create-project-dialog footer button { min-height: 2.2rem; border-radius: var(--radius-control); color: var(--muted-foreground); padding: .45rem .8rem; font-size: .78rem; font-weight: 650; }
-.create-project-dialog footer button:hover { background: var(--accent); color: var(--foreground); }
+.create-project-dialog footer button:hover { background: var(--hover-surface); color: var(--foreground); }
 .create-project-dialog footer button.is-primary { background: var(--primary); color: var(--primary-foreground); }
 .create-project-dialog footer button:disabled { cursor: not-allowed; opacity: .5; }
 

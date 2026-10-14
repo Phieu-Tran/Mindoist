@@ -1,10 +1,10 @@
 import { useCallback, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 import { Check, Repeat } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { buildRrule, type RecurrencePreset } from '@mindoist/shared/recurrence/utils';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
+import { PopoverPanel } from '@/components/ui/popover-panel';
 import { useDismissiblePopover } from './use-dismissible-popover';
 import { usePropertyMutation } from './use-property-mutation';
 import type { PropertySave, TaskPropertyDraft } from './types';
@@ -64,10 +64,10 @@ export function RecurrenceField({ taskId, value, save, onChange }: Props) {
     <div className="grid gap-1" title={error ?? undefined}>
       <div ref={ref} className="relative shrink-0">
         <button ref={triggerRef} type="button" onClick={toggleMenu} aria-haspopup="listbox" aria-expanded={open} aria-label={t('detail.recurrence')} data-testid="detail-recurrence-select" data-value={value.recurrencePreset || ''} title={value.recurrencePreset ? `${t('detail.recurrence')}: ${value.recurrencePreset}` : t('detail.noRecurrence')} className={cn('flex h-11 w-11 items-center justify-center rounded-control bg-background/75 transition-colors hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring xl:h-7 xl:w-7', value.recurrencePreset && 'text-primary')}><Repeat className="h-3.5 w-3.5" aria-hidden="true" /></button>
-        {open && createPortal(<div ref={menuRef} role="listbox" aria-label={t('detail.recurrence')} style={menuPosition} className="frosted-surface fixed z-[100] max-h-[calc(100vh-1rem)] w-44 overflow-y-auto rounded-panel border border-border bg-card p-1 shadow-lg">{optionValues.map((preset, index) => {
+        <PopoverPanel open={open} onClose={close} anchorRef={triggerRef} containerRef={ref} panelRef={menuRef} role="listbox" aria-label={t('detail.recurrence')} placement="bottom end" portal style={menuPosition} className="frosted-surface fixed z-[100] max-h-[calc(100vh-1rem)] w-44 overflow-y-auto rounded-panel border border-border bg-card p-1 shadow-lg" heroClassName="w-44 p-1">{optionValues.map((preset, index) => {
           const selected = value.recurrencePreset === preset;
           return <button key={preset || 'none'} type="button" role="option" aria-selected={selected} onClick={() => select(preset)} className={cn('flex w-full items-center gap-2 rounded-control px-2.5 py-1.5 text-left text-xs transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring', selected && 'bg-muted font-medium')}><Check className={cn('h-3 w-3 shrink-0', !selected && 'opacity-0')} aria-hidden="true" /><span className="truncate">{labels[index]}</span></button>;
-        })}</div>, document.body)}
+        })}</PopoverPanel>
       </div>
       {value.recurrencePreset === 'custom' && <div className="flex items-center gap-2"><label className="w-16 shrink-0 text-xs text-muted-foreground">{t('detail.customRrule', 'RRULE')}</label><Input value={value.customRrule} onChange={(event) => onChange('customRrule', event.target.value)} onBlur={() => void commit({ rrule: value.customRrule || null })} placeholder="FREQ=DAILY;INTERVAL=3" spellCheck={false} className="h-11 flex-1 border-border/70 bg-background font-mono text-xs xl:h-7" data-testid="detail-custom-rrule" /></div>}
       {value.recurrencePreset && <div className="flex flex-wrap items-center gap-x-3 gap-y-1">

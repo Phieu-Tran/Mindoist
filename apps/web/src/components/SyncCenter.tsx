@@ -56,7 +56,7 @@ export function SyncCenter() {
             </div>
             <button
               type="button"
-              className="inline-flex size-9 shrink-0 items-center justify-center rounded-control text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="inline-flex size-9 shrink-0 items-center justify-center rounded-control text-muted-foreground hover:bg-hover-surface hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               onClick={() => setOpen(false)}
               aria-label={t('common:sync.close')}
             >

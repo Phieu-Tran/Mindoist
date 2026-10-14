@@ -20,6 +20,8 @@ export interface ShortcutHandlers {
   onTags?: () => void;
 }
 
+const INTERACTIVE_SELECTOR = 'button, a[href], summary, select, [role="button"], [role="link"], [role="menuitem"], [role="option"], [role="tab"], [role="checkbox"], [role="switch"], [role="gridcell"]';
+
 export function useKeyboardShortcuts(handlers: ShortcutHandlers) {
   const goPrefix = useRef(false);
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
@@ -80,6 +82,9 @@ export function useKeyboardShortcuts(handlers: ShortcutHandlers) {
       e.preventDefault();
       handlers.onPrev?.();
     } else if (e.key === 'Enter') {
+      // A focused button, link or menu/listbox item owns Enter — swallowing
+      // it here made every such control unreachable by keyboard.
+      if (target.closest?.(INTERACTIVE_SELECTOR)) return;
       e.preventDefault();
       handlers.onOpen?.();
     } else if (e.key === 'Backspace' || e.key === 'Delete') {

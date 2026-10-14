@@ -39,7 +39,7 @@ export function TelegramUsageGuide() {
         open={isOpen}
         onToggle={event => setIsOpen(event.currentTarget.open)}
       >
-        <summary className="flex min-h-11 cursor-pointer list-none items-center gap-3 rounded-control outline-none transition-colors duration-200 hover:bg-accent/60 active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card [&::-webkit-details-marker]:hidden">
+        <summary className="flex min-h-11 cursor-pointer list-none items-center gap-3 rounded-control outline-none transition-colors duration-200 hover:bg-hover-surface/60 active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card [&::-webkit-details-marker]:hidden">
           <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary/10 text-primary">
             <BookOpenText className="h-5 w-5" aria-hidden="true" />
           </span>

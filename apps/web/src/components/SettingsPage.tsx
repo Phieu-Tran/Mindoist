@@ -8,6 +8,8 @@ import { ThemeToggle } from './ThemeToggle';
 import { AccentPicker } from './AccentPicker';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { DensityToggle } from './DensityToggle';
+import { UiKitToggle } from './UiKitToggle';
+import { featureFlags } from '@/lib/feature-flags';
 import { GoogleConnectButton } from './GoogleConnectButton';
 import { GoogleDriveBackup } from './GoogleDriveBackup';
 import { TelegramConnectCard } from '@/features/telegram/TelegramConnectCard';
@@ -197,7 +199,7 @@ export function SettingsPage({
               aria-current={active ? 'page' : undefined}
               className={cn(
                 'flex shrink-0 items-center gap-2.5 rounded-control px-3 py-2 text-left text-sm transition-colors',
-                'hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+                'hover:bg-hover-surface hover:text-hover-surface-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
                 active && 'bg-sidebar-accent font-semibold text-foreground'
               )}
             >
@@ -306,6 +308,15 @@ export function SettingsPage({
               </div>
               <DensityToggle />
             </div>
+            {featureFlags.uiKitSwitcher && (
+              <div className="flex flex-wrap items-center justify-between gap-4 rounded-panel border border-border/70 bg-card p-4">
+                <div>
+                  <span className="block text-sm font-medium">{t('settingsPage.uiKit')}</span>
+                  <span className="text-xs text-muted-foreground">{t('settingsPage.uiKitHint')}</span>
+                </div>
+                <UiKitToggle />
+              </div>
+            )}
           </div>
         )}
 

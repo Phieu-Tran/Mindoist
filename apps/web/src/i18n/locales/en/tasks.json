@@ -471,6 +471,11 @@
     "detach": "Detach"
   },
   "settingsPage": {
+    "uiKit": "UI kit",
+    "uiKitHint": "Try the new HeroUI components on this device. Switching reloads the page.",
+    "uiKitDefault": "Default ({{kit}})",
+    "uiKit_legacy": "Classic",
+    "uiKit_heroui": "HeroUI (beta)",
     "title": "Settings",
     "subtitle": "Manage your workspace, integrations, and focus preferences.",
     "category": "Settings category",

@@ -1,5 +1,9 @@
 import { test, expect, Page } from '@playwright/test';
 
+function isoDay(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
 // B1.15 — Task Detail UX overhaul: side panel layout, custom date picker
 // with date ranges (startDate → dueDate), and sub-task management.
 test.describe('B1.15 Task Detail UX', () => {
@@ -42,7 +46,7 @@ test.describe('B1.15 Task Detail UX', () => {
       if (await popup.getByText(dueMonthLabel, { exact: true }).isVisible()) break;
       await popup.getByRole('button', { name: 'Next month' }).click();
     }
-    await popup.getByRole('button', { name: String(due.getDate()), exact: true }).click();
+    await popup.locator(`[data-calendar-day="${isoDay(due)}"]`).click();
     await expect(popup).not.toBeVisible();
   }
 
@@ -91,8 +95,8 @@ test.describe('B1.15 Task Detail UX', () => {
 
     // Complete the sub-task via its checkbox inside the detail panel.
     const subtaskRow = page.locator('[data-testid="detail-subtasks"] [data-testid^="subtask-"]').first();
-    await subtaskRow.locator('button[role="checkbox"]').click();
-    await expect(subtaskRow.locator('button[role="checkbox"]')).toHaveAttribute('data-state', 'checked');
+    await subtaskRow.locator('[data-testid^="subtask-toggle-"]').click();
+    await expect(subtaskRow.locator('[data-testid^="subtask-toggle-"]')).toHaveAttribute('data-state', 'checked');
     await expect(page.getByTestId(`task-subtasks-${parentId}`)).toContainText('1/1');
 
     // Persistence proof: reload, reopen the parent, sub-task is still there and done.
@@ -103,7 +107,7 @@ test.describe('B1.15 Task Detail UX', () => {
     await expect(page.getByTestId('task-detail')).toBeVisible();
     const reloadedRow = page.locator('[data-testid="detail-subtasks"] [data-testid^="subtask-"]').first();
     await expect(reloadedRow).toContainText(subTitle);
-    await expect(reloadedRow.locator('button[role="checkbox"]')).toHaveAttribute('data-state', 'checked');
+    await expect(reloadedRow.locator('[data-testid^="subtask-toggle-"]')).toHaveAttribute('data-state', 'checked');
   });
 
   test('[DETAIL-01] persists a deadline to Task List and Calendar', async ({ page }) => {
