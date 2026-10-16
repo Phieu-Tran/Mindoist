@@ -2,6 +2,15 @@
 
 Notable changes to Mindoist, grouped by date. This project doesn't cut versioned releases yet — entries are dated instead.
 
+## 2026-10-16
+
+### Changed
+- The HeroUI (beta) kit now moves. Its priority, color, tags and recurrence popovers, date pickers, "More actions" and "Move to" menus, and selects fade and scale in from their trigger (160 ms) and fade out (90 ms). Before, they appeared and disappeared instantly, so the kit looked identical to Classic. Dialogs keep HeroUI's own backdrop fade and zoom, retimed to Mindoist's motion tokens. Option and menu rows give a small press response. Colors, shapes, sizes and density are unchanged, and the Classic kit is untouched.
+- With reduced motion turned on in the operating system, all of this motion is off.
+
+### Validation
+- KIT-08 browser checks (both CI lanes) record every animation. HeroUI panels must open and close with motion and be gone quickly. Dialogs must run exactly HeroUI's two animations at token timings. Reduced motion leaves nothing longer than 1 ms. Classic panels gain no new motion. The HeroUI check fails without the new styles.
+
 ## 2026-10-14
 
 ### Added

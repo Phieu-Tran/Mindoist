@@ -301,3 +301,88 @@ test('[KIT-07] a HeroUI asset that keeps failing falls back to the Classic kit',
   await expect(page.getByRole('button', { name: 'Register', exact: true })).toBeVisible();
   expect(await activeKit(page)).toBe('legacy');
 });
+
+// Records every CSS animation that starts, with its computed duration, so the
+// assertions don't depend on sampling inside a 90–240 ms window.
+async function recordAnimations(page: Page) {
+  await page.addInitScript(() => {
+    const log: Array<{ name: string; ms: number }> = [];
+    (window as unknown as { __animations: typeof log }).__animations = log;
+    document.addEventListener('animationstart', event => {
+      const seconds = parseFloat(getComputedStyle(event.target as Element).animationDuration) || 0;
+      log.push({ name: event.animationName, ms: seconds * 1000 });
+    }, true);
+  });
+}
+const animations = (page: Page) => page.evaluate(() => (window as unknown as { __animations: Array<{ name: string; ms: number }> }).__animations.splice(0));
+
+async function openTaskPanel(page: Page, kit: 'legacy' | 'heroui', reducedMotion: 'reduce' | 'no-preference' = 'no-preference') {
+  await recordAnimations(page);
+  await page.addInitScript(k => localStorage.setItem('ui-kit', k), kit);
+  await page.emulateMedia({ reducedMotion });
+  await page.setViewportSize({ width: 1280, height: 860 });
+  await register(page);
+  expect(await activeKit(page)).toBe(kit);
+  await addTask(page, 'Motion task');
+  await page.getByTestId(/^task-title-/).filter({ hasText: 'Motion task' }).click();
+  await expect(page.getByTestId('task-detail')).toBeVisible();
+  await animations(page);
+}
+
+const closeOutside = (page: Page) => page.getByText('Task Details', { exact: true }).click({ force: true });
+
+test('[KIT-08] HeroUI panels open and close with motion; dialogs keep a single animation', async ({ page }) => {
+  await openTaskPanel(page, 'heroui');
+  const panels: Array<[string, () => Promise<void>, Locator]> = [
+    ['priority', () => page.getByTestId('detail-priority').click(), page.getByRole('listbox', { name: 'Priority' })],
+    ['date', () => page.getByTestId('detail-deadline-v2').click(), page.getByRole('dialog', { name: 'Pick date' })],
+    ['menu', () => page.getByRole('button', { name: 'More actions' }).click(), page.getByRole('menu')],
+  ];
+  for (const [label, open, panel] of panels) {
+    await open();
+    await expect(panel).toBeVisible();
+    await expect.poll(async () => (await animations(page)).map(a => a.name), { message: `${label} opens with motion` }).toContain('mindoist-pop-in');
+    const closedAt = Date.now();
+    await closeOutside(page);
+    await expect(panel).toBeHidden();
+    expect(Date.now() - closedAt, `${label} is gone quickly`).toBeLessThan(600);
+    expect((await animations(page)).map(a => a.name), `${label} closes with motion`).toContain('mindoist-pop-out');
+  }
+
+  await page.getByRole('button', { name: 'More actions' }).click();
+  await expect(page.getByRole('menu')).toBeVisible();
+  // Let the menu's own open animation start before clearing the log.
+  await expect.poll(async () => (await animations(page)).some(a => a.name === 'mindoist-pop-in')).toBe(true);
+  await page.getByRole('menuitem', { name: 'Delete' }).click();
+  await expect(page.getByRole('alertdialog')).toBeVisible();
+  // HeroUI's own backdrop fade + container zoom, timed to the Mindoist
+  // tokens, and nothing stacked on top (only the menu's close besides).
+  const seen: Array<{ name: string; ms: number }> = [];
+  await expect.poll(async () => {
+    seen.push(...await animations(page));
+    return seen.filter(a => a.name === 'enter').length;
+  }).toBe(2);
+  expect(seen.filter(a => a.name === 'enter').map(a => a.ms).sort((a, b) => a - b)).toEqual([160, 240]);
+  expect(seen.filter(a => a.name !== 'enter' && a.name !== 'mindoist-pop-out'), 'no extra dialog animation').toEqual([]);
+  await page.getByRole('alertdialog').getByRole('button', { name: 'Cancel' }).click();
+  await expect(page.getByRole('alertdialog')).toBeHidden();
+});
+
+test('[KIT-08] reduced motion turns HeroUI panel motion off', async ({ page }) => {
+  await openTaskPanel(page, 'heroui', 'reduce');
+  await page.getByTestId('detail-priority').click();
+  await expect(page.getByRole('listbox', { name: 'Priority' })).toBeVisible();
+  await closeOutside(page);
+  await expect(page.getByRole('listbox', { name: 'Priority' })).toBeHidden();
+  const long = (await animations(page)).filter(a => a.ms > 1);
+  expect(long, 'no animation longer than 1 ms').toEqual([]);
+});
+
+test('[KIT-08] the Classic kit panels are unchanged (no new motion)', async ({ page }) => {
+  await openTaskPanel(page, 'legacy');
+  await page.getByTestId('detail-priority').click();
+  await expect(page.getByRole('listbox', { name: 'Priority' })).toBeVisible();
+  await closeOutside(page);
+  await expect(page.getByRole('listbox', { name: 'Priority' })).toBeHidden();
+  expect((await animations(page)).filter(a => a.name.startsWith('mindoist-pop'))).toEqual([]);
+});
