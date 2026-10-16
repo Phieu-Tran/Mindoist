@@ -44,7 +44,7 @@ export function Select({
         <HeroSelect.Value />
         <HeroSelect.Indicator />
       </HeroSelect.Trigger>
-      <HeroSelect.Popover placement={align === 'right' ? 'bottom end' : 'bottom start'} className="min-w-[8rem]">
+      <HeroSelect.Popover placement={align === 'right' ? 'bottom end' : 'bottom start'} className="mindoist-select-popover min-w-[8rem]">
         {/* React Aria doesn't report re-picking the selected option; the
             legacy Select did, and callers rely on it (CalendarView persists
             the view on any explicit pick). Changes still arrive through

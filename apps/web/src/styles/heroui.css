@@ -228,9 +228,42 @@
     max-height: var(--visual-viewport-height, 100vh);
     overflow-y: auto;
   }
-  .mindoist-popover-panel[data-entering] { animation: mindoist-popover-in 140ms ease-out; }
-  @keyframes mindoist-popover-in {
-    from { opacity: 0; transform: translateY(-4px) scale(0.98); }
-  }
   .mindoist-menu-item { font-size: 0.8125rem; border-radius: var(--radius-control); }
+
+  /* Motion — HeroUI's open/close feel for the standalone panels (they get no
+     slot classes, so none of HeroUI's own animations apply): fade + a small
+     scale from the trigger, a quicker fade out. React Aria keeps the panel
+     mounted while [data-exiting] runs. Tokens from index.css; the global
+     prefers-reduced-motion rule neutralises all of it. */
+  .mindoist-popover-panel,
+  .mindoist-date-popover,
+  .mindoist-select-popover { transform-origin: var(--trigger-anchor-point, top center); }
+  .mindoist-popover-panel[data-entering],
+  .mindoist-date-popover[data-entering],
+  .mindoist-select-popover[data-entering] { animation: mindoist-pop-in var(--motion-quick) var(--ease-out) both; }
+  .mindoist-popover-panel[data-entering][data-placement="top"],
+  .mindoist-date-popover[data-entering][data-placement="top"],
+  .mindoist-select-popover[data-entering][data-placement="top"] { animation-name: mindoist-pop-in-up; }
+  .mindoist-popover-panel[data-exiting],
+  .mindoist-date-popover[data-exiting],
+  .mindoist-select-popover[data-exiting] { animation: mindoist-pop-out var(--motion-instant) ease-in both; }
+
+  /* Dialogs: HeroUI's Modal already fades the backdrop and zooms the
+     container (it has its Root context). Only align its timing to the
+     Mindoist motion tokens instead of stacking a second animation. */
+  .mindoist-modal-backdrop[data-entering] { animation-duration: var(--motion-quick); }
+  .mindoist-modal-container[data-entering] { animation-duration: var(--motion-base); }
+  .mindoist-modal-backdrop[data-exiting],
+  .mindoist-modal-container[data-exiting] { animation-duration: var(--motion-instant); }
+
+  /* Pressed feedback on custom option rows inside kit panels (HeroUI's own
+     buttons already scale on press). */
+  .mindoist-popover-panel [role="option"],
+  .mindoist-popover-panel [role="menuitem"] { transition: background-color var(--motion-instant) var(--ease-out), transform var(--motion-instant) var(--ease-out); }
+  .mindoist-popover-panel [role="option"]:active,
+  .mindoist-popover-panel [role="menuitem"]:active { transform: scale(0.98); }
 }
+
+@keyframes mindoist-pop-in { from { opacity: 0; transform: translateY(-4px) scale(0.96); } }
+@keyframes mindoist-pop-in-up { from { opacity: 0; transform: translateY(4px) scale(0.96); } }
+@keyframes mindoist-pop-out { to { opacity: 0; transform: scale(0.97); } }
