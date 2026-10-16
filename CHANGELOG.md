@@ -16,6 +16,7 @@ Notable changes to Mindoist, grouped by date. This project doesn't cut versioned
 - In dark mode, delete buttons use dark text on the red, readable at AA. White on it was 2.77:1.
 - If the HeroUI kit's script or stylesheet fails to load (for example, the CDN answers a just-deployed file with the app page), the app reloads once to retry and only then falls back to the Classic kit. Before, a failed stylesheet left HeroUI unstyled, and a failed script briefly showed the Classic kit before the stale-chunk reload.
 - Deleting a task right after editing it in the task panel no longer sends saves for the deleted task. The pending autosave used to send PATCH requests that the server answered with 404. Undo already restored the task correctly.
+- Quick Capture shows the full priority label ("Không ưu tiên" / "No priority"). The priority field was about 40px wide on desktop and cut the label off in both languages. The dialog is now up to 50rem wide and the fields are re-proportioned; phones are unchanged.
 
 ### Changed
 - The column color picker in a project's "Add column" form has an accessible name.
@@ -32,6 +33,7 @@ Notable changes to Mindoist, grouped by date. This project doesn't cut versioned
 - A `bundle-diff` CI job builds the PR base and head and reports how much the eagerly loaded bundle changed, with a warning above 2 KiB gzip. This change adds 1.74 KiB to the Classic kit (346.46 → 348.21 KiB).
 - Browser tests that selected elements by Classic-only markup (`button[...]` tags, day buttons named only by their number, an unnamed combobox) now use kit-neutral test ids, `data-state` and `data-calendar-day`.
 - Browser checks serve the HeroUI script or stylesheet as an HTML page once (it must recover with one reload) and on every request (it must fall back to Classic). Another check edits a task, deletes it, undoes, and asserts that no save was sent after the delete. Each check fails without its fix.
+- A browser check measures the Quick Capture project and priority labels in Vietnamese at 1440px and 390px. It fails on the previous layout.
 
 ## 2026-10-11
 

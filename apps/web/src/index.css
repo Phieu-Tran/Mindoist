@@ -738,7 +738,9 @@ body {
   top: clamp(5rem, 13vh, 8.5rem);
   left: 50%;
   z-index: 71;
-  width: min(46rem, calc(100vw - 2rem));
+  /* 50rem: the five quick fields (project, today/tomorrow, date, time,
+     priority) fit on one row without truncating Vietnamese labels. */
+  width: min(50rem, calc(100vw - 2rem));
   overflow: visible;
   overscroll-behavior: contain;
   border: 1px solid color-mix(in oklch, var(--border) 80%, var(--foreground));
@@ -828,7 +830,10 @@ body {
 .command-context-divider { width: 1px; height: 1rem; background: var(--border); }
 .command-selected-task { min-width: 0; max-width: 18rem; overflow: hidden; border-radius: var(--radius-chip); background: var(--muted); padding: 0.25rem 0.5rem; color: var(--foreground); text-overflow: ellipsis; white-space: nowrap; }
 .command-quick-fields { border-bottom: 1px solid var(--border); background: color-mix(in oklch, var(--muted) 78%, var(--card)); padding: 0.7rem 1rem 0.8rem; }
-.command-quick-fields-inner { display: grid; min-width: 0; grid-template-columns: minmax(8.5rem, 1.2fr) auto minmax(8.75rem, 1fr) minmax(6.75rem, 0.72fr) minmax(6.75rem, 0.72fr); align-items: center; gap: 0.5rem; }
+/* Priority needs room for "Không ưu tiên"/"No priority" plus the native
+   arrow (it was ~40px, truncating both languages); time only ever shows
+   "Giờ"/"HH:mm" and date "dd/mm/yyyy", so they give up the difference. */
+.command-quick-fields-inner { display: grid; min-width: 0; grid-template-columns: minmax(8.5rem, 1.2fr) auto minmax(7.5rem, 1fr) minmax(5.5rem, 0.6fr) minmax(11.25rem, 1fr); align-items: center; gap: 0.5rem; }
 .command-quick-caption { grid-column: 1 / -1; color: var(--muted-foreground); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.06em; line-height: 1; text-transform: uppercase; }
 .command-quick-control { display: inline-flex; min-width: 0; min-height: 2.5rem; align-items: center; gap: 0.45rem; border: 1px solid color-mix(in oklch, var(--border) 86%, var(--foreground)); border-radius: var(--radius-control); background: var(--card); padding: 0.35rem 0.6rem; color: var(--muted-foreground); font-size: 0.75rem; box-shadow: var(--shadow-xs); transition: border-color var(--motion-instant) var(--ease-out), background-color var(--motion-instant) var(--ease-out), box-shadow var(--motion-instant) var(--ease-out); }
 .command-quick-control:hover { border-color: color-mix(in oklch, var(--border) 58%, var(--foreground)); background: color-mix(in oklch, var(--card) 90%, var(--muted)); }

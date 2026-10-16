@@ -107,3 +107,32 @@ test('global quick capture uses responsive in-app date and time pickers', async 
   await expect(dateDialog).toBeVisible();
   await page.screenshot({ path: `${EVIDENCE_DIR}/command-date-picker-dark-375.png`, fullPage: true });
 });
+
+test('quick capture fields show their full Vietnamese labels on desktop and phone', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await register(page);
+  await page.evaluate(() => localStorage.setItem('i18nextLng', 'vi'));
+  await page.reload();
+  await expect(page.getByTestId('sidebar')).toBeVisible();
+  for (const width of [1440, 390]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.keyboard.press('Control+k');
+    await expect(page.getByTestId('command-quick-fields')).toBeVisible();
+    const fields = await page.evaluate(() => ['quick-add-project', 'quick-add-priority'].map(id => {
+      const select = document.querySelector<HTMLSelectElement>(`[data-testid="${id}"]`)!;
+      const probe = document.createElement('span');
+      probe.style.cssText = `position:absolute;visibility:hidden;white-space:nowrap;font:${getComputedStyle(select).font}`;
+      probe.textContent = select.options[select.selectedIndex].text;
+      document.body.appendChild(probe);
+      const needed = probe.getBoundingClientRect().width;
+      probe.remove();
+      // A native select keeps ~20px for its arrow.
+      return { id, text: probe.textContent, needed: Math.ceil(needed), available: Math.floor(select.clientWidth - 20) };
+    }));
+    for (const field of fields) {
+      expect(field.needed, `${width}px: ${field.id} "${field.text}" is not truncated`).toBeLessThanOrEqual(field.available);
+    }
+    await page.keyboard.press('Escape');
+    await expect(page.getByTestId('global-quick-capture')).toBeHidden();
+  }
+});
