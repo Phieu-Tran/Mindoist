@@ -392,11 +392,9 @@
   box-shadow: none;
 }
 
-/* Quick Capture: frameless raised sheet. The surface inherits its radius
-   from a wrapper, not from .command-dialog, and paints square corners over
-   the rounded dialog, so round it from the token directly. */
+/* Quick Capture: frameless raised sheet (its surface already follows
+   --radius-panel, see index.css). */
 :root[data-ui-kit="heroui"] .command-dialog {
   border-color: transparent;
   box-shadow: var(--hui-shadow-raised);
 }
-:root[data-ui-kit="heroui"] .command-surface { border-radius: var(--radius-panel); }

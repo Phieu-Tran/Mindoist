@@ -4,7 +4,11 @@ Notable changes to Mindoist, grouped by date. This project doesn't cut versioned
 
 ## 2026-10-17 (later)
 
+### Changed
+- Staging and production now open in the HeroUI look by default. Anyone who picked a kit in Settings keeps it, and Classic stays one tap away in Settings › Appearance › UI kit (or `?ui-kit=legacy`). If the HeroUI files fail to load, the app still falls back to Classic.
+
 ### Fixed
+- Quick Capture has rounded corners in Classic too. Its inner surface took its radius from a wrapper instead of the dialog and painted square corners over it.
 - Quick Capture no longer closes under you when you reopen it right after adding a task. If the previous task was still saving, the dialog came back showing that task's text and then shut itself when the save finished. Reopening now starts an empty capture, you can add the next task straight away, and a failed save comes back for retry as before. If you had already started the next task, it is kept, and the error names the task that wasn't saved.
 - With "reduce motion" on in the operating system, HeroUI popovers (for example Quick Capture's date picker) sometimes stayed open after Escape. Reduced motion forced a 0.01 ms transition onto every style change of every element, and React Aria waits for an exiting popover's transitions; an interrupted one left it mounted. Reduced motion now turns transitions off, which looks the same.
 - When a request fails on the server, the API now always answers JSON with the usual CORS headers instead of a plain-text `500 Internal Server Error` that the app couldn't read. A temporary database problem (dropped or refused connection, too many connections, deadlock, serialization failure) answers `503` with `retryable: true` and `Retry-After: 1`, and a read that hits one is tried once more on the server first. Writes are never retried there, because the first attempt may already have saved.
@@ -23,7 +27,7 @@ Notable changes to Mindoist, grouped by date. This project doesn't cut versioned
 - Classic is unchanged, pixel for pixel.
 
 ### Fixed
-- With HeroUI, Quick Capture has rounded corners again. Its inner surface painted square corners over the rounded dialog. Classic still shows the square corners, because this release does not change Classic.
+- With HeroUI, Quick Capture has rounded corners again. Its inner surface painted square corners over the rounded dialog. (Classic got the same fix later the same day.)
 
 ### Validation
 - KIT-09 browser check: on the same account, Classic keeps its radii, framed cards and grey current view, while HeroUI shows the new radii, frameless lifted cards, the accent-tinted current view, pill buttons and segmented controls, and Quick Capture's rounded corners and fields. It fails if the new styles are removed.
