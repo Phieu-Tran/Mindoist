@@ -456,6 +456,12 @@ test('[KIT-09] HeroUI gives the whole app its look; Classic keeps its own', asyn
   expect(classic.banner).toMatchObject({ radius: '8px', shadow: 'none' });
   expect(classic.current).toBe(classic.sidebarAccent);
   expect(classic.addTask).toBe('7px');
+  await page.keyboard.press('Control+k');
+  await expect(page.getByTestId('global-quick-capture')).toBeVisible();
+  // The surface follows the dialog's radius instead of painting square corners.
+  expect(await page.evaluate(() => getComputedStyle(document.querySelector('.command-surface')!).borderTopLeftRadius)).toBe('12px');
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('global-quick-capture')).toBeHidden();
 
   const heroui = await lookOf(page, 'heroui');
   expect(heroui.row).toBe('14px');
