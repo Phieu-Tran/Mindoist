@@ -40,7 +40,8 @@ describe('Onboarding', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Continue' }));
 
     expect(screen.getByText('This field is required')).toBeInTheDocument();
-    expect(screen.getByLabelText('Name')).toHaveFocus();
+    // Focus moves in the next animation frame, after the error renders.
+    await waitFor(() => expect(screen.getByLabelText('Name')).toHaveFocus());
   });
 
   it('lets the user skip the optional password', async () => {
