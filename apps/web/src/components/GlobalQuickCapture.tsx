@@ -84,12 +84,18 @@ export function GlobalQuickCapture({
 }: Props) {
   const { i18n, t } = useTranslation('tasks');
   const effectiveLocale = locale ?? (i18n.language?.startsWith('vi') ? 'vi' : 'en');
-  const [open, setOpen] = useState(false);
+  const [open, setOpenState] = useState(false);
   const [input, setInput] = useState('');
   const [edits, setEdits] = useState<Partial<PreviewEdits>>({});
-  const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
-  const pending = useRef(false);
+  // Saves still in flight. The dialog closes as soon as a task is submitted,
+  // so the user can reopen it for the next task while earlier ones save.
+  const savesInFlight = useRef(0);
+  const openRef = useRef(open);
+  const setOpen = useCallback((next: boolean) => {
+    openRef.current = next;
+    setOpenState(next);
+  }, []);
   const currentDraft = useRef({ input, edits });
   currentDraft.current = { input, edits };
   const triggerElementRef = useRef<Element | null>(null);
@@ -131,14 +137,19 @@ export function GlobalQuickCapture({
     setEdits({});
     setSubmitError('');
     onDismiss?.();
-  }, [onDismiss]);
+  }, [onDismiss, setOpen]);
 
   const openCommandBar = useCallback((initialInput = '') => {
     triggerElementRef.current = document.activeElement;
-    // Reopening a pending save must keep its draft available for retry.
-    if (!pending.current) setInput(initialInput);
+    setInput(initialInput);
+    // Reopened while the last task still saves: start a fresh capture. The
+    // saving draft is kept by its save and comes back only if it fails.
+    if (savesInFlight.current > 0) {
+      setEdits({});
+      setSubmitError('');
+    }
     setOpen(true);
-  }, []);
+  }, [setOpen]);
 
   useEffect(() => {
     const handleGlobalKeyDown = (event: KeyboardEvent) => {
@@ -165,31 +176,41 @@ export function GlobalQuickCapture({
       return;
     }
     if (datePickerOpenRef.current || timePickerOpenRef.current) return;
-    if (pending.current) setOpen(false);
+    if (savesInFlight.current > 0) setOpen(false);
     else resetAndClose();
     window.setTimeout(() => (triggerElementRef.current as HTMLElement | null)?.focus?.(), 0);
-  }, [resetAndClose]);
+  }, [resetAndClose, setOpen]);
 
   const createTask = useCallback(async () => {
-    if (!preview?.title.trim() || pending.current) return;
+    if (!preview?.title.trim()) return;
     const draft = currentDraft.current;
     const fresh = parseQuickAdd(input.trim(), { locale: effectiveLocale, now: new Date() });
-    pending.current = true;
-    setSubmitting(true);
+    savesInFlight.current += 1;
     setSubmitError('');
     // Keep the draft until persistence succeeds, but release the dialog now.
     setOpen(false);
     try {
       await onAdd(applyPreviewEdits(fresh, { ...parsedEdits, date: fresh.deadline?.date ?? '', time: fresh.deadline?.time ?? '', ...edits }));
-      if (currentDraft.current.input === draft.input && currentDraft.current.edits === draft.edits) resetAndClose();
+      // Reopened for the next task meanwhile: leave that capture as it is.
+      if (openRef.current) onDismiss?.();
+      else resetAndClose();
     } catch (cause) {
-      setSubmitError(cause instanceof Error ? cause.message : t('detail.error'));
+      const message = cause instanceof Error ? cause.message : t('detail.error');
+      const now = currentDraft.current;
+      if (!now.input.trim() || now.input === draft.input) {
+        // Nothing new typed: bring the failed draft back for a retry.
+        setInput(draft.input);
+        setEdits(draft.edits);
+        setSubmitError(message);
+      } else {
+        // A newer draft is in the dialog; keep it and name the one that failed.
+        setSubmitError(t('quickAdd.saveFailed', { title: fresh.title, error: message }));
+      }
       setOpen(true);
     } finally {
-      pending.current = false;
-      setSubmitting(false);
+      savesInFlight.current -= 1;
     }
-  }, [onAdd, preview, input, edits, effectiveLocale, parsedEdits, resetAndClose, t]);
+  }, [onAdd, onDismiss, preview, input, edits, effectiveLocale, parsedEdits, resetAndClose, setOpen, t]);
 
   const run = useCallback(async (action: () => void | Promise<void>) => {
     await action();
@@ -222,7 +243,7 @@ export function GlobalQuickCapture({
           />
           <kbd className="command-escape">Esc</kbd>
           {mode === 'create' && (
-            <Button type="button" size="sm" className="command-submit" onClick={() => { void createTask(); }} disabled={submitting || !preview?.title.trim()} data-testid="global-quick-capture-submit">
+            <Button type="button" size="sm" className="command-submit" onClick={() => { void createTask(); }} disabled={!preview?.title.trim()} data-testid="global-quick-capture-submit">
               {t('quickAdd.add')}
             </Button>
           )}

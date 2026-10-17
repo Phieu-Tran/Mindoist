@@ -437,7 +437,8 @@
       "text": "nội dung",
       "close": "Đóng"
     },
-    "reminderFailed": "Đã tạo “{{title}}”, nhưng chưa lưu được nhắc việc. Hãy thêm lại nhắc việc."
+    "reminderFailed": "Đã tạo “{{title}}”, nhưng chưa lưu được nhắc việc. Hãy thêm lại nhắc việc.",
+    "saveFailed": "Chưa lưu được “{{title}}”: {{error}}"
   },
   "toggleSidebar": "Ẩn/hiện thanh bên",
   "skipToMain": "Chuyển tới nội dung chính",

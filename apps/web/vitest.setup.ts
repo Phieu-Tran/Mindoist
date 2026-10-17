@@ -154,6 +154,7 @@ i18n.use(initReactI18next).init({
         },
         quickAdd: {
           add: 'Add task',
+          saveFailed: '“{{title}}” wasn’t saved: {{error}}',
           placeholder: 'Add a task... (e.g., "buy milk tomorrow 9am p1")',
           preview: 'Preview',
           dueDate: 'Due date',
@@ -448,6 +449,7 @@ i18n.use(initReactI18next).init({
         },
         quickAdd: {
           add: 'Thêm task',
+          saveFailed: 'Chưa lưu được “{{title}}”: {{error}}',
           placeholder: 'Thêm task... (vd: "mua sữa ngày mai 9h p1")',
           preview: 'Xem trước',
           dueDate: 'Ngày',

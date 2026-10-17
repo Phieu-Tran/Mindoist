@@ -439,7 +439,8 @@
       "text": "text",
       "close": "Close"
     },
-    "reminderFailed": "Created “{{title}}”, but the reminder could not be saved. Try adding the reminder again."
+    "reminderFailed": "Created “{{title}}”, but the reminder could not be saved. Try adding the reminder again.",
+    "saveFailed": "“{{title}}” wasn’t saved: {{error}}"
   },
   "toggleSidebar": "Toggle sidebar",
   "skipToMain": "Skip to main content",

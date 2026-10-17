@@ -30,9 +30,31 @@ assert.equal(db.response.status, 200);
 assert.equal(db.body.success, true);
 assert.ok(db.body.data.publicTableCount >= 31);
 
+// Error boundary: a thrown error must answer JSON with CORS headers (request()
+// above throws on the old plain-text 500), a transient database error 503.
+const bug = await request('/api/__sf0/fail?kind=bug');
+assert.equal(bug.response.status, 500);
+assert.deepEqual(bug.body, { success: false, error: 'Internal server error' });
+assert.equal(bug.response.headers.get('access-control-allow-origin'), '*');
+
+const dbDown = await request('/api/__sf0/fail?kind=db');
+assert.equal(dbDown.response.status, 503);
+assert.equal(dbDown.body.success, false);
+assert.equal(dbDown.body.retryable, true);
+assert.equal(dbDown.response.headers.get('retry-after'), '1');
+assert.equal(dbDown.response.headers.get('access-control-allow-origin'), '*');
+
+// A read that hits a transient error is tried once more; a write never is.
+const flakyRead = await request(`/api/__sf0/flaky?key=read-${crypto.randomUUID()}`);
+assert.equal(flakyRead.response.status, 200);
+assert.equal(flakyRead.body.data.attempts, 2);
+const flakyWrite = await request(`/api/__sf0/flaky?key=write-${crypto.randomUUID()}`, { method: 'POST' });
+assert.equal(flakyWrite.response.status, 503);
+
 console.log(JSON.stringify({
   baseUrl,
   health: 'ok',
   reminderJob: job.body.data,
   publicTableCount: db.body.data.publicTableCount,
+  errorBoundary: { bug: bug.response.status, dbDown: dbDown.response.status, readRetries: flakyRead.body.data.attempts - 1, write: flakyWrite.response.status },
 }));
