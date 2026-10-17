@@ -386,3 +386,108 @@ test('[KIT-08] the Classic kit panels are unchanged (no new motion)', async ({ p
   await expect(page.getByRole('listbox', { name: 'Priority' })).toBeHidden();
   expect((await animations(page)).filter(a => a.name.startsWith('mindoist-pop'))).toEqual([]);
 });
+
+async function seedLook(page: Page) {
+  const targetDate = await page.evaluate(() => {
+    const date = new Date();
+    date.setDate(date.getDate() + 10);
+    const pad = (value: number) => String(value).padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+  });
+  const post = (path: string, body: unknown) => page.evaluate(async ({ path, body }) => {
+    const response = await fetch(path, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    return response.json();
+  }, { path, body });
+  expect((await post('/countdowns', { title: 'Look countdown', targetDate, color: 'rose' })).success).toBe(true);
+  // An undated task keeps the inbox banner on My Day.
+  expect((await post('/tasks', { title: 'Look inbox task' })).success).toBe(true);
+  await addTask(page, 'Look task');
+}
+
+// Computed styles of the surfaces the H10 look retunes, read on My Day.
+async function lookOf(page: Page, kit: 'legacy' | 'heroui') {
+  await page.goto(`/today?ui-kit=${kit}`);
+  await expect.poll(() => activeKit(page)).toBe(kit);
+  await expect(page.getByTestId('today-countdown-widget')).toBeVisible();
+  await expect(page.getByTestId(/^task-title-/).filter({ hasText: 'Look task' })).toBeVisible();
+  return page.evaluate(() => {
+    const style = (selector: string) => {
+      const element = document.querySelector(selector);
+      if (!element) throw new Error(`missing ${selector}`);
+      return getComputedStyle(element);
+    };
+    const colorOf = (value: string) => {
+      const probe = document.createElement('div');
+      probe.style.backgroundColor = value;
+      document.body.append(probe);
+      const color = getComputedStyle(probe).backgroundColor;
+      probe.remove();
+      return color;
+    };
+    const card = style('[data-testid="today-countdown-widget"]');
+    const banner = style('.inbox-banner');
+    return {
+      row: style('.task-row-density').borderTopLeftRadius,
+      card: { radius: card.borderTopLeftRadius, border: card.borderTopColor, shadow: card.boxShadow },
+      banner: { radius: banner.borderTopLeftRadius, border: banner.borderTopColor, shadow: banner.boxShadow },
+      current: style('[data-testid="sidebar-today"]').backgroundColor,
+      sidebarAccent: colorOf('var(--sidebar-accent)'),
+      accentSoft: colorOf('var(--accent-soft)'),
+      addTask: style('.sidebar-add-task').borderTopLeftRadius,
+    };
+  });
+}
+
+test('[KIT-09] HeroUI gives the whole app its look; Classic keeps its own', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 860 });
+  await page.addInitScript(() => localStorage.setItem('ui-kit', 'legacy'));
+  await register(page);
+  await seedLook(page);
+
+  const classic = await lookOf(page, 'legacy');
+  // Classic: the D5 radius scale, framed cards, grey current view.
+  expect(classic.row).toBe('0px');
+  expect(classic.card).toMatchObject({ radius: '12px', shadow: 'none' });
+  expect(classic.card.border).not.toBe('rgba(0, 0, 0, 0)');
+  expect(classic.banner).toMatchObject({ radius: '8px', shadow: 'none' });
+  expect(classic.current).toBe(classic.sidebarAccent);
+  expect(classic.addTask).toBe('7px');
+
+  const heroui = await lookOf(page, 'heroui');
+  expect(heroui.row).toBe('14px');
+  expect(heroui.card.radius).toBe('20px');
+  expect(heroui.card.border, 'cards lose their frame').toBe('rgba(0, 0, 0, 0)');
+  expect(heroui.card.shadow, 'cards are lifted instead').not.toBe('none');
+  expect(heroui.banner.radius).toBe('14px');
+  expect(heroui.banner.shadow).not.toBe('none');
+  expect(heroui.current, 'current view is tinted with the accent').toBe(heroui.accentSoft);
+  expect(heroui.current).not.toBe(classic.current);
+  expect(heroui.addTask).toBe('9999px');
+
+  await page.keyboard.press('Control+k');
+  await expect(page.getByTestId('global-quick-capture')).toBeVisible();
+  const capture = await page.evaluate(() => {
+    const surface = getComputedStyle(document.querySelector('.command-surface')!);
+    const field = getComputedStyle(document.querySelector('.command-quick-control')!);
+    return { surface: surface.borderTopLeftRadius, fieldBorder: field.borderTopColor, fieldShadow: field.boxShadow };
+  });
+  expect(capture.surface, 'Quick Capture keeps its rounded corners').toBe('20px');
+  expect(capture.fieldBorder).toBe('rgba(0, 0, 0, 0)');
+  expect(capture.fieldShadow).not.toBe('none');
+  await page.keyboard.press('Escape');
+
+  await page.goto('/settings?ui-kit=heroui');
+  await expect.poll(() => activeKit(page)).toBe('heroui');
+  await page.getByTestId('settings-tab-appearance').first().click();
+  const toggle = page.getByTestId('ui-kit-toggle');
+  await expect(toggle).toBeVisible();
+  const segmented = await toggle.evaluate(element => ({
+    track: getComputedStyle(element).borderTopLeftRadius,
+    thumb: getComputedStyle(element.querySelector('[aria-checked="true"]')!).borderTopLeftRadius,
+  }));
+  expect(segmented).toEqual({ track: '9999px', thumb: '9999px' });
+});

@@ -47,6 +47,12 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+}
+
+/* Not `inline`: the rounded-chip|control|panel utilities must read the
+   variable at runtime (they compile to var(--radius-control), not to 8px),
+   so the HeroUI kit can retune the whole scale from styles/heroui.css. */
+@theme {
   /* D5 — one radius scale for the whole app (was 19 hand-picked rem values
      + 4 one-off Tailwind arbitrary classes across index.css/CalendarView.css/
      ProjectWorkspace.css/SummaryDashboard.css/CreateProjectDialog.css/

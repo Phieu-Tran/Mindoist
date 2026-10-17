@@ -24,7 +24,7 @@ export function UiKitToggle({ onChange = setUiKitPreference }: { onChange?: (pre
 
   return (
     <div
-      className="inline-grid grid-cols-3 rounded-control bg-muted p-0.5"
+      className="mindoist-segmented inline-grid grid-cols-3 rounded-control bg-muted p-0.5"
       role="radiogroup"
       aria-label={t('settingsPage.uiKit')}
       data-testid="ui-kit-toggle"

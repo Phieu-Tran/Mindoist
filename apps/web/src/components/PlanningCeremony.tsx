@@ -73,7 +73,7 @@ export function PlanningCeremony({ tasks, timeBlocks, workHoursPerDay, onUpdateT
 
   return (
     <section className="px-3 pb-3" data-testid="planning-ceremony">
-      <div className="mb-2 grid grid-cols-3 gap-1 rounded-lg bg-muted/60 p-0.5" role="tablist" aria-label={t('calendar.ceremony.label')}>
+      <div className="mindoist-segmented mb-2 grid grid-cols-3 gap-1 rounded-lg bg-muted/60 p-0.5" role="tablist" aria-label={t('calendar.ceremony.label')}>
         {(['plan', 'focus', 'shutdown'] as const).map(item => (
           <button key={item} type="button" role="tab" aria-selected={mode === item} onClick={() => setMode(item)} className={cn('rounded-md px-1 py-1.5 text-[0.68rem] font-medium', mode === item && 'bg-background text-foreground shadow-sm')}>
             {t(`calendar.ceremony.tabs.${item}`)}

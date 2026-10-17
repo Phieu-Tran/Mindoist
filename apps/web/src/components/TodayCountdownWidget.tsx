@@ -58,7 +58,7 @@ export function TodayCountdownWidget({ countdowns, loading = false }: TodayCount
             const label = days > 0 ? `${days} ${t('calendar.daysShort')}` : allDay ? t('calendar.today')
               : t('dueCountdown.remaining', { duration: minutes >= 60 ? t('dueCountdown.hoursMinutes', { hours: Math.floor(minutes / 60), minutes: minutes % 60 }) : t('dueCountdown.minutes', { minutes }) });
             return (
-              <article key={item.id} className={`flex min-w-0 items-center gap-3 rounded-control border border-border/70 bg-background p-2 ${taskColorClass(item.color)}`}>
+              <article key={item.id} className={`countdown-card flex min-w-0 items-center gap-3 rounded-control border border-border/70 bg-background p-2 ${taskColorClass(item.color)}`}>
                 <div className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-chip bg-muted text-[var(--task-color-accent)]" aria-hidden="true">
                   <CalendarDays className="h-7 w-7" />
                   {item.imageUrl && <img key={item.imageUrl} src={item.imageUrl} alt="" width={64} height={64} loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover" onError={event => { event.currentTarget.hidden = true; }} />}

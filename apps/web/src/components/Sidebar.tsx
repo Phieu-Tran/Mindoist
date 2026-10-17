@@ -180,7 +180,7 @@ export function Sidebar({
     <nav
       data-testid="sidebar"
       className={cn(
-        "flex h-full flex-col w-[var(--shell-sidebar-width)] shrink-0 border-r border-border bg-sidebar overflow-y-auto",
+        "app-sidebar flex h-full flex-col w-[var(--shell-sidebar-width)] shrink-0 border-r border-border bg-sidebar overflow-y-auto",
         className,
       )}
       aria-label={t('sidebar.navigationLabel')}
@@ -197,7 +197,7 @@ export function Sidebar({
           type="button"
           data-testid="sidebar-add-task"
           onClick={() => window.dispatchEvent(new Event('mindoist:global-capture'))}
-          className="flex min-h-10 w-full items-center gap-2 rounded-lg bg-primary px-3 text-left text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          className="sidebar-add-task flex min-h-10 w-full items-center gap-2 rounded-lg bg-primary px-3 text-left text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         >
           <Plus className="h-4 w-4 shrink-0" aria-hidden="true" />
           <span className="flex-1">{t('quickAdd.add')}</span>

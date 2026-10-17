@@ -63,7 +63,136 @@ function contrastRatio(fgL, bgL) {
   return (l1 + 0.05) / (l2 + 0.05);
 }
 
+// ── color-mix() and translucent layers ──
+// The HeroUI adapter derives tones with color-mix() (CSS Color 5), some of
+// them translucent (mixed with `transparent`) and painted over another
+// surface. This evaluates the subset those tokens use: hex, oklch() with an
+// optional alpha, `transparent`, and color-mix() in oklab or oklch with
+// optional percentages, premultiplied like the browser. An explicit hue is
+// interpolated as written (that is the D3/D6 hue drag the browser really
+// does); only a missing hue (achromatic result, `transparent`) defers to the
+// other colour. Translucent colours are composited over their backdrop in
+// gamma-encoded sRGB, like the browser paints them.
+
+const decodeSrgb = v => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
+const encodeSrgb = v => (v <= 0.0031308 ? 12.92 * v : 1.055 * v ** (1 / 2.4) - 0.055);
+
+function linearSrgbToOklab([r, g, b]) {
+  const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b);
+  const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b);
+  const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
+  return [
+    0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s,
+    1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s,
+    0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s,
+  ];
+}
+
+function fromOklab(L, a, b, alpha) {
+  const C = Math.hypot(a, b);
+  const H = C < 1e-6 ? NaN : (((Math.atan2(b, a) * 180) / Math.PI) + 360) % 360;
+  return { L, C, H, alpha };
+}
+
+function toOklab({ L, C, H }) {
+  const h = ((Number.isNaN(H) ? 0 : H) * Math.PI) / 180;
+  return [L, C * Math.cos(h), C * Math.sin(h)];
+}
+
+function splitTopLevel(body) {
+  const parts = [];
+  let depth = 0;
+  let start = 0;
+  for (let i = 0; i < body.length; i++) {
+    if (body[i] === '(') depth++;
+    else if (body[i] === ')') depth--;
+    else if (body[i] === ',' && depth === 0) {
+      parts.push(body.slice(start, i).trim());
+      start = i + 1;
+    }
+  }
+  parts.push(body.slice(start).trim());
+  return parts;
+}
+
+function parseMixArg(arg) {
+  const trailing = arg.match(/^([\s\S]*\S)\s+([\d.]+)%$/);
+  if (trailing) return [parseColor(trailing[1]), parseFloat(trailing[2])];
+  const leading = arg.match(/^([\d.]+)%\s+([\s\S]+)$/);
+  if (leading) return [parseColor(leading[2]), parseFloat(leading[1])];
+  return [parseColor(arg), undefined];
+}
+
+function mixColors(space, [c1, p1], [c2, p2]) {
+  if (p1 === undefined && p2 === undefined) p1 = p2 = 50;
+  else if (p1 === undefined) p1 = 100 - p2;
+  else if (p2 === undefined) p2 = 100 - p1;
+  const sum = p1 + p2;
+  if (sum <= 0) throw new Error('color-mix() percentages sum to zero');
+  const w1 = p1 / sum;
+  const w2 = p2 / sum;
+  const alpha = c1.alpha * w1 + c2.alpha * w2;
+  const alphaScale = sum < 100 ? sum / 100 : 1;
+  const premix = (v1, v2) => (alpha === 0 ? 0 : (v1 * c1.alpha * w1 + v2 * c2.alpha * w2) / alpha);
+  if (space === 'oklab') {
+    const [L1, a1, b1] = toOklab(c1);
+    const [L2, a2, b2] = toOklab(c2);
+    return fromOklab(premix(L1, L2), premix(a1, a2), premix(b1, b2), alpha * alphaScale);
+  }
+  let h1 = c1.H;
+  let h2 = c2.H;
+  if (Number.isNaN(h1)) h1 = h2;
+  if (Number.isNaN(h2)) h2 = h1;
+  let H = NaN;
+  if (!Number.isNaN(h1)) {
+    if (h2 - h1 > 180) h2 -= 360;
+    else if (h1 - h2 > 180) h2 += 360;
+    H = ((h1 * w1 + h2 * w2) % 360 + 360) % 360;
+  }
+  return { L: premix(c1.L, c2.L), C: premix(c1.C, c2.C), H, alpha: alpha * alphaScale };
+}
+
+function parseColor(input) {
+  const value = input.trim();
+  if (value === 'transparent') return { L: 0, C: 0, H: NaN, alpha: 0 };
+  if (/^#[\da-f]{6}$/i.test(value)) {
+    const rgb = value.slice(1).match(/.{2}/g).map(v => decodeSrgb(Number.parseInt(v, 16) / 255));
+    return fromOklab(...linearSrgbToOklab(rgb), 1);
+  }
+  const oklch = value.match(/^oklch\(\s*([\d.]+)\s+([\d.]+)\s+([\d.]+|none)\s*(?:\/\s*([\d.]+)(%?))?\s*\)$/);
+  if (oklch) {
+    const alpha = oklch[4] === undefined ? 1 : parseFloat(oklch[4]) / (oklch[5] ? 100 : 1);
+    return { L: parseFloat(oklch[1]), C: parseFloat(oklch[2]), H: oklch[3] === 'none' ? NaN : parseFloat(oklch[3]), alpha };
+  }
+  const mix = value.match(/^color-mix\(\s*in\s+(oklab|oklch)\s*,([\s\S]*)\)$/);
+  if (mix) {
+    const args = splitTopLevel(mix[2]);
+    if (args.length !== 2) throw new Error(`color-mix() needs two colours: ${value}`);
+    return mixColors(mix[1], parseMixArg(args[0]), parseMixArg(args[1]));
+  }
+  throw new Error(`Cannot parse colour: ${value}`);
+}
+
+function colorToLinearSrgb(color) {
+  return oklchToLinearSrgb(color.L, color.C, Number.isNaN(color.H) ? 0 : color.H);
+}
+
+// Luminance of a (possibly translucent) colour painted over an opaque one.
+function luminanceOver(top, backdrop) {
+  const base = parseColor(backdrop);
+  if (base.alpha < 0.999) throw new Error(`Backdrop must be opaque: ${backdrop}`);
+  const layer = parseColor(top);
+  const fg = colorToLinearSrgb(layer).map(v => encodeSrgb(Math.min(1, v)));
+  const bg = colorToLinearSrgb(base).map(v => encodeSrgb(Math.min(1, v)));
+  return relativeLuminance(fg.map((v, i) => decodeSrgb(v * layer.alpha + bg[i] * (1 - layer.alpha))));
+}
+
 function luminance(token) {
+  if (!/^#[\da-f]{6}$/i.test(token) && !/^oklch\(\s*[\d.]+\s+[\d.]+\s+[\d.]+\s*\)$/.test(token)) {
+    const color = parseColor(token);
+    if (color.alpha < 0.999) throw new Error(`Translucent colour needs a backdrop: ${token}`);
+    return relativeLuminance(colorToLinearSrgb(color));
+  }
   if (/^#[\da-f]{6}$/i.test(token)) {
     const channels = token
       .slice(1)
@@ -184,6 +313,18 @@ function auditPair(fgName, fgVal, bgName, bgVal, theme, preset) {
   };
 }
 
+function auditLayeredPair(fgName, fgVal, layerName, layerVal, backdropName, backdropVal, theme, preset) {
+  const ratio = contrastRatio(luminance(fgVal), luminanceOver(layerVal, backdropVal));
+  return {
+    theme,
+    preset: preset || '(base)',
+    fg: fgName,
+    bg: `${layerName} on ${backdropName}`,
+    ratio: Math.round(ratio * 100) / 100,
+    pass: ratio >= 4.5,
+  };
+}
+
 function auditTheme(name, tokens, accentPresets) {
   const results = [];
 
@@ -261,6 +402,11 @@ const HEROUI_PAIRS = [
   ['--field-placeholder', '--field-background'],
   ['--muted-foreground', '--overlay'],
   ['--link', '--overlay'],
+  // H10 look: [text, translucent fill, surface the fill is painted on]
+  ['--accent-soft-foreground', '--accent-soft', '--sidebar'], // sidebar current view
+  ['--accent-soft-foreground', '--accent-soft', '--card'], // Quick Capture date shortcut
+  ['--foreground', '--hui-field'], // calendar toolbar pills
+  ['--muted-foreground', '--hui-field'], // idle segmented options
 ];
 
 function resolveOne(tokens, name, stack = []) {
@@ -279,8 +425,10 @@ function auditHeroUiTheme(name, baseTokens, presets, adapter) {
   const variants = [[undefined, {}], ...Object.entries(presets)];
   for (const [preset, overrides] of variants) {
     const tokens = { ...baseTokens, ...overrides, ...adapter };
-    for (const [fg, bg] of HEROUI_PAIRS) {
-      results.push(auditPair(fg, resolveOne(tokens, fg), bg, resolveOne(tokens, bg), `heroui-${name}`, preset));
+    for (const [fg, bg, backdrop] of HEROUI_PAIRS) {
+      results.push(backdrop
+        ? auditLayeredPair(fg, resolveOne(tokens, fg), bg, resolveOne(tokens, bg), backdrop, resolveOne(tokens, backdrop), `heroui-${name}`, preset)
+        : auditPair(fg, resolveOne(tokens, fg), bg, resolveOne(tokens, bg), `heroui-${name}`, preset));
     }
   }
   return results;
