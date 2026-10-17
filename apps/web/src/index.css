@@ -720,12 +720,19 @@ body {
   animation: task-complete var(--motion-slow) var(--ease-spring) forwards;
 }
 
-/* Reduced motion: every animation/transition becomes instant */
+/* Reduced motion: every animation/transition becomes instant.
+   Animations keep a 0.01ms run so animationend still fires. Transitions are
+   switched off instead: transition-property defaults to `all`, so a forced
+   0.01ms duration turned every style change on every element into a
+   transition. React Aria waits for all of an exiting overlay's animations
+   and transitions; when one of those micro-transitions was interrupted its
+   promise rejected and the popover stayed mounted in [data-exiting]
+   (Quick Capture's date picker sometimes ignored Escape). */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+    transition: none !important;
     scroll-behavior: auto !important;
   }
 }

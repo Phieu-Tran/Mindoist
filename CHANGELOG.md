@@ -2,6 +2,19 @@
 
 Notable changes to Mindoist, grouped by date. This project doesn't cut versioned releases yet — entries are dated instead.
 
+## 2026-10-17 (later)
+
+### Fixed
+- Quick Capture no longer closes under you when you reopen it right after adding a task. If the previous task was still saving, the dialog came back showing that task's text and then shut itself when the save finished. Reopening now starts an empty capture, you can add the next task straight away, and a failed save comes back for retry as before. If you had already started the next task, it is kept, and the error names the task that wasn't saved.
+- With "reduce motion" on in the operating system, HeroUI popovers (for example Quick Capture's date picker) sometimes stayed open after Escape. Reduced motion forced a 0.01 ms transition onto every style change of every element, and React Aria waits for an exiting popover's transitions; an interrupted one left it mounted. Reduced motion now turns transitions off, which looks the same.
+- When a request fails on the server, the API now always answers JSON with the usual CORS headers instead of a plain-text `500 Internal Server Error` that the app couldn't read. A temporary database problem (dropped or refused connection, too many connections, deadlock, serialization failure) answers `503` with `retryable: true` and `Retry-After: 1`, and a read that hits one is tried once more on the server first. Writes are never retried there, because the first attempt may already have saved.
+
+### Validation
+- 5 new Quick Capture unit tests fail on the previous code and pass now, including the exact race CI caught (the save finishing before you type).
+- The date-picker Escape check with reduced motion went from stuck in about 1 of 10 runs to 70 of 70 closed. Summary calendar e2e passed 20 of 20 on the HeroUI build.
+- New Edge checks in the `edge-db` lane use a real refused database connection: a bug answers JSON 500 with CORS, a database outage answers 503, a read is retried exactly once, and a write is not. Without the new error handling the check fails on the old plain-text 500.
+- Each failure logs one `api_unhandled_error` JSON line (method, path, attempt, error code and message; no headers, bodies or tokens) in the Supabase function logs.
+
 ## 2026-10-17
 
 ### Changed

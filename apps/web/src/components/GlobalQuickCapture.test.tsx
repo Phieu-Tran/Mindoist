@@ -195,7 +195,7 @@ describe('GlobalQuickCapture command bar', () => {
     expect(screen.getByRole('button', { name: 'Tháng trước' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Tháng sau' })).toBeInTheDocument();
   });
-  it.each(['click', 'Enter'])('closes on %s before saving and keeps a new draft without duplicate submission', async submit => {
+  it.each(['click', 'Enter'])('closes on %s before saving; reopening meanwhile starts a fresh draft the save leaves alone', async submit => {
     let finish!: () => void;
     onAdd.mockImplementation(() => new Promise<void>(resolve => { finish = resolve; }));
     renderCapture();
@@ -207,14 +207,57 @@ describe('GlobalQuickCapture command bar', () => {
       fireEvent.keyDown(input, { key: 'Enter' });
     }
     expect(screen.queryByTestId('global-quick-capture')).not.toBeInTheDocument();
+    // No copy of the saving draft to submit twice.
     const nextInput = await open();
-    expect(nextInput).toHaveValue('First draft');
+    expect(nextInput).toHaveValue('');
     fireEvent.change(nextInput, { target: { value: 'Second draft' } });
-    expect(screen.getByTestId('global-quick-capture-submit')).toBeDisabled();
-    fireEvent.keyDown(nextInput, { key: 'Enter' });
     await act(async () => { finish(); });
-    expect(nextInput).toHaveValue('Second draft');
+    expect(screen.getByTestId('global-quick-capture-input')).toHaveValue('Second draft');
     expect(onAdd).toHaveBeenCalledTimes(1);
+    expect(onAdd).toHaveBeenCalledWith(expect.objectContaining({ title: 'First draft' }));
+  });
+
+  it('stays open when the earlier save finishes before anything is typed', async () => {
+    let finish!: () => void;
+    onAdd.mockImplementationOnce(() => new Promise<void>(resolve => { finish = resolve; })).mockResolvedValueOnce(undefined);
+    renderCapture();
+    fireEvent.change(await open(), { target: { value: 'First draft' } });
+    fireEvent.click(screen.getByTestId('global-quick-capture-submit'));
+    await open();
+    await act(async () => { finish(); });
+    const nextInput = screen.getByTestId('global-quick-capture-input');
+    expect(nextInput).toHaveValue('');
+    fireEvent.change(nextInput, { target: { value: 'Second draft' } });
+    fireEvent.click(screen.getByTestId('global-quick-capture-submit'));
+    await waitFor(() => expect(onAdd).toHaveBeenCalledTimes(2));
+    expect(onAdd).toHaveBeenLastCalledWith(expect.objectContaining({ title: 'Second draft' }));
+  });
+
+  it('captures the next task while the first one still saves', async () => {
+    let finish!: () => void;
+    onAdd.mockImplementationOnce(() => new Promise<void>(resolve => { finish = resolve; })).mockResolvedValueOnce(undefined);
+    renderCapture();
+    fireEvent.change(await open(), { target: { value: 'First draft' } });
+    fireEvent.click(screen.getByTestId('global-quick-capture-submit'));
+    fireEvent.change(await open(), { target: { value: 'Second draft' } });
+    expect(screen.getByTestId('global-quick-capture-submit')).toBeEnabled();
+    fireEvent.click(screen.getByTestId('global-quick-capture-submit'));
+    expect(screen.queryByTestId('global-quick-capture')).not.toBeInTheDocument();
+    expect(onAdd.mock.calls.map(([parsed]) => parsed.title)).toEqual(['First draft', 'Second draft']);
+    await act(async () => { finish(); });
+    expect(screen.queryByTestId('global-quick-capture')).not.toBeInTheDocument();
+  });
+
+  it('keeps a newer draft and names the task whose save failed', async () => {
+    let fail!: (error: Error) => void;
+    onAdd.mockImplementationOnce(() => new Promise<void>((_resolve, reject) => { fail = reject; }));
+    renderCapture();
+    fireEvent.change(await open(), { target: { value: 'First draft' } });
+    fireEvent.click(screen.getByTestId('global-quick-capture-submit'));
+    fireEvent.change(await open(), { target: { value: 'Second draft' } });
+    await act(async () => { fail(new Error('Unable to save')); });
+    expect(await screen.findByRole('alert')).toHaveTextContent('“First draft” wasn’t saved: Unable to save');
+    expect(screen.getByTestId('global-quick-capture-input')).toHaveValue('Second draft');
   });
 
   it('shows a failed save and preserves the draft for retry', async () => {

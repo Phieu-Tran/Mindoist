@@ -1,3 +1,4 @@
+import { withErrorBoundary } from '../_shared/errors.ts';
 import { json, jsonHeaders, methodNotAllowed, notFound } from '../_shared/http.ts';
 
 /**
@@ -7,7 +8,21 @@ import { json, jsonHeaders, methodNotAllowed, notFound } from '../_shared/http.t
  * validated. Keep this function deliberately small: each route is ported only
  * after its contract test can compare it with Fastify.
  */
-Deno.serve(async request => {
+// Local-only failure probes for the error boundary (SF0_DIAGNOSTICS=1).
+// A real postgres.js connection error, from a port nothing listens on.
+async function failWithDbError(): Promise<never> {
+  const { default: postgres } = await import('npm:postgres@3.4.7');
+  const unreachable = postgres('postgres://sf0:sf0@127.0.0.1:1/sf0', { max: 1, connect_timeout: 2 });
+  try {
+    await unreachable`select 1`;
+  } finally {
+    await unreachable.end({ timeout: 0 }).catch(() => {});
+  }
+  throw new Error('unreachable database answered');
+}
+const flakyAttempts = new Map<string, number>();
+
+async function route(request: Request): Promise<Response> {
   if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: jsonHeaders });
 
   const url = new URL(request.url);
@@ -31,6 +46,21 @@ Deno.serve(async request => {
       where table_schema = 'public' and table_type = 'BASE TABLE'
     `;
     return json({ success: true, data: { publicTableCount: tableCount } });
+  }
+
+  if (path === '/__sf0/fail' && Deno.env.get('SF0_DIAGNOSTICS') === '1') {
+    if (url.searchParams.get('kind') === 'db') await failWithDbError();
+    throw new Error('SF0 diagnostic failure');
+  }
+
+  // Fails with a transient database error on the first attempt per key, then
+  // succeeds: a GET shows the boundary's single retry, a POST shows none.
+  if (path === '/__sf0/flaky' && Deno.env.get('SF0_DIAGNOSTICS') === '1') {
+    const key = url.searchParams.get('key') ?? '';
+    const attempts = (flakyAttempts.get(key) ?? 0) + 1;
+    flakyAttempts.set(key, attempts);
+    if (attempts === 1) await failWithDbError();
+    return json({ success: true, data: { attempts } });
   }
 
   if (path === '/__sf0/dependencies' && Deno.env.get('SF0_DIAGNOSTICS') === '1') {
@@ -247,4 +277,6 @@ Deno.serve(async request => {
   if (request.method !== 'GET') return methodNotAllowed();
 
   return notFound(path);
-});
+}
+
+Deno.serve(withErrorBoundary(route));
