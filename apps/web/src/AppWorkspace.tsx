@@ -1173,7 +1173,7 @@ function AuthenticatedWorkspace({ user, setPassword, logout }: AuthenticatedWork
             {sidebarView === 'completed' && <ReviewTabs active={sidebarView} onSelect={view => handleSidebarSelect(view)} />}
             {sidebarView === 'today' && <TodayCountdownWidget countdowns={countdowns} loading={countdownsLoading} />}
             {sidebarView === 'today' && inboxQuery.tasks.length > 0 && (
-              <div className="mb-4 flex items-center justify-between gap-3 rounded-control border border-border bg-card px-3 py-2">
+              <div className="inbox-banner mb-4 flex items-center justify-between gap-3 rounded-control border border-border bg-card px-3 py-2">
                 <p className="m-0 text-sm text-muted-foreground">{inboxQuery.tasks.length === 1 ? t('tasks:list.inboxPendingOne') : t('tasks:list.inboxPending', { count: inboxQuery.tasks.length })}</p>
                 <button
                   type="button"

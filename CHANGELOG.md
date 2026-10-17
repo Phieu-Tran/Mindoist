@@ -2,6 +2,21 @@
 
 Notable changes to Mindoist, grouped by date. This project doesn't cut versioned releases yet — entries are dated instead.
 
+## 2026-10-17
+
+### Changed
+- The HeroUI (beta) kit now restyles the whole app, not only its own controls. Corners are rounder (10, 14 and 20 px instead of 6, 8 and 12). Cards, the countdown widget, the inbox banner and the calendar lose their 1px frame and sit on a soft shadow instead. Task rows become rounded cards with a little space between them. The current view in the sidebar is tinted with the accent color, and buttons, the sidebar "Add task" button, calendar navigation and segmented controls (density, UI kit, Plan/Focus/Shutdown, project view) are pills. Fields are white and borderless with a soft shadow, and show an accent ring on focus. In dark mode a faint light outline takes the place of the shadows.
+- Before this, turning HeroUI on changed almost nothing you could see: the sidebar, task list, cards and calendar are Mindoist's own components, and the kit's buttons and fields had been matched to Classic on purpose.
+- Classic is unchanged, pixel for pixel.
+
+### Fixed
+- With HeroUI, Quick Capture has rounded corners again. Its inner surface painted square corners over the rounded dialog. Classic still shows the square corners, because this release does not change Classic.
+
+### Validation
+- KIT-09 browser check: on the same account, Classic keeps its radii, framed cards and grey current view, while HeroUI shows the new radii, frameless lifted cards, the accent-tinted current view, pill buttons and segmented controls, and Quick Capture's rounded corners and fields. It fails if the new styles are removed.
+- The contrast audit now evaluates `color-mix()` and translucent fills painted over their surface. It checks the new pairs (accent text on the tinted sidebar and Quick Capture chips, text on the pill tracks) in both themes for every accent preset: all pass AA, the lowest at 4.58:1.
+- Classic screenshots of My Day, task details, the calendar, Settings and a 390px phone, in light and dark, match the previous release exactly.
+
 ## 2026-10-16
 
 ### Changed

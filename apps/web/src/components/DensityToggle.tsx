@@ -18,7 +18,7 @@ export function DensityToggle() {
   const [density, setDensity] = useState<Density>(storedDensity);
 
   return (
-    <div className="inline-grid grid-cols-3 rounded-control bg-muted p-0.5" role="radiogroup" aria-label="Interface density">
+    <div className="mindoist-segmented inline-grid grid-cols-3 rounded-control bg-muted p-0.5" role="radiogroup" aria-label="Interface density">
       {(['compact', 'cozy', 'comfortable'] as const).map(option => (
         <button
           key={option}

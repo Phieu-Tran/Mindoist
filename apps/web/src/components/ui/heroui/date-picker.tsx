@@ -182,7 +182,7 @@ export function DatePicker({
         aria-expanded={open}
         aria-haspopup="dialog"
         className={cn(
-          'flex h-7 w-full items-center gap-1.5 rounded-control border border-input bg-background px-2 text-xs',
+          'mindoist-date-trigger flex h-7 w-full items-center gap-1.5 rounded-control border border-input bg-background px-2 text-xs',
           'hover:border-muted-foreground hover:bg-muted/50 transition-colors text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
           !value && 'text-muted-foreground',
         )}

@@ -105,6 +105,16 @@
   --overlay-shadow: 0 10px 30px -8px oklch(0 0 0 / 0.18), 0 2px 6px oklch(0 0 0 / 0.08);
   --field-shadow: 0 0 0 0 transparent;
 
+  /* H10 look (bản B): lifted surfaces instead of 1px frames, filled
+     tracks for buttons/segmented controls. Read only by the
+     [data-ui-kit="heroui"] rules at the end of this file. */
+  --hui-shadow: 0 1px 2px color-mix(in oklch, var(--foreground) 6%, transparent), 0 2px 6px color-mix(in oklch, var(--foreground) 4%, transparent), 0 0 1px color-mix(in oklch, var(--foreground) 16%, transparent);
+  --hui-shadow-hover: 0 2px 6px color-mix(in oklch, var(--foreground) 7%, transparent), 0 10px 24px -10px color-mix(in oklch, var(--foreground) 22%, transparent);
+  --hui-shadow-raised: 0 4px 12px color-mix(in oklch, var(--foreground) 9%, transparent), 0 24px 48px -16px color-mix(in oklch, var(--foreground) 28%, transparent);
+  --hui-field: color-mix(in oklch, var(--muted) 96%, var(--foreground));
+  --hui-field-hover: color-mix(in oklch, var(--muted) 92%, var(--foreground));
+  --hui-focus-ring: 0 0 0 2px var(--card), 0 0 0 4px color-mix(in oklch, var(--ring) 70%, transparent);
+
   /* Calculated colours — same formulas as HeroUI's default theme, now fed
      by Mindoist tokens. */
   --surface-hover: var(--hover-surface);
@@ -160,6 +170,13 @@
   --overlay-shadow: 0 0 0 1px color-mix(in oklab, var(--foreground) 12%, transparent), 0 12px 32px -8px oklch(0 0 0 / 0.5);
   --surface-shadow: 0 0 0 0 transparent;
   --backdrop: oklch(0 0 0 / 0.6);
+  /* Shadows vanish on near-black surfaces: a faint light ring separates
+     the layers instead. */
+  --hui-shadow: 0 0 0 1px color-mix(in oklch, var(--foreground) 8%, transparent);
+  --hui-shadow-hover: 0 0 0 1px color-mix(in oklch, var(--foreground) 13%, transparent), 0 10px 24px -10px oklch(0 0 0 / 0.8);
+  --hui-shadow-raised: 0 0 0 1px color-mix(in oklch, var(--foreground) 11%, transparent), 0 24px 48px -16px oklch(0 0 0 / 0.85);
+  --hui-field: color-mix(in oklch, var(--muted) 94%, var(--foreground));
+  --hui-field-hover: color-mix(in oklch, var(--muted) 88%, var(--foreground));
 }
 
 /* Mindoist proportions: controls follow the density row height instead of
@@ -267,3 +284,119 @@
 @keyframes mindoist-pop-in { from { opacity: 0; transform: translateY(-4px) scale(0.96); } }
 @keyframes mindoist-pop-in-up { from { opacity: 0; transform: translateY(4px) scale(0.96); } }
 @keyframes mindoist-pop-out { to { opacity: 0; transform: scale(0.97); } }
+
+/* ── H10 — HeroUI look for the whole app (bản B) ──
+   Everything below is scoped to :root[data-ui-kit="heroui"] and stays
+   unlayered on purpose: it has to win over the app's Tailwind utilities
+   (@layer utilities) and its plain component CSS. Colours come only from
+   tokens; radii from the token scale or a full pill (9999px). Classic never
+   loads this file, and the scope keeps it inert if it ever does. */
+
+:root[data-ui-kit="heroui"] {
+  --radius-chip: 10px;
+  --radius-control: 14px;
+  --radius-panel: 20px;
+  /* rounded-sm/md/lg/xl derive from --radius (index.css @theme). */
+  --radius: 14px;
+}
+
+/* Surfaces: lifted by shadow, no 1px frame. */
+:root[data-ui-kit="heroui"] .rounded-panel.bg-card:not(.border-dashed),
+:root[data-ui-kit="heroui"] .calendar-view,
+:root[data-ui-kit="heroui"] .countdown-card,
+:root[data-ui-kit="heroui"] .inbox-banner {
+  border-color: transparent;
+  box-shadow: var(--hui-shadow);
+}
+:root[data-ui-kit="heroui"] .calendar-view { background: var(--card); }
+
+/* Sidebar: pill rows, accent-soft current view, pill call to action. */
+:root[data-ui-kit="heroui"] .app-sidebar button.rounded-lg { border-radius: 9999px; }
+:root[data-ui-kit="heroui"] .app-sidebar [aria-current="page"] {
+  background: var(--accent-soft);
+  color: var(--accent-soft-foreground);
+}
+:root[data-ui-kit="heroui"] .app-sidebar [aria-current="page"] svg { color: var(--accent); }
+:root[data-ui-kit="heroui"] .sidebar-add-task {
+  border-radius: 9999px;
+  box-shadow: 0 8px 18px -8px color-mix(in oklch, var(--primary) 80%, transparent);
+}
+
+/* Buttons: pills. */
+:root[data-ui-kit="heroui"] .button,
+:root[data-ui-kit="heroui"] button.bg-primary { border-radius: 9999px; }
+
+/* Calendar toolbar: filled pills instead of framed squares. */
+:root[data-ui-kit="heroui"] :is(.calendar-toolbar-nav-btn, .calendar-toolbar-today, .calendar-panel-toggle) {
+  border-color: transparent;
+  border-radius: 9999px;
+  background: var(--hui-field);
+  color: var(--foreground);
+}
+:root[data-ui-kit="heroui"] :is(.calendar-toolbar-nav-btn, .calendar-toolbar-today, .calendar-panel-toggle):hover:not(:disabled) {
+  border-color: transparent;
+  background: var(--hui-field-hover);
+}
+
+/* Task rows: rounded cards with a little air; lift on hover. Row height and
+   density stay as they are. */
+:root[data-ui-kit="heroui"] .task-row-density {
+  border-radius: var(--radius-control);
+  margin-bottom: 4px;
+  transition: background-color var(--motion-quick) var(--ease-out), box-shadow var(--motion-quick) var(--ease-out);
+}
+:root[data-ui-kit="heroui"] .task-row-density:hover { box-shadow: var(--hui-shadow-hover); }
+/* Meta chips (date, project, priority) are spans; the title button and the
+   bulk-select checkbox keep their shapes. */
+:root[data-ui-kit="heroui"] .task-row-density span:is(.rounded-chip, .rounded, .rounded-sm, .rounded-md) { border-radius: 9999px; }
+
+/* Segmented controls: pill track, raised pill thumb. */
+:root[data-ui-kit="heroui"] :is(.mindoist-segmented, .project-workspace-view-switch) {
+  border-color: transparent;
+  border-radius: 9999px;
+  background: var(--hui-field);
+  padding: 3px;
+}
+:root[data-ui-kit="heroui"] :is(.mindoist-segmented, .project-workspace-view-switch) > button {
+  border-radius: 9999px;
+  transition: background-color var(--motion-quick) var(--ease-out), color var(--motion-quick) var(--ease-out), box-shadow var(--motion-quick) var(--ease-out);
+}
+:root[data-ui-kit="heroui"] :is(.mindoist-segmented, .project-workspace-view-switch) > :is([aria-checked="true"], [aria-selected="true"], .is-active) {
+  background: var(--card);
+  box-shadow: var(--hui-shadow-hover);
+}
+:root[data-ui-kit="heroui"] .summary-range { border-radius: 9999px; }
+
+/* Fields: HeroUI v3 "primary" field — white, borderless, soft shadow;
+   accent ring on focus. */
+:root[data-ui-kit="heroui"] :is(.input, .textarea, .mindoist-select .select__trigger, .mindoist-date-trigger, .command-quick-control, .command-date-shortcuts, .command-picker > button) {
+  border-color: transparent;
+  background: var(--card);
+  box-shadow: var(--hui-shadow);
+}
+:root[data-ui-kit="heroui"] :is(.input, .textarea, .mindoist-select .select__trigger, .mindoist-date-trigger, .command-quick-control, .command-picker > button):hover {
+  border-color: transparent;
+  box-shadow: var(--hui-shadow-hover);
+}
+:root[data-ui-kit="heroui"] :is(.input, .textarea):focus,
+:root[data-ui-kit="heroui"] :is(.select__trigger, .mindoist-date-trigger, .command-picker > button):focus-visible,
+:root[data-ui-kit="heroui"] .command-quick-control:focus-within {
+  border-color: transparent;
+  background: var(--card);
+  box-shadow: var(--hui-focus-ring);
+}
+:root[data-ui-kit="heroui"] .command-date-shortcuts button { border-radius: 9999px; }
+:root[data-ui-kit="heroui"] .command-date-shortcuts button.is-active {
+  background: var(--accent-soft);
+  color: var(--accent-soft-foreground);
+  box-shadow: none;
+}
+
+/* Quick Capture: frameless raised sheet. The surface inherits its radius
+   from a wrapper, not from .command-dialog, and paints square corners over
+   the rounded dialog, so round it from the token directly. */
+:root[data-ui-kit="heroui"] .command-dialog {
+  border-color: transparent;
+  box-shadow: var(--hui-shadow-raised);
+}
+:root[data-ui-kit="heroui"] .command-surface { border-radius: var(--radius-panel); }
