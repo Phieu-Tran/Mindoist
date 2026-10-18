@@ -4,7 +4,7 @@
 
 # Mindoist
 
-**A modern, bilingual task manager with smart lists, calendar sync, offline support, and Kanban workspaces.**
+**A modern, bilingual task manager with smart lists, a planning calendar, offline support, and Kanban workspaces.**
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue.svg)](https://www.typescriptlang.org/)
@@ -19,48 +19,65 @@
 ## Screenshots
 
 <p align="center">
-  <img src="docs/readme/screenshot-summary-light.png" alt="Today view (light mode)" width="49%">
-  <img src="docs/readme/screenshot-calendar-dark.png" alt="Calendar view (dark mode)" width="49%">
+  <img src="docs/readme/screenshot-today-light.png" alt="My Day in light mode: countdowns, the inbox banner, and today's tasks with projects, colors and priorities" width="49%">
+  <img src="docs/readme/screenshot-calendar-dark.png" alt="Week calendar in dark mode with planned time blocks, all-day tasks, and finished meetings struck through" width="49%">
 </p>
+<p align="center">
+  <img src="docs/readme/screenshot-task-detail-light.png" alt="Task details next to the task list: project, priority, estimate, due date, planned time, sub-tasks and a checklist" width="49%">
+  <img src="docs/readme/screenshot-quick-capture-dark.png" alt="Quick Capture in dark mode reading “tomorrow 3pm p2 #Work” as a date, a time, a priority and a project" width="49%">
+</p>
+
+<p align="center"><sub>Shown with the HeroUI look, the default on the hosted app. The Classic look is one switch away in Settings.</sub></p>
 
 ---
 
 ## Features
 
 ### Core
-- **Task Management** — Create, edit, complete, and delete tasks with priorities (P1–P4), due dates, tags, and descriptions
-- **Quick Add** — Natural language input that parses dates and times in English and Vietnamese
+- **Task Management** — Priorities (P1–P4), due dates and times, estimates, task colors, tags, descriptions, sub-tasks, and checklists
+- **Quick Capture** (`Ctrl/⌘ K`) — Natural-language input in English and Vietnamese (“tomorrow 3pm p2 #Work”) with an editable preview of the date, time, project and priority. The same bar runs actions (`>`), navigation (`@`) and search (`?`)
 - **Recurring Tasks** — RFC 5545 RRULE support with automatic next-occurrence generation
-- **Smart Lists** — Today, Upcoming, Overdue, and Completed views with real-time filtering
-- **Global Search** — Fuzzy search across task titles and descriptions
+- **Smart Lists** — My Day, Upcoming, Overdue, and Completed views
+- **Inbox** — Process undated tasks one at a time: plan, snooze, finish, or delete
+- **Reminders** — Per-task reminders delivered as web push notifications
+- **Countdowns** — Count down to important dates on My Day and in the calendar
+- **Notes** and **Global Search** across task titles and descriptions
+
+### Planning & Calendar
+- **Week and Month Calendar** — Drag tasks onto the time grid to plan them, drag to reschedule, multi-day ranges
+- **Daily Planning** — Plan, Focus and Shutdown steps with a capacity check and “move unfinished to tomorrow”
+- **Focus Timer** — Pomodoro timer and due countdown in the task panel
+- **Google Calendar Sync** — One-way push (task → event) and read-only pull of existing events
+- **Priority Color Coding** — Calendar items colored by priority, with a legend
 
 ### Projects & Workspaces
-- **Kanban Board** — Drag-and-drop tasks across customizable columns
+- **Kanban Board and List** — Drag-and-drop tasks across customizable columns
 - **Sub-Projects** — Hierarchical project tree with parent/child relationships
 - **Project Templates** — Predefined column layouts for Daily Log, Job, Personal, or Custom workflows
-- **Task Inspector** — Slide-out detail panel with inline editing, Pomodoro timer, and due countdown
+- **Task Inspector** — Side panel with inline editing that keeps you in the current view
 
-### Calendar & Sync
-- **FullCalendar Integration** — Month, Week, and Day views with drag-to-reschedule
-- **Google Calendar Sync** — One-way push (task → event) and read-only pull of existing events
-- **Priority Color Coding** — Events colored by task priority with a legend bar
+### Integrations & Data
+- **Telegram Bot** — Work with your projects and tasks from Telegram after linking your account
+- **Obsidian** — Send a review summary to your vault as a Markdown note, no plugin required
+- **Google Drive Backup** — Export tasks, projects and notes to Drive as JSON
+- **Import and Export** — TickTick CSV and Mindoist JSON import with a preview; JSON and CSV export
 
 ### Offline & PWA
 - **Offline-First** — IndexedDB cache via Dexie with automatic background sync
 - **Conflict Resolution** — Last-write-wins with cursor-based change tracking
-- **Web Push Notifications** — VAPID-based reminders via pg-boss scheduler
+- **Web Push Notifications** — VAPID-based reminders
 - **Service Worker** — Workbox-powered caching for installability
 
-### Polish
+### Look & Feel
+- **Two UI Kits** — The HeroUI look (default) or Classic, switchable per device in Settings › Appearance or with `?ui-kit=heroui|legacy`
+- **Themes** — Light and dark (follows the system), 9 accent color presets, and three densities
 - **Bilingual** — Full English and Vietnamese localization with automatic language detection
-- **Dark Mode** — System-aware with manual toggle and 8 accent color presets
 - **Responsive** — Desktop sidebar, tablet drawer, mobile bottom navigation
-- **Keyboard Shortcuts** — Quick add, navigation, and command palette
-- **Import** — TickTick CSV import with dry-run preview
+- **Accessible** — Keyboard shortcuts, full keyboard use of panels and pickers, reduced-motion support, WCAG AA contrast
 
 ### Analytics
-- **Summary Dashboard** — Task completion stats, trend charts, priority breakdowns, and project distribution
-- **Summary Calendar** — Monthly overview with day agenda sidebar
+- **Review Dashboard** — Completion stats, trend charts, priority breakdowns, and project distribution
+- **Review Calendar** — Monthly overview with a day agenda, planned vs. actual time
 
 ---
 
@@ -68,11 +85,12 @@
 
 | Layer | Technology |
 |---|---|
-| **Frontend** | React 19, Vite 6, Tailwind CSS v4, Framer Motion, FullCalendar 6, Dexie 4 |
-| **Backend** | Fastify 5, Prisma 6, Zod, pg-boss, jsonwebtoken |
+| **Frontend** | React 19, Vite 6, Tailwind CSS v4, HeroUI v3 (React Aria), TanStack Query 5, Framer Motion, cmdk, Dexie 4 |
+| **Backend** | Fastify 5, Prisma 6, Zod, pg-boss, jsonwebtoken (self-hosted API) |
+| **Edge API** | Supabase Edge Functions (Deno, postgres.js) for the hosted deployment |
 | **Database** | PostgreSQL 16 |
-| **Shared** | TypeScript 5.8, chrono-node, rrule |
-| **Infra** | Docker Compose, pnpm workspaces, Vitest, Playwright |
+| **Shared** | TypeScript 5.8, chrono-node, rrule, design tokens package |
+| **Infra** | Docker Compose, pnpm workspaces, Vitest, Playwright, GitHub Actions, Cloudflare Pages |
 
 ---
 
@@ -80,16 +98,16 @@
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) ≥ 20
-- [pnpm](https://pnpm.io/)
+- [Node.js](https://nodejs.org/) 22 (the version CI uses)
+- [pnpm](https://pnpm.io/) 10
 - [Docker](https://www.docker.com/) (for PostgreSQL)
 
 ### Installation
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/mindoist.git
-cd mindoist
+git clone https://github.com/Phieu-Tran/Mindoist.git
+cd Mindoist
 
 # Start PostgreSQL
 docker compose up -d
@@ -175,7 +193,10 @@ mindoist/
 │       │   └── pages/        # Login, Register
 │       └── e2e/          # Playwright end-to-end tests
 ├── packages/
-│   └── shared/           # Shared types, NL parser, recurrence utils
+│   ├── shared/           # Shared types, NL parser, recurrence utils
+│   └── design-tokens/    # Colors, hues and CSS variables used by the web app
+├── supabase/
+│   └── functions/        # Edge API (Deno) for the hosted deployment
 ├── docs/                 # Design docs, plans, test reports
 ├── docker-compose.yml    # PostgreSQL 16
 └── pnpm-workspace.yaml
@@ -190,14 +211,14 @@ mindoist/
 | POST | `/auth/register` | Create account |
 | POST | `/auth/login` | Sign in (returns JWT) |
 | GET | `/auth/me` | Current user |
-| CRUD | `/tasks`, `/projects`, `/sections`, `/tags`, `/notes` | Resource management |
-| PATCH | `/tasks/:id/complete` | Complete a task |
+| CRUD | `/tasks`, `/projects`, `/sections`, `/tags`, `/notes`, `/countdowns`, `/time-blocks` | Resource management |
+| GET | `/tasks?filter=today\|upcoming\|overdue` | Smart lists |
+| POST | `/tasks/:id/complete`, `/tasks/:id/reopen` | Complete or reopen a task |
 | PATCH | `/tasks/:id/move` | Move task to column |
-| GET | `/tasks/smart/:filter` | Smart list (today/upcoming/overdue) |
+| GET | `/calendar/projection` | Tasks and planned time blocks for a calendar range |
 | GET | `/sync/changes` | Pull offline changes |
 | POST | `/sync/push` | Push offline mutations |
-| GET | `/gcal/events` | Google Calendar events |
-| POST | `/gcal/connect` | Start Google OAuth |
+| GET | `/gcal/auth-url`, `/gcal/events` | Start Google OAuth, read Google Calendar events |
 | GET | `/health` | Health check |
 
 ---
@@ -214,6 +235,14 @@ mindoist/
 | `GOOGLE_REDIRECT_URI` | No | OAuth callback URL (Google Calendar) |
 | `GOOGLE_AUTH_REDIRECT_URI` | No | OAuth callback URL (sign-in with Google) |
 | `FRONTEND_URL` | No | Where to redirect after OAuth completes (default: `http://localhost:5173`) |
+
+Web build (read by Vite at build time):
+
+| Variable | Required | Description |
+|---|---|---|
+| `VITE_API_URL` | No | API base URL when the API runs on another origin; leave unset when it shares the web domain |
+| `VITE_UI_KIT` | No | Default UI kit for visitors who haven't picked one: `heroui` or `legacy` (Classic, the default when unset) |
+| `VITE_UI_KIT_SWITCHER` | No | `off` hides the UI kit switch in Settings |
 
 `docker-compose.prod.yml` only:
 

@@ -2,6 +2,14 @@
 
 Notable changes to Mindoist, grouped by date. This project doesn't cut versioned releases yet — entries are dated instead.
 
+## 2026-10-18
+
+### Fixed
+- The estimate field in the task panel shows its full value. It was 24 px wide and the browser's number spinner took most of it, so a value like “45” was cut off. It now fits three digits and drops the spinner; arrow keys still change the value.
+
+### Docs
+- README: new screenshots of the HeroUI look (My Day, task details, the week calendar in dark mode, Quick Capture), and a feature list, tech stack, API table and environment variables checked against the current code. It no longer mentions FullCalendar, which the app stopped using.
+
 ## 2026-10-17 (later)
 
 ### Changed
