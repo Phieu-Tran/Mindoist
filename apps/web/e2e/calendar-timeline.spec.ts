@@ -41,6 +41,9 @@ async function dragCalendarEventTo(page: Page, title: string, targetTime: string
   const event = page.locator('.mindoist-time-grid-block').filter({ hasText: title }).first();
   await expect(event).toBeVisible();
   const targetGrid = event.locator('xpath=ancestor::*[contains(@class, "mindoist-time-grid")]');
+  // The calendar opens scrolled to the current time, so where the grid sits
+  // depends on when the test runs. Start every drag from the same place.
+  await page.locator('.mindoist-calendar-grid').evaluate(grid => { grid.scrollTop = 0; });
   const box = await targetGrid.boundingBox();
   if (!box) throw new Error('Calendar time grid has no bounding box');
   const [hour, minute] = targetTime.split(':').map(Number);
