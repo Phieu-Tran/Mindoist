@@ -2,6 +2,12 @@
 
 Notable changes to Mindoist, grouped by date. This project doesn't cut versioned releases yet — entries are dated instead.
 
+## 2026-11-16
+
+### Changed
+- Mindoist moved to https://mindoist.workspacesbeat.io.vn, and the status page to https://status.mindoist.workspacesbeat.io.vn, because the `workspacesbeat.site` domain expired. Sign in again at the new address; if you had installed the app or turned on notifications, do that again there too. https://mindoist.pages.dev keeps working.
+- Signing in with Google and connecting Google Calendar return you to the new address. Production deploys now set that address and attach the new domain, so a deploy can no longer point them back at the expired one.
+
 ## 2026-10-18
 
 ### Fixed

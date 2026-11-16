@@ -72,7 +72,7 @@ jobs:
           supabase secrets set \
             "GOOGLE_AUTH_REDIRECT_URI=https://${SUPABASE_PROJECT_REF}.supabase.co/functions/v1/api/auth/google/callback" \
             "GOOGLE_REDIRECT_URI=https://${SUPABASE_PROJECT_REF}.supabase.co/functions/v1/api/gcal/callback" \
-            'FRONTEND_URL=https://mindoist.workspacesbeat.site' \
+            'FRONTEND_URL=https://mindoist.workspacesbeat.io.vn' \
             --project-ref "$SUPABASE_PROJECT_REF"
       - name: Apply additive migrations
         env:
@@ -117,7 +117,7 @@ jobs:
         run: |
           set -euo pipefail
           endpoint="https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/$CLOUDFLARE_PAGES_PROJECT/domains"
-          domain='mindoist.workspacesbeat.site'
+          domain='mindoist.workspacesbeat.io.vn'
           existing="$(curl --fail --silent --show-error \
             -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
             "$endpoint" | jq -r --arg domain "$domain" '.result[] | select(.name == $domain) | .name' | head -n 1)"

@@ -150,7 +150,7 @@ page; verify the current limits before relying on them for production.
 
 Create two HTTP status monitors:
 
-1. `https://mindoist.workspacesbeat.site/` — production web;
+1. `https://mindoist.workspacesbeat.io.vn/` — production web;
 2. `https://<production-project-ref>.supabase.co/functions/v1/api/health` —
    the public Edge API health endpoint.
 
