@@ -15,9 +15,13 @@ import {
 interface Props {
   side?: 'top' | 'bottom';
   variant?: 'icon' | 'row';
+  // 'parent': the panel is positioned by the nearest positioned ancestor and
+  // spans its width — for an icon trigger inside a narrow strip (the sidebar
+  // footer), where a panel hung off the icon itself would be clipped.
+  anchor?: 'self' | 'parent';
 }
 
-export function AccentPicker({ side = 'bottom', variant = 'icon' }: Props) {
+export function AccentPicker({ side = 'bottom', variant = 'icon', anchor = 'self' }: Props) {
   const { t } = useTranslation('common');
   const [accent, setAccent] = useState<Accent>(getStoredAccent);
   const [open, setOpen] = useState(false);
@@ -65,7 +69,7 @@ export function AccentPicker({ side = 'bottom', variant = 'icon' }: Props) {
   };
 
   return (
-    <div ref={containerRef} className={cn('relative', variant === 'row' && 'w-full')}>
+    <div ref={containerRef} className={cn(anchor === 'self' && 'relative', variant === 'row' && 'w-full')}>
       <Button
         ref={triggerRef}
         type="button"
@@ -78,7 +82,7 @@ export function AccentPicker({ side = 'bottom', variant = 'icon' }: Props) {
         aria-controls="accent-picker-panel"
         data-testid="accent-picker-trigger"
         title={t('appearance.accent')}
-        className={cn(variant === 'row' && 'w-full justify-start gap-2 px-3')}
+        className={cn(variant === 'row' ? 'w-full justify-start gap-2 px-3' : 'relative')}
       >
         <Palette className="h-4 w-4" aria-hidden="true" />
         {variant === 'row' && <span className="flex-1 text-left">{t('appearance.accent')}</span>}
@@ -101,7 +105,7 @@ export function AccentPicker({ side = 'bottom', variant = 'icon' }: Props) {
             className={cn(
               'absolute z-[70] rounded-xl border border-border bg-card p-3 shadow-lg',
               side === 'top' ? 'bottom-full mb-2' : 'top-full mt-2',
-              variant === 'row' ? 'left-0 w-full' : 'right-0 w-56',
+              variant === 'row' || anchor === 'parent' ? 'left-0 w-full' : 'right-0 w-56',
             )}
             data-testid="accent-picker-panel"
             initial={{ opacity: 0, y: side === 'top' ? 6 : -6, scale: 0.96 }}

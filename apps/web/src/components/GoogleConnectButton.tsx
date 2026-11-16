@@ -11,9 +11,12 @@ interface Props {
   // Settings wants a compact, auto-width control at the end of a
   // label/control row (D7 — one idiom per context, not one global style).
   className?: string;
+  // Icon only, for the sidebar's quick-control strip; the action stays in the
+  // accessible name and tooltip.
+  iconOnly?: boolean;
 }
 
-export function GoogleConnectButton({ className }: Props = {}) {
+export function GoogleConnectButton({ className, iconOnly = false }: Props = {}) {
   const { t } = useTranslation();
   const { connected, loading, disconnect } = useGoogleCalendarStatus(Boolean(localStorage.getItem('token')));
 
@@ -38,26 +41,28 @@ export function GoogleConnectButton({ className }: Props = {}) {
   return connected ? (
     <Button
       variant="ghost"
-      size="sm"
+      size={iconOnly ? 'icon' : 'sm'}
       onClick={handleDisconnect}
       className={cn('gap-1.5 text-xs text-muted-foreground', className)}
       data-testid="gcal-disconnect"
       aria-label={t('tasks:gcal.disconnect')}
+      title={iconOnly ? t('tasks:gcal.disconnect') as string : undefined}
     >
-      <Unlink className="h-3.5 w-3.5" aria-hidden="true" />
-      <span className="hidden sm:inline">{t('tasks:gcal.connected')}</span>
+      <Unlink className={iconOnly ? 'h-4 w-4' : 'h-3.5 w-3.5'} aria-hidden="true" />
+      {!iconOnly && <span className="hidden sm:inline">{t('tasks:gcal.connected')}</span>}
     </Button>
   ) : (
     <Button
       variant="ghost"
-      size="sm"
+      size={iconOnly ? 'icon' : 'sm'}
       onClick={handleConnect}
       className={cn('gap-1.5 text-xs text-muted-foreground', className)}
       data-testid="gcal-connect"
       aria-label={t('tasks:gcal.connect')}
+      title={iconOnly ? t('tasks:gcal.connect') as string : undefined}
     >
-      <Link2 className="h-3.5 w-3.5" aria-hidden="true" />
-      <span className="hidden sm:inline">{t('tasks:gcal.connect')}</span>
+      <Link2 className={iconOnly ? 'h-4 w-4' : 'h-3.5 w-3.5'} aria-hidden="true" />
+      {!iconOnly && <span className="hidden sm:inline">{t('tasks:gcal.connect')}</span>}
     </Button>
   );
 }

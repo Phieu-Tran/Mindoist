@@ -189,7 +189,7 @@ export function AppShell({
                 <motion.div
                   ref={drawerRef}
                   tabIndex={-1}
-                  className="fixed inset-y-0 left-0 z-50 w-[min(var(--shell-sidebar-width),calc(100vw-3rem))] bg-sidebar border-r border-border"
+                  className="fixed bottom-0 left-0 top-[var(--shell-appbar-height)] z-50 w-[min(var(--shell-sidebar-width),calc(100vw-3rem))] bg-sidebar border-r border-border"
                   initial={{ x: '-100%' }}
                   animate={{ x: 0 }}
                   exit={{ x: '-100%' }}
