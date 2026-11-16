@@ -224,7 +224,10 @@ export function AppShell({
           id="main-content"
           tabIndex={-1}
           className={cn(
-            "flex-1 overflow-y-auto",
+            // Focused programmatically after navigation and by the skip link; as
+            // a scroll container its focus ring only ever showed as a stray
+            // accent line down the sidebar edge.
+            "focus-silent flex-1 overflow-y-auto",
             !isDesktop && "p-4",
             isDesktop && "mx-auto w-full px-8 py-4",
             isDesktop && (contentWide ? "max-w-none" : "max-w-[var(--shell-content-max)]"),

@@ -248,6 +248,7 @@
     "dueToday": "Today",
     "dueTomorrow": "Tomorrow",
     "dueOverdue": "Overdue",
+    "noDate": "No date",
     "dueDate": "{{date}}",
     "dueTime": "at {{time}}",
     "project": "Project",

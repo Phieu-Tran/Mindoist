@@ -282,7 +282,14 @@
 .dark .mindoist-calendar-grid-chip.is-external:hover { background: oklch(from var(--calendar-identity-color) 0.285 calc(c * 0.42) h); }
 .mindoist-calendar-grid-block-button { display: flex; width: 100%; height: 100%; flex-direction: column; overflow: hidden; border: 0; background: transparent; padding: .45rem .6rem .45rem 1.28rem; color: inherit; text-align: left; }
 .mindoist-calendar-grid-block-button span { overflow: hidden; font-size: 13px; font-weight: 650; line-height: 1.35; text-overflow: ellipsis; white-space: nowrap; }
-.mindoist-calendar-grid-block-button small { margin-top: .12rem; font-size: 12px; font-weight: 520; font-variant-numeric: tabular-nums; opacity: .82; }
+.mindoist-calendar-grid-block-button small { margin-top: .12rem; font-size: 12px; font-weight: 520; font-variant-numeric: tabular-nums; opacity: .82; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mindoist-calendar-grid-block-button small b { font-weight: inherit; }
+.mindoist-calendar-grid-block-button.is-narrow small b,
+.mindoist-calendar-grid-block-button.is-compact small b { display: none; }
+.mindoist-calendar-grid-block-button.is-compact { flex-direction: row; align-items: center; gap: .4rem; padding-top: .15rem; padding-bottom: .15rem; }
+.mindoist-calendar-grid-block-button.is-compact span { min-width: 0; flex: 1; }
+.mindoist-calendar-grid-block-button.is-compact small { flex-shrink: 0; margin-top: 0; }
+.mindoist-calendar-grid-block-button.is-compact.is-narrow small { display: none; }
 .mindoist-deadline-layer { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
 .mindoist-deadline-marker { position: absolute; display: grid; grid-template-columns: 6px minmax(0, 1fr) auto; align-items: start; gap: .35rem; overflow: hidden; border: 1px solid var(--border); border-top: 2px solid var(--calendar-identity-color); border-radius: var(--radius-chip); background: color-mix(in oklch, var(--card) 92%, var(--calendar-identity-color)); padding: .2rem .35rem; color: var(--foreground); font-size: 13px; line-height: 1.3; text-align: left; pointer-events: auto; }
 .mindoist-deadline-marker > span { width: 0; height: 0; margin-top: .25rem; border-top: 4px solid transparent; border-bottom: 4px solid transparent; border-left: 6px solid var(--calendar-identity-color); }
@@ -595,6 +602,21 @@
   --task-color-bg: oklch(from var(--task-color-accent) 0.285 calc(c * 0.42) h);
   --task-color-border: oklch(from var(--task-color-accent) calc(l * 0.45 + 0.17215) calc(c * 0.45) h);
   --task-color-text: oklch(from var(--task-color-accent) 0.82 calc(c * 0.85) h);
+}
+
+/* Lists whisper, the calendar speaks. A task row (and its twin in the calendar's
+   planning panel) carries its project identity as a faint wash, so a long list
+   reads as a list rather than as stripes of colour; time blocks on the grid
+   keep the full tint above, because there colour is how you tell blocks apart.
+   Same hue-exact `oklch(from …)` form as the tokens above. */
+.task-row-density[class*="task-color-"],
+[data-calendar-backlog-task][class*="task-color-"] {
+  --task-color-bg: oklch(from var(--task-color-accent) 0.972 calc(c * 0.10) h);
+}
+
+.dark .task-row-density[class*="task-color-"],
+.dark [data-calendar-backlog-task][class*="task-color-"] {
+  --task-color-bg: oklch(from var(--task-color-accent) 0.245 calc(c * 0.20) h);
 }
 
 /* Metadata chips (D3): same hue-safe relative-color-syntax recipe as

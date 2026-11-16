@@ -909,7 +909,9 @@ export function TaskInspector({
               {error}
             </div>
           )}
-          <div className="flex shrink-0 justify-end gap-2 border-t border-border/60 bg-card/95 px-4 py-2.5 backdrop-blur-sm">
+          {/* Pinned to the bottom of the scrolling form: on a long task the
+              actions used to sit below the fold, half-clipped by the rail. */}
+          <div className="sticky bottom-0 z-10 flex shrink-0 justify-end gap-2 border-t border-border/60 bg-card/95 px-4 py-2.5 backdrop-blur-sm">
             <Button
               type="button"
               variant="ghost"

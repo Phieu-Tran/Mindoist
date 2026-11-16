@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import type { Countdown, Task, UpdateTaskRequest } from '@mindoist/shared/types';
 import type { GCalEvent } from '../hooks/useApi';
 import { cn } from '@/lib/utils';
-import { CalendarHeader } from './CalendarHeader';
+import { CalendarHeader, CalendarMobileModeSwitch } from './CalendarHeader';
 import { CalendarToolbar, type CalendarViewType } from './CalendarToolbar';
 import { CalendarGridView } from '@/features/calendar/grid';
 import { dayKey, monthDates, threeDayDates, weekDates, workWeekDates } from '@/features/calendar/grid/time-grid';
@@ -277,9 +277,14 @@ export function CalendarView({
 
   return (
     <div className={cn('calendar-layout flex h-full min-h-0 gap-3', panelOpen && 'calendar-layout-plan-open')}>
+      <CalendarMobileModeSwitch panelOpen={panelOpen} togglePanel={togglePanel} />
       {panelOpen && <CalendarPlanningPanel tasks={tasks} todayTasks={todayTasks} backlogTasks={backlogTasks} projects={projects} timeBlocks={projection?.timeBlocks ?? []} workHoursPerDay={workHoursPerDay} onSelectTask={onSelectTask} onUpdateTask={onUpdateTask} onUpdateTimeBlock={handleBlockProgress} />}
       <div className="calendar-canvas flex min-w-0 flex-1 flex-col">
         <div className="calendar-view">
+          {/* One bar: panel toggle, period navigation, the period itself, the
+              legend and the view switch. The header and toolbar rows used to
+              stack and spend ~115px before the first hour line. */}
+          <div className="calendar-topbar">
           <CalendarHeader panelOpen={panelOpen} togglePanel={togglePanel} hasGcalEvents={gcalEvents.length > 0} />
           <span className="sr-only">{t('calendar.timelineHint')}</span>
           <CalendarToolbar
@@ -291,6 +296,7 @@ export function CalendarView({
             onToday={goToday}
             onChangeView={changeView}
           />
+          </div>
           {(projectionError || projectionLoadError) && <div role="alert" className="mb-2 flex items-center justify-between rounded-control bg-destructive/10 px-3 py-2 text-xs text-destructive"><span>{projectionError || (projectionLoadError instanceof Error ? projectionLoadError.message : t('calendar.projectionLoadFailed'))}</span><button type="button" className="font-medium underline-offset-2 hover:underline" onClick={() => { setProjectionError(null); void loadProjection(); }}>{t('calendar.retry')}</button></div>}
           <CalendarGridView
             anchorDate={anchorDate}

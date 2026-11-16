@@ -170,6 +170,14 @@ function AuthenticatedWorkspace({ user, setPassword, logout }: AuthenticatedWork
   const [searchQuery, setSearchQuery] = useState('');
   const { tasks, loading: tasksLoading, error: taskError, addTask, updateTask, moveTask, completeTask, completePomodoro, reopenTask, deleteTask, restoreTask, refetch: refetchTasks } = useTasksQuery(sidebarView, Boolean(user), currentProjectId, currentTagId);
   const inboxQuery = useTasksQuery('inbox', Boolean(user) && sidebarView === 'today');
+  // The API's `inbox` view returns every open task; the Inbox itself (and the
+  // list at /tasks/inbox) is only what has neither a project nor a date. The
+  // banner used to count all of them ("18 inbox items" with 3 in the inbox)
+  // and "Process inbox" walked through tasks that were already planned.
+  const inboxTasks = useMemo(
+    () => inboxQuery.tasks.filter(task => !task.parentId && !task.projectId && !task.deadline && !task.completedAt && !task.deletedAt),
+    [inboxQuery.tasks],
+  );
   const allTasksQuery = useTasksQuery('all', Boolean(user));
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [keyboardTaskId, setKeyboardTaskId] = useState<string | null>(null);
@@ -1172,9 +1180,9 @@ function AuthenticatedWorkspace({ user, setPassword, logout }: AuthenticatedWork
           <div className="min-w-0 flex-1">
             {sidebarView === 'completed' && <ReviewTabs active={sidebarView} onSelect={view => handleSidebarSelect(view)} />}
             {sidebarView === 'today' && <TodayCountdownWidget countdowns={countdowns} loading={countdownsLoading} />}
-            {sidebarView === 'today' && inboxQuery.tasks.length > 0 && (
+            {sidebarView === 'today' && inboxTasks.length > 0 && (
               <div className="inbox-banner mb-4 flex items-center justify-between gap-3 rounded-control border border-border bg-card px-3 py-2">
-                <p className="m-0 text-sm text-muted-foreground">{inboxQuery.tasks.length === 1 ? t('tasks:list.inboxPendingOne') : t('tasks:list.inboxPending', { count: inboxQuery.tasks.length })}</p>
+                <p className="m-0 text-sm text-muted-foreground">{inboxTasks.length === 1 ? t('tasks:list.inboxPendingOne') : t('tasks:list.inboxPending', { count: inboxTasks.length })}</p>
                 <button
                   type="button"
                   className="min-h-10 shrink-0 rounded-control bg-primary px-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
@@ -1186,7 +1194,7 @@ function AuthenticatedWorkspace({ user, setPassword, logout }: AuthenticatedWork
             )}
             {sidebarView === 'today' && inboxProcessOpen ? (
               <InboxProcess
-                tasks={inboxQuery.tasks}
+                tasks={inboxTasks}
                 onComplete={task => handleToggle(task)}
                 onDelete={task => handleDeleteTask(task.id)}
                 onUpdate={async (id, request) => { await updateTask(id, request); }}

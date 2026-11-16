@@ -1,5 +1,5 @@
 import { Check, X } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { canonicalProjectColor } from '@/lib/project-colors';
 import { type TaskColor } from '@/lib/task-colors';
 import type { PositionedBlock } from './types';
@@ -99,10 +99,17 @@ export function TimeGrid({
   const slots = Math.max(1, ((endHour - startHour) * 60) / SLOT_MINUTES);
   const height = slots * CALENDAR_SLOT_HEIGHT;
   const today = dayKey(day) === dayKey(new Date());
-  const nowTop = useMemo(() => {
-    const now = new Date();
-    return ((now.getHours() * 60 + now.getMinutes() - startHour * 60) / ((endHour - startHour) * 60)) * 100;
-  }, [startHour, endHour]);
+  // The "now" line follows the clock; it used to be computed once and stay
+  // where it was when the calendar was opened.
+  const [nowMinutes, setNowMinutes] = useState(() => { const now = new Date(); return now.getHours() * 60 + now.getMinutes(); });
+  useEffect(() => {
+    if (!today) return;
+    const update = () => { const now = new Date(); setNowMinutes(now.getHours() * 60 + now.getMinutes()); };
+    const timer = window.setInterval(update, 60_000);
+    window.addEventListener('focus', update);
+    return () => { window.clearInterval(timer); window.removeEventListener('focus', update); };
+  }, [today]);
+  const nowTop = ((nowMinutes - startHour * 60) / ((endHour - startHour) * 60)) * 100;
 
   useEffect(() => {
     if (!draft) return;

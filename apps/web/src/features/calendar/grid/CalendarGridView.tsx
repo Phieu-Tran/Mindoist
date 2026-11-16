@@ -1,11 +1,11 @@
-import { useMemo, useRef, useState, type CSSProperties } from 'react';
+import { useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { GCalEvent } from '@/hooks/useApi';
 import type { Countdown, Task } from '@mindoist/shared/types';
 import { TASK_COLOR_OPTIONS } from '@/lib/task-colors';
 import { calendarProjectionToItems, type CalendarProjection } from '../projection';
 import { layoutTimedItems } from './layout';
-import { CALENDAR_SLOT_HEIGHT, dayKey, snapMinutes, threeDayDates, weekDates, workWeekDates } from './time-grid';
+import { CALENDAR_SLOT_HEIGHT, dateToY, dayKey, snapMinutes, threeDayDates, weekDates, workWeekDates } from './time-grid';
 import type { CalendarItem, PositionedBlock } from './types';
 import { TimeGrid } from './TimeGrid';
 import { DeadlineLayer } from './DeadlineLayer';
@@ -118,18 +118,46 @@ export function CalendarGridView({
   }, [countdowns, gcalEvents, projection, projects, tasks]);
   const dayLayouts = useMemo(() => view === 'dayGridMonth' ? [] : days.map(day => {
     const key = dayKey(day);
+    const blocks = layoutForDay(day, items);
+    // One task, one mark per day. A deadline that falls inside the task's own
+    // planned block (or an untimed deadline on a day the task is already
+    // blocked) used to be drawn a second time on top of that block.
+    const plannedRanges = new Map<string, [number, number][]>();
+    for (const { item } of blocks) {
+      if (item.kind !== 'block') continue;
+      const start = item.start.getHours() * 60 + item.start.getMinutes();
+      const end = Math.max(start, item.end.getHours() * 60 + item.end.getMinutes());
+      plannedRanges.set(item.taskId, [...(plannedRanges.get(item.taskId) ?? []), [start, end]]);
+    }
+    const coveredByBlock = (taskId: string, time?: string | null) => {
+      const ranges = plannedRanges.get(taskId);
+      if (!ranges) return false;
+      if (!time) return true;
+      const [hour, minute] = time.split(':').map(Number);
+      return ranges.some(([start, end]) => hour * 60 + minute >= start && hour * 60 + minute <= end);
+    };
     return {
       day, key,
-      blocks: layoutForDay(day, items),
-      deadlines: items.filter((item): item is Extract<CalendarItem, { kind: 'deadline' }> => item.kind === 'deadline' && !item.allDay && item.date === key),
+      blocks,
+      deadlines: items.filter((item): item is Extract<CalendarItem, { kind: 'deadline' }> => item.kind === 'deadline' && !item.allDay && item.date === key && !coveredByBlock(item.taskId, item.time)),
       allDayItems: items.filter(item => (
-        item.kind === 'deadline' ? item.allDay && item.date === key
+        item.kind === 'deadline' ? item.allDay && item.date === key && !coveredByBlock(item.taskId)
           : item.kind === 'range' ? item.startDate <= key && item.endDate >= key
             : item.allDay && dayKey(item.start) === key
       )),
     };
   }), [days, items, view]);
   const today = dayKey(new Date());
+  const gridRef = useRef<HTMLDivElement>(null);
+  const isTimeGrid = view !== 'dayGridMonth';
+
+  // Open on the part of the day that matters: the grid starts at 06:00 and
+  // used to stay scrolled there, so an afternoon visit showed an empty morning.
+  useLayoutEffect(() => {
+    const grid = gridRef.current;
+    if (!grid || !isTimeGrid) return;
+    grid.scrollTop = Math.max(0, dateToY(new Date(), 6, CALENDAR_SLOT_HEIGHT) - grid.clientHeight * 0.3);
+  }, [isTimeGrid]);
 
   if (view === 'dayGridMonth') {
     return (
@@ -147,11 +175,15 @@ export function CalendarGridView({
 
   return (
     <div
+      ref={gridRef}
       className="mindoist-calendar-grid"
       data-calendar-engine="grid"
       style={{
         '--grid-days': days.length,
-        '--calendar-grid-min-width': `${Math.max(42, 4.25 + days.length * 9.5)}rem`,
+        // A full week has to fit beside the planning panel on a laptop, so its
+        // columns may get narrower than the 3- and 5-day ones before the grid
+        // starts scrolling sideways (Sunday used to sit off-screen at 1440px).
+        '--calendar-grid-min-width': `${Math.max(42, 4.25 + days.length * (days.length >= 7 ? 7 : 9.5))}rem`,
       } as CSSProperties}
     >
       <div className="mindoist-calendar-grid-header" aria-hidden="true">
@@ -233,7 +265,13 @@ export function CalendarGridView({
                   onBlockResize={onBlockResize}
                   renderBlock={block => {
                     const task = block.item.kind === 'block' ? tasksById.get(block.item.taskId) : undefined;
-                    return <button type="button" className="mindoist-calendar-grid-block-button" onClick={() => task && onSelectTask(task)} title={block.item.title}><span>{block.item.title}</span><small>{formatTime(block.item.start)} – {formatTime(block.item.end)}</small></button>;
+                    // Short blocks keep the title and put the start time beside
+                    // it; side-by-side blocks drop the end time. Either way the
+                    // title is what stays readable.
+                    const compact = block.height < 46;
+                    const narrow = block.columnCount > 1;
+                    const range = `${formatTime(block.item.start)} – ${formatTime(block.item.end)}`;
+                    return <button type="button" className={`mindoist-calendar-grid-block-button${compact ? ' is-compact' : ''}${narrow ? ' is-narrow' : ''}`} onClick={() => task && onSelectTask(task)} title={`${block.item.title} · ${range}`}><span>{block.item.title}</span><small>{formatTime(block.item.start)}<b> – {formatTime(block.item.end)}</b></small></button>;
                   }}
                 />
                 <DeadlineLayer deadlines={deadlines} tasksById={tasksById} startHour={6} endHour={23} onSelectTask={onSelectTask} />

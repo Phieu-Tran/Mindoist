@@ -2,6 +2,30 @@
 
 Notable changes to Mindoist, grouped by date. This project doesn't cut versioned releases yet — entries are dated instead.
 
+## 2026-11-16 (later)
+
+### Changed
+- Calendar: one top bar instead of two rows. The planning-panel toggle, previous/next, Today, the period, the priority key and the view switch share a single line, so the grid starts about 55 px higher. The key is plain text with a dot rather than a row of pills, and drops to its own line on narrow windows.
+- Calendar opens scrolled to the current time instead of 06:00, and the red “now” line moves with the clock (it used to stay where it was when the page opened).
+- Calendar: a full week fits beside the planning panel at 1440 px. Sunday used to be off-screen until you scrolled sideways.
+- Calendar: a task is drawn once per day. A deadline that falls inside the task's own planned block, or an untimed deadline on a day the task is already blocked, is no longer drawn a second time on top of the block. A deadline outside the block still gets its own marker.
+- Calendar: short blocks (under 30 minutes) show the title with the start time beside it, and side-by-side blocks keep the title and drop the end time. Before, a 15-minute block showed only its time range and narrow blocks wrapped the time over three lines.
+- My Day lists Overdue, then Today, then Anytime. The sidebar badge counts today plus overdue, matching what the page asks you to deal with.
+- My Day: the countdown strip is one compact line per countdown (about 55 px instead of 120 px), so today's tasks start higher.
+- Dates read as dates: “Thu, Nov 19” in task rows and “Tomorrow · Tue, Nov 17” as a group heading, instead of `2026-11-19` and `19/11/2026`.
+- Task rows are quieter. A row still carries its project colour, but as a faint wash instead of a pastel band, so a long list no longer reads as stripes; the same goes for the rows in the calendar's planning panel. Time blocks on the calendar keep their full colour.
+- The daily planner's permanent hint line is gone from view (screen readers still get it).
+
+### Fixed
+- Next 7 Days is in date order, and tasks within a day are in time order. Days appeared in whatever order the server returned them (for example the 18th before the 17th).
+- A task with a time that already passed today is marked overdue in red. Its chip stayed blue while its own countdown said “3h overdue”.
+- “Process inbox” on My Day counts and walks through inbox tasks only — no project, no date. It counted every open task (“18 inbox items” with 3 in the inbox) and stepped through tasks that were already planned.
+- Review › Summary: Overdue counts every open task past its deadline. It only counted deadlines inside the selected period, so it showed 0 on a Monday while last week's late tasks were still open.
+- Phone: the Plan / Calendar switch is always visible. It sat inside the calendar, which is hidden while the planner is open, so from the planner there was no way back to the calendar.
+- Task panel: Complete and Save stay pinned to the bottom. On a long task they were below the fold and half cut off.
+- The blue line down the edge of the sidebar after opening a page is gone. It was the focus ring of the main content area.
+- “Today” and “Yesterday” headings use the local date. Before 07:00 in UTC+7 they were a day behind.
+
 ## 2026-11-16
 
 ### Changed

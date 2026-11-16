@@ -120,6 +120,46 @@ describe('CalendarGridView', () => {
     })));
   });
 
+  it('draws a task once when its deadline falls inside its own planned block', () => {
+    const covered = makeTask('covered', 'Standup', { completedAt: null, deadline: { date: '2026-08-12', time: '09:30', timeZone: 'Asia/Ho_Chi_Minh' } });
+    const later = makeTask('later', 'Ship report', { completedAt: null, deadline: { date: '2026-08-12', time: '15:00', timeZone: 'Asia/Ho_Chi_Minh' } });
+    const untimed = makeTask('untimed', 'Write notes', { completedAt: null, deadline: { date: '2026-08-12' } });
+    const deadline = (task: Task) => ({
+      id: `deadline-${task.id}`, taskId: task.id, title: task.title, startDate: null, date: '2026-08-12',
+      time: task.deadline?.time ?? null, timeZone: task.deadline?.time ? 'Asia/Ho_Chi_Minh' : null,
+      completedAt: null, priority: 1, projectId: null, colorOverride: null,
+    });
+    const projection: CalendarProjection = {
+      // 09:00–10:00 blocks for "Standup", "Ship report" and "Write notes".
+      timeBlocks: [covered, later, untimed].map(task => ({ ...timeBlock(task.id), id: `block-${task.id}` })),
+      deadlines: [covered, later, untimed].map(deadline),
+      externalEvents: [],
+    };
+    const { container } = render(
+      <CalendarGridView anchorDate={new Date('2026-08-12T12:00:00')} projection={projection} tasks={[covered, later, untimed]} view="timeGridDay" onSelectTask={vi.fn()} onCreateTask={vi.fn()} />,
+    );
+
+    // 09:30 is inside the 09:00–10:00 block: no second marker on top of it.
+    expect(screen.queryByRole('button', { name: 'Standup, deadline 09:30' })).not.toBeInTheDocument();
+    // 15:00 is outside the block: the deadline is still its own marker.
+    expect(screen.getByRole('button', { name: 'Ship report, deadline 15:00' })).toBeInTheDocument();
+    // An untimed deadline on a day the task is already blocked leaves the all-day row.
+    expect(container.querySelector('.mindoist-calendar-grid-all-day')).toBeEmptyDOMElement();
+    expect(container.querySelectorAll('.mindoist-time-grid-block')).toHaveLength(3);
+  });
+
+  it('keeps the title readable on short and side-by-side blocks', () => {
+    const short = makeTask('short', 'Quick call', { completedAt: null });
+    const projection: CalendarProjection = {
+      timeBlocks: [{ ...timeBlock(short.id), endAt: '2026-08-12T09:15:00' }],
+      deadlines: [], externalEvents: [],
+    };
+    render(<CalendarGridView anchorDate={new Date('2026-08-12T12:00:00')} projection={projection} tasks={[short]} view="timeGridWeek" onSelectTask={vi.fn()} onCreateTask={vi.fn()} />);
+    const button = screen.getByRole('button', { name: /Quick call/ });
+    expect(button).toHaveClass('is-compact');
+    expect(button).toHaveAttribute('title', 'Quick call · 09:00 – 09:15');
+  });
+
   it('marks completed timed and all-day tasks for strike-through and uses roomier time slots', () => {
     const timedTask = makeTask('timed-task', 'Completed focus');
     const allDayTask = makeTask('all-day-task', 'Completed deadline', {
