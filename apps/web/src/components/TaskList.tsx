@@ -39,21 +39,40 @@ function toDayKey(iso: string): string {
   return iso.slice(0, 10);
 }
 
-function isToday(key: string): boolean {
-  return key === new Date().toISOString().slice(0, 10);
+// Day keys are compared in the user's local calendar. `toISOString()` is UTC,
+// so before 07:00 in UTC+7 it still reports yesterday and "Today" headings
+// landed on the wrong group.
+function localDayKey(date: Date): string {
+  const pad = (value: number) => String(value).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
-function isYesterday(key: string): boolean {
-  const d = new Date();
-  d.setDate(d.getDate() - 1);
-  return key === d.toISOString().slice(0, 10);
+function relativeDayKey(offset: number): string {
+  const date = new Date();
+  date.setDate(date.getDate() + offset);
+  return localDayKey(date);
 }
 
-function formatDateHeading(key: string, t: (k: string) => string): string {
-  if (isToday(key)) return t('completedView.today');
-  if (isYesterday(key)) return t('completedView.yesterday');
-  const [y, m, d] = key.split('-');
-  return `${d}/${m}/${y}`;
+// "Thu, Nov 19" — and the year only when it is not the current one — instead
+// of a raw 2026-11-19 key.
+function formatFriendlyDate(key: string, locale?: string): string {
+  const [y, m, d] = key.split('-').map(Number);
+  const date = new Date(y, m - 1, d);
+  if (Number.isNaN(date.getTime())) return key;
+  return date.toLocaleDateString(locale, {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    ...(y !== new Date().getFullYear() ? { year: 'numeric' } : {}),
+  });
+}
+
+function formatDateHeading(key: string, t: (k: string) => string, locale?: string): string {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(key)) return t('meta.noDate');
+  if (key === relativeDayKey(0)) return t('completedView.today');
+  if (key === relativeDayKey(-1)) return t('completedView.yesterday');
+  if (key === relativeDayKey(1)) return `${t('meta.dueTomorrow')} · ${formatFriendlyDate(key, locale)}`;
+  return formatFriendlyDate(key, locale);
 }
 
 function formatShortDate(dateStr: string): string {
@@ -61,18 +80,11 @@ function formatShortDate(dateStr: string): string {
   return `${String(d).padStart(2, '0')}/${String(m).padStart(2, '0')}`;
 }
 
-function getDueMeta(task: Task, t: (k: string, opts?: any) => string): { label: string; className: string } | null {
+function getDueMeta(task: Task, t: (k: string, opts?: any) => string, locale?: string): { label: string; className: string } | null {
   if (!task.deadline) return null;
   const dueDate = task.deadline.date;
-  const dateKey = (date: Date) => {
-    const pad = (value: number) => String(value).padStart(2, '0');
-    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-  };
-  const todayDate = new Date();
-  const tomorrowDate = new Date(todayDate);
-  tomorrowDate.setDate(todayDate.getDate() + 1);
-  const today = dateKey(todayDate);
-  const tomorrow = dateKey(tomorrowDate);
+  const today = relativeDayKey(0);
+  const tomorrow = relativeDayKey(1);
 
   // Date range display when startDate exists and differs from dueDate
   if (task.startDate) {
@@ -86,18 +98,27 @@ function getDueMeta(task: Task, t: (k: string, opts?: any) => string): { label: 
   }
 
   if (task.completedAt) {
-    return { label: dueDate, className: 'text-muted-foreground' };
+    return { label: formatFriendlyDate(dueDate, locale), className: 'text-muted-foreground' };
   }
   if (dueDate < today) {
     return { label: t('meta.dueOverdue'), className: 'text-destructive font-medium' };
   }
   if (dueDate === today) {
+    // A timed deadline that already passed today is overdue too: the chip used
+    // to stay accent-blue while its own countdown read "3h overdue".
+    const time = task.deadline.time;
+    if (time) {
+      const [hours, minutes] = time.split(':').map(Number);
+      const due = new Date();
+      due.setHours(hours, minutes, 0, 0);
+      if (due.getTime() < Date.now()) return { label: t('meta.dueToday'), className: 'text-destructive font-medium' };
+    }
     return { label: t('meta.dueToday'), className: 'text-primary font-medium' };
   }
   if (dueDate === tomorrow) {
     return { label: t('meta.dueTomorrow'), className: 'text-muted-foreground' };
   }
-  return { label: dueDate, className: 'text-muted-foreground' };
+  return { label: formatFriendlyDate(dueDate, locale), className: 'text-muted-foreground' };
 }
 
 function getPriorityLabel(priority: number | null): string | null {
@@ -147,7 +168,8 @@ function TaskMeta({
   subtaskStat?: SubtaskStat;
   t: (k: string, opts?: any) => string;
 }) {
-  const due = getDueMeta(task, t);
+  const { i18n } = useTranslation();
+  const due = getDueMeta(task, t, i18n.language);
   const countdownDate = task.deadline?.date ?? null;
   const countdownTime = task.deadline?.time ?? null;
   const countdown = useCountdownLabel(countdownDate, countdownTime, task.completedAt);
@@ -530,7 +552,7 @@ function LoadingSkeleton() {
 }
 
 export function TaskList({ tasks, loading, error, onToggle, onSelect, onBulkComplete, onBulkDelete, onRetry, onMakeSubtask, onRestore, view, selectedTaskId, bulkSelectedIds: controlledBulkSelectedIds, onBulkSelectionChange, tags = [], projects = [] }: Props) {
-  const { t } = useTranslation('tasks');
+  const { t, i18n } = useTranslation('tasks');
   const [animatingIds, setAnimatingIds] = useState<Set<string>>(new Set());
   const [internalBulkSelectedIds, setInternalBulkSelectedIds] = useState<Set<string>>(new Set());
   const bulkSelectedIds = controlledBulkSelectedIds ?? internalBulkSelectedIds;
@@ -703,6 +725,17 @@ export function TaskList({ tasks, loading, error, onToggle, onSelect, onBulkComp
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key)!.push(task);
     }
+    if (view === 'today') {
+      // What is late, then what is due, then the undated backlog — the list
+      // used to open on whichever group the API happened to return first.
+      const order = ['overdue', 'today', 'anytime'];
+      return new Map(order.filter(key => groups.has(key)).map(key => [key, groups.get(key)!] as const));
+    }
+    if (view === 'next7') {
+      // Chronological days; tasks inside a day by time, untimed ones last.
+      const keys = [...groups.keys()].sort((a, b) => (a === 'no-date' ? 1 : b === 'no-date' ? -1 : a.localeCompare(b)));
+      return new Map(keys.map(key => [key, [...groups.get(key)!].sort((a, b) => (a.deadline?.time ?? '99').localeCompare(b.deadline?.time ?? '99'))] as const));
+    }
     return groups;
   }, [displayTasks, view]);
 
@@ -745,7 +778,7 @@ export function TaskList({ tasks, loading, error, onToggle, onSelect, onBulkComp
         Array.from(groupedTasks.entries()).map(([dayKey, dayTasks]) => (
           <div key={dayKey} data-testid={`completed-group-${dayKey}`}>
             <h4 className="px-1 pb-1 pt-5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              {view === 'today' ? t(`myDay.${dayKey}`) : formatDateHeading(dayKey, t)}
+              {view === 'today' ? t(`myDay.${dayKey}`) : formatDateHeading(dayKey, t, i18n.language)}
             </h4>
             <div className="flex flex-col gap-0.5">
               {dayTasks.map((task, index) => (
@@ -783,7 +816,7 @@ export function TaskList({ tasks, loading, error, onToggle, onSelect, onBulkComp
         Array.from(groupedTasks.entries()).map(([dayKey, dayTasks]) => (
           <div key={dayKey} data-testid={`group-${dayKey}`}>
             <h4 className="px-1 pb-1 pt-5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              {formatDateHeading(dayKey, t)}
+              {formatDateHeading(dayKey, t, i18n.language)}
             </h4>
             <div className="flex flex-col gap-0.5">
               {dayTasks.map((task, index) => (

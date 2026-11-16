@@ -246,6 +246,7 @@
     "dueToday": "Hôm nay",
     "dueTomorrow": "Ngày mai",
     "dueOverdue": "Quá hạn",
+    "noDate": "Không có ngày",
     "dueDate": "{{date}}",
     "dueTime": "lúc {{time}}",
     "project": "Dự án",

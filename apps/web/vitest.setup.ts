@@ -179,6 +179,13 @@ i18n.use(initReactI18next).init({
             reminderFailed: 'Created “{{title}}”, but the reminder could not be saved. Try adding the reminder again.',
         },
         toggleSidebar: 'Toggle sidebar',
+        meta: {
+          dueToday: 'Today',
+          dueTomorrow: 'Tomorrow',
+          dueOverdue: 'Overdue',
+          noDate: 'No date',
+          subtaskCount: '{{done}}/{{total}} sub-tasks',
+        },
         completedView: {
           title: 'Completed',
           empty: 'No completed tasks yet',
@@ -474,6 +481,13 @@ i18n.use(initReactI18next).init({
             reminderFailed: 'Đã tạo “{{title}}”, nhưng chưa lưu được nhắc việc. Hãy thêm lại nhắc việc.',
         },
         toggleSidebar: 'Ẩn/hiện thanh bên',
+        meta: {
+          dueToday: 'Hôm nay',
+          dueTomorrow: 'Ngày mai',
+          dueOverdue: 'Quá hạn',
+          noDate: 'Không có ngày',
+          subtaskCount: '{{done}}/{{total}} sub-task',
+        },
         completedView: {
           title: 'Đã hoàn thành',
           empty: 'Chưa có task hoàn thành',

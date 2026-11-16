@@ -90,6 +90,60 @@ describe('TaskList', () => {
     expect(screen.queryByText('Future start task')).not.toBeInTheDocument();
   });
 
+  it('orders My Day as overdue, today, then anytime', () => {
+    const key = (offset: number) => {
+      const value = new Date();
+      value.setDate(value.getDate() + offset);
+      return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-${String(value.getDate()).padStart(2, '0')}`;
+    };
+    renderList([
+      makeTask('anytime', 'Anytime task'),
+      makeTask('today', 'Today task', null, { dueDate: key(0) }),
+      makeTask('overdue', 'Overdue task', null, { dueDate: key(-1) }),
+    ], false, null, 'today');
+
+    const groups = screen.getAllByTestId(/^completed-group-/).map(group => group.getAttribute('data-testid'));
+    expect(groups).toEqual(['completed-group-overdue', 'completed-group-today', 'completed-group-anytime']);
+  });
+
+  it('lists upcoming days chronologically with readable headings', () => {
+    const key = (offset: number) => {
+      const value = new Date();
+      value.setDate(value.getDate() + offset);
+      return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-${String(value.getDate()).padStart(2, '0')}`;
+    };
+    renderList([
+      makeTask('d3', 'In three days', null, { dueDate: key(3) }),
+      makeTask('d1-late', 'Tomorrow evening', null, { dueDate: key(1), dueTime: '18:00' }),
+      makeTask('d2', 'In two days', null, { dueDate: key(2) }),
+      makeTask('d1-early', 'Tomorrow morning', null, { dueDate: key(1), dueTime: '08:00' }),
+    ], false, null, 'next7');
+
+    const groups = screen.getAllByTestId(/^group-/).map(group => group.getAttribute('data-testid'));
+    expect(groups).toEqual([`group-${key(1)}`, `group-${key(2)}`, `group-${key(3)}`]);
+    const tomorrow = screen.getByTestId(`group-${key(1)}`);
+    expect(tomorrow.querySelector('h4')).toHaveTextContent(/^Tomorrow · /);
+    expect(tomorrow.querySelector('h4')).not.toHaveTextContent(key(1));
+    const titles = Array.from(tomorrow.querySelectorAll('[data-testid^="task-title-"]')).map(node => node.textContent);
+    expect(titles[0]).toContain('Tomorrow morning');
+    expect(titles[1]).toContain('Tomorrow evening');
+  });
+
+  it('marks a timed deadline that already passed today as overdue', () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      vi.setSystemTime(new Date(2026, 10, 16, 15, 0, 0));
+      renderList([
+        makeTask('late', 'Morning call', null, { dueDate: '2026-11-16', dueTime: '10:00' }),
+        makeTask('soon', 'Evening run', null, { dueDate: '2026-11-16', dueTime: '18:30' }),
+      ]);
+      expect(screen.getByTestId('task-due-late').closest('.chip')).toHaveClass('chip-overdue');
+      expect(screen.getByTestId('task-due-soon').closest('.chip')).toHaveClass('chip-today');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('calls onToggle when checkbox is clicked', () => {
     const task = makeTask('1', 'Buy milk');
     renderList([task]);
@@ -168,7 +222,9 @@ describe('TaskList', () => {
   it('renders metadata: due date', () => {
     // Far-future date so it never lands on a relative label like "Tomorrow".
     renderList([makeTask('1', 'Task with due', null, { dueDate: '2099-12-31T00:00:00.000Z' })]);
-    expect(screen.getByTestId('task-due-1')).toHaveTextContent('2099-12-31');
+    // A readable date ("Thu, Dec 31, 2099"), never the raw storage key.
+    expect(screen.getByTestId('task-due-1')).toHaveTextContent('2099');
+    expect(screen.getByTestId('task-due-1')).not.toHaveTextContent('2099-12-31');
     expect(screen.getByTestId('task-due-1')).not.toHaveTextContent('T00:00:00');
   });
 

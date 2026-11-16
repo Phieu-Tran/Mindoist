@@ -91,7 +91,7 @@ export function CalendarPlanningPanel({ tasks, todayTasks, backlogTasks, project
     <PersistentResizablePanel className="calendar-panel flex shrink-0 flex-col overflow-hidden rounded-panel border border-border bg-card" label={t('calendar.planningPanel')} storageKey="mindoist:panel:calendar-plan-width" defaultWidth={280} minWidth={240} maxWidth={480}>
       <header className="shrink-0 px-3 pb-2 pt-3">
         <strong className="block text-sm text-foreground">{t('calendar.planningPanel')}</strong>
-        <p className="m-0 mt-1 text-[0.68rem] leading-4 text-muted-foreground">{t('calendar.planningPanelHint')}</p>
+        <p className="sr-only">{t('calendar.planningPanelHint')}</p>
       </header>
       <PlanningCeremony
         tasks={tasks}

@@ -38,10 +38,22 @@ export function CalendarHeader({ panelOpen, togglePanel, hasGcalEvents }: Props)
       >
         {panelOpen ? <PanelLeftClose className="h-4 w-4" aria-hidden="true" /> : <PanelLeftOpen className="h-4 w-4" aria-hidden="true" />}
       </button>
-      <div className="calendar-mobile-mode" role="group" aria-label={t('calendar.mobileMode')}>
-        <button type="button" aria-pressed={panelOpen} onClick={() => !panelOpen && togglePanel()}>{t('calendar.plan')}</button>
-        <button type="button" aria-pressed={!panelOpen} onClick={() => panelOpen && togglePanel()}>{t('sidebar.calendar')}</button>
-      </div>
+    </div>
+  );
+}
+
+/**
+ * Phone-only Plan / Calendar switch. It lives outside the calendar canvas
+ * because the canvas is hidden while the planning panel is open on a phone —
+ * inside it, the switch disappeared together with the calendar and there was
+ * no way back to the grid.
+ */
+export function CalendarMobileModeSwitch({ panelOpen, togglePanel }: Pick<Props, 'panelOpen' | 'togglePanel'>) {
+  const { t } = useTranslation('tasks');
+  return (
+    <div className="calendar-mobile-mode" role="group" aria-label={t('calendar.mobileMode')}>
+      <button type="button" aria-pressed={panelOpen} onClick={() => !panelOpen && togglePanel()}>{t('calendar.plan')}</button>
+      <button type="button" aria-pressed={!panelOpen} onClick={() => panelOpen && togglePanel()}>{t('sidebar.calendar')}</button>
     </div>
   );
 }

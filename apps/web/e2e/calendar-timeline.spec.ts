@@ -261,6 +261,9 @@ test('[CALENDAR-04] selecting a time range creates a task with persisted planned
   await page.goto('/calendar?view=day&plan=0');
   const dayGrid = page.locator('.mindoist-time-grid').first();
   await expect(dayGrid).toBeVisible();
+  // The calendar opens scrolled to the current time; this test drags with raw
+  // mouse coordinates, so bring the morning back into view first.
+  await page.locator('.mindoist-calendar-grid').evaluate(grid => { grid.scrollTop = 0; });
   const gridBox = await dayGrid.boundingBox();
   if (!gridBox) throw new Error('Calendar time grid has no bounding box');
   const yAt = (hour: number, minute = 0) => gridBox.y + (((hour * 60 + minute) - 6 * 60) / (17 * 60)) * gridBox.height;

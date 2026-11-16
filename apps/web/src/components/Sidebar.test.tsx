@@ -110,7 +110,8 @@ describe('Sidebar', () => {
 
   it('shows counts next to nav items', () => {
     renderSidebar();
-    expect(screen.getByText('1')).toBeInTheDocument();
+    // 1 due today + 2 overdue: My Day counts everything that needs attention now.
+    expect(screen.getByTestId('sidebar-today')).toHaveTextContent('3');
   });
 
   it('highlights the currently selected item', () => {

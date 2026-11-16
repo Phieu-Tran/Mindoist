@@ -212,7 +212,14 @@ export function Sidebar({
           const isActive = !currentProjectId && !currentTagId && (
             current === item.view || (item.view === 'summary' && isReviewSurface)
           );
-          const count = item.view === 'all' ? countMap.inbox : countMap[item.view as keyof typeof countMap];
+          // My Day lists what is due today *and* what is already late, so its
+          // badge counts both — it used to show only today's while the page
+          // opened on a pile of overdue work.
+          const count = item.view === 'all'
+            ? countMap.inbox
+            : item.view === 'today'
+              ? countMap.today + countMap.overdue
+              : countMap[item.view as keyof typeof countMap];
           return (
             <button
               type="button"

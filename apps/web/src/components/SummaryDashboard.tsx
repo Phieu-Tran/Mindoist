@@ -96,8 +96,11 @@ export function SummaryDashboard({
     const start = rangeStart(range, now);
     const completed = periodTasks.filter(task => task.completedAt).length;
     const open = periodTasks.filter(task => !task.completedAt).length;
-    const overdue = periodTasks.filter(task => (
-      !task.completedAt && task.deadline && task.deadline.date < today
+    // Overdue is a standing backlog, not something that happened "in" the
+    // period: counting only deadlines inside the range reported 0 on a Monday
+    // while last week's late tasks were still open.
+    const overdue = filteredTasks.filter(task => (
+      !task.completedAt && !task.deletedAt && !task.parentId && task.deadline && task.deadline.date < today
     )).length;
     const completedInPeriod = filteredTasks.filter(task => (
       task.completedAt && new Date(task.completedAt) >= start && new Date(task.completedAt) <= now
