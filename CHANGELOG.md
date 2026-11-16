@@ -2,6 +2,14 @@
 
 Notable changes to Mindoist, grouped by date. This project doesn't cut versioned releases yet — entries are dated instead.
 
+## 2026-11-16 (evening)
+
+### Changed
+- Sidebar footer: Settings stays a row; Connect Google, accent colour, light/dark, language and Logout are one strip of icon buttons under it. Six full-width rows became two, so projects and tags get the space. Each icon shows what it does on hover and to screen readers, and all of them are still in Settings.
+
+### Fixed
+- Phone and tablet: the slide-out menu starts below the top bar. It used to slide under it, hiding the logo and cutting the top of the Add task button.
+
 ## 2026-11-16 (later)
 
 ### Changed

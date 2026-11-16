@@ -9,7 +9,9 @@ interface Props {
   // AccentPicker/ThemeToggle's row idiom — an outlined button was the
   // single brightest element in the dark-mode sidebar, wrong emphasis next
   // to plain nav rows (D7).
-  variant?: 'outline' | 'ghost';
+  // 'icon': a bare icon button for the sidebar's quick-control strip; the
+  // target language is in its accessible name and tooltip.
+  variant?: 'outline' | 'ghost' | 'icon';
 }
 
 export function LanguageSwitcher({ variant = 'outline' }: Props) {
@@ -21,6 +23,15 @@ export function LanguageSwitcher({ variant = 'outline' }: Props) {
     const next = currentLang === 'en' ? 'vi' : 'en';
     i18n.changeLanguage(next);
   };
+
+  if (variant === 'icon') {
+    const label = `${t('appearance.language', { ns: 'common' })}: ${nextLabel}`;
+    return (
+      <Button type="button" variant="ghost" size="icon" onClick={toggle} aria-label={label} title={label} data-testid="language-switcher">
+        <Languages className="h-4 w-4" aria-hidden="true" />
+      </Button>
+    );
+  }
 
   if (variant === 'ghost') {
     return (

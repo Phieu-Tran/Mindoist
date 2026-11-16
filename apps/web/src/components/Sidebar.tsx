@@ -386,35 +386,39 @@ export function Sidebar({
         )}
       </div>
 
-      {/* One idiom for every footer control (D7): ghost, w-full, left-aligned
-          icon+label — was 5 different treatments (plain ghost button, an
-          outlined pill, a bare label+icon-button row, another outlined
-          button, and Logout's own ghost row), and in dark mode the two
-          outlined ones (AccentPicker, LanguageSwitcher) were the single
-          brightest things in the sidebar — louder than the actual nav. */}
-      <div className="mt-auto flex flex-col gap-0.5 border-t border-border mx-2 my-2 p-2">
+      {/* Footer: Settings as a row, everything else as one strip of quiet icon
+          buttons. Six full-width rows (Settings, Google, accent, appearance,
+          language, logout) used to take a quarter of the sidebar for controls
+          that are touched rarely and all live in Settings too. Still one
+          idiom (D7): ghost, same size, same colour; each icon names its action
+          in its accessible name and tooltip. The strip is the positioning
+          parent of the accent panel so the panel spans the sidebar width. */}
+      <div className="mt-auto flex flex-col gap-1 border-t border-border mx-2 my-2 p-2">
         <Button data-testid="sidebar-settings" type="button" variant="ghost" size="sm" aria-current={current === 'settings' ? 'page' : undefined} onClick={() => onSelect('settings')} className="w-full justify-start gap-2 text-sidebar-foreground"><Settings className="h-4 w-4" aria-hidden="true" />{t('sidebar.settings')}</Button>
         {isAdmin && <Button data-testid="sidebar-admin" type="button" variant="ghost" size="sm" onClick={() => onSelect('admin')} className="w-full justify-start gap-2 text-sidebar-foreground"><ShieldCheck className="h-4 w-4" aria-hidden="true" />{t('sidebar.admin')}</Button>}
-        <GoogleConnectButton className="w-full justify-start text-sidebar-foreground" />
-        {showAppearance && (
-          <>
-            <AccentPicker side="top" variant="row" />
-            <ThemeToggle variant="row" />
-            <LanguageSwitcher variant="ghost" />
-          </>
-        )}
-        {onLogout && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={onLogout}
-            className="w-full justify-start gap-2 text-sidebar-foreground"
-          >
-            <LogOut className="h-4 w-4" aria-hidden="true" />
-            {t('logout', { ns: 'auth' })}
-          </Button>
-        )}
+        <div className="sidebar-quick-controls relative flex items-center justify-between text-sidebar-foreground" role="group" aria-label={t('sidebar.quickControls')} data-testid="sidebar-quick-controls">
+          <GoogleConnectButton iconOnly className="text-sidebar-foreground" />
+          {showAppearance && (
+            <>
+              <AccentPicker side="top" variant="icon" anchor="parent" />
+              <ThemeToggle />
+              <LanguageSwitcher variant="icon" />
+            </>
+          )}
+          {onLogout && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={onLogout}
+              aria-label={t('logout', { ns: 'auth' })}
+              title={t('logout', { ns: 'auth' })}
+              data-testid="sidebar-logout"
+            >
+              <LogOut className="h-4 w-4" aria-hidden="true" />
+            </Button>
+          )}
+        </div>
       </div>
       {onCreateProject && (
         <CreateProjectDialog

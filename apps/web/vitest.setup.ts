@@ -103,7 +103,7 @@ i18n.use(initReactI18next).init({
         },
       },
       tasks: {
- sidebar: { summary: 'Summary', review: 'Review', inbox: 'Inbox', today: 'Today', next7: 'Next 7 Days', projects: 'Projects', tags: 'Tags', overdue: 'Overdue', completed: 'Completed', notes: 'Notes', calendar: 'Calendar', countdown: 'Countdown', import: 'Import', settings: 'Settings', admin: 'Admin Console', more: 'More' },
+ sidebar: { summary: 'Summary', review: 'Review', inbox: 'Inbox', today: 'Today', next7: 'Next 7 Days', projects: 'Projects', tags: 'Tags', overdue: 'Overdue', completed: 'Completed', notes: 'Notes', calendar: 'Calendar', countdown: 'Countdown', import: 'Import', settings: 'Settings', admin: 'Admin Console', more: 'More', quickControls: 'Quick controls' },
         projects: {
           addProject: 'Add project', addSubproject: 'Add a sub-project to {{name}}', newProject: 'New project', newSubproject: 'New sub-project', namePlaceholder: 'Project name', create: 'Create', creating: 'Creating…', cancel: 'Cancel', createError: "Couldn't create this project. Try again.",
           projectEyebrow: 'New workspace', subprojectEyebrow: 'New sub-project', createProjectTitle: 'Create a project', createSubprojectTitle: 'Add to {{name}}', name: 'Project name', dailyNamePlaceholder: 'What are you logging today?', chooseTemplate: 'Choose a workflow', customColumns: 'Custom columns', customColumnsPlaceholder: 'Ideas, Doing, Done', customColumnsHint: 'Separate column names with commas.', color: 'Project color',
@@ -405,7 +405,7 @@ i18n.use(initReactI18next).init({
         },
       },
       tasks: {
- sidebar: { summary: 'Tổng quan', review: 'Tổng kết', inbox: 'Hộp thư', today: 'Hôm nay', next7: '7 ngày tới', projects: 'Dự án', tags: 'Thẻ', overdue: 'Quá hạn', completed: 'Đã hoàn thành', notes: 'Ghi chú', calendar: 'Lịch', countdown: 'Đếm ngày', import: 'Nhập dữ liệu', settings: 'Cài đặt', admin: 'Quản trị', more: 'Khác' },
+ sidebar: { summary: 'Tổng quan', review: 'Tổng kết', inbox: 'Hộp thư', today: 'Hôm nay', next7: '7 ngày tới', projects: 'Dự án', tags: 'Thẻ', overdue: 'Quá hạn', completed: 'Đã hoàn thành', notes: 'Ghi chú', calendar: 'Lịch', countdown: 'Đếm ngày', import: 'Nhập dữ liệu', settings: 'Cài đặt', admin: 'Quản trị', more: 'Khác', quickControls: 'Điều khiển nhanh' },
         projects: {
           addProject: 'Thêm dự án', addSubproject: 'Thêm dự án con vào {{name}}', newProject: 'Dự án mới', newSubproject: 'Dự án con mới', namePlaceholder: 'Tên dự án', create: 'Tạo', creating: 'Đang tạo…', cancel: 'Hủy', createError: 'Không thể tạo dự án. Hãy thử lại.',
           projectEyebrow: 'Không gian mới', subprojectEyebrow: 'Dự án con mới', createProjectTitle: 'Tạo dự án', createSubprojectTitle: 'Thêm vào {{name}}', name: 'Tên dự án', dailyNamePlaceholder: 'Hôm nay bạn muốn ghi lại điều gì?', chooseTemplate: 'Chọn quy trình', customColumns: 'Các cột tùy chỉnh', customColumnsPlaceholder: 'Ý tưởng, Đang làm, Hoàn thành', customColumnsHint: 'Ngăn cách tên cột bằng dấu phẩy.', color: 'Màu dự án',
