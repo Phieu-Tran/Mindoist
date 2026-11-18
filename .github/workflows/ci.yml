@@ -144,6 +144,18 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:55432/postgres
         run: pnpm --filter @mindoist/api prisma migrate deploy
+      - name: Check every public table has RLS and no Data API grant
+        shell: bash
+        env:
+          PGURL: postgresql://postgres:postgres@127.0.0.1:55432/postgres
+        run: |
+          # Supabase serves every table in `public` through the Data API with the
+          # anon key. A migration that adds a table must enable RLS on it.
+          no_rls="$(psql "$PGURL" -tAc "select string_agg(tablename, ', ') from pg_tables where schemaname = 'public' and not rowsecurity")"
+          granted="$(psql "$PGURL" -tAc "select string_agg(distinct table_name, ', ') from information_schema.role_table_grants where table_schema = 'public' and grantee in ('anon', 'authenticated')")"
+          [ -z "$no_rls" ] || { echo "Tables without RLS: $no_rls (add ALTER TABLE ... ENABLE ROW LEVEL SECURITY to the migration)"; exit 1; }
+          [ -z "$granted" ] || { echo "Tables granted to anon/authenticated: $granted"; exit 1; }
+          echo "RLS on every public table; nothing granted to anon/authenticated."
       - name: Serve Edge Functions with synthetic-only secrets
         shell: bash
         run: |
