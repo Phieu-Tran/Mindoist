@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { memo, useState, useRef, useEffect, useLayoutEffect, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { projectColorClass } from '@/lib/project-colors';
 import { effectiveTaskColor, taskColorClass } from '@/lib/task-colors';
@@ -249,7 +249,16 @@ function TaskMeta({
   );
 }
 
-function TaskRow({
+// Rows are memoized; a parent that passes a new function every render would
+// still re-render all of them. This keeps one function per handler that
+// always calls the latest one.
+function useStableHandler<A extends unknown[], R>(handler: (...args: A) => R) {
+  const latest = useRef(handler);
+  useLayoutEffect(() => { latest.current = handler; });
+  return useCallback((...args: A) => latest.current(...args), []);
+}
+
+const TaskRow = memo(function TaskRow({
   task,
   projectMap,
   tagMap,
@@ -404,7 +413,7 @@ function TaskRow({
     </div>
     </motion.div>
   );
-}
+});
 
 function BulkActionBar({
   selectedCount,
@@ -561,6 +570,13 @@ export function TaskList({ tasks, loading, error, onToggle, onSelect, onBulkComp
   const prevCompletedRef = useRef<Set<string>>(new Set());
   const tagMap = useMemo(() => new Map(tags.map(tag => [tag.id, tag])), [tags]);
   const projectMap = useMemo(() => new Map(projects.map(project => [project.id, project])), [projects]);
+  const rowToggle = useStableHandler(onToggle);
+  const rowSelect = useStableHandler(onSelect);
+  const stableMakeSubtask = useStableHandler((taskId: string, parentId: string) => onMakeSubtask?.(taskId, parentId));
+  const stableRestore = useStableHandler((taskId: string) => onRestore?.(taskId));
+  // Rows read whether these exist (restore button, bulk slot), so keep undefined as undefined.
+  const rowMakeSubtask = onMakeSubtask ? stableMakeSubtask : undefined;
+  const rowRestore = onRestore ? stableRestore : undefined;
 
   const subtaskStats = useMemo(() => {
     const map = new Map<string, SubtaskStat>();
@@ -602,8 +618,8 @@ export function TaskList({ tasks, loading, error, onToggle, onSelect, onBulkComp
     setDraggedTaskId(null);
     setDragOverTaskId(null);
     if (task.parentId) return;
-    if (draggedId && draggedId !== task.id) onMakeSubtask?.(draggedId, task.id);
-  }, [draggedTaskId, onMakeSubtask]);
+    if (draggedId && draggedId !== task.id) stableMakeSubtask(draggedId, task.id);
+  }, [draggedTaskId, stableMakeSubtask]);
 
   const handleRowDragEnd = useCallback(() => {
     setDraggedTaskId(null);
@@ -788,8 +804,8 @@ export function TaskList({ tasks, loading, error, onToggle, onSelect, onBulkComp
                   projectMap={projectMap}
                   tagMap={tagMap}
                   subtaskStat={subtaskStats.get(task.id)}
-                  onToggle={onToggle}
-                  onSelect={onSelect}
+                  onToggle={rowToggle}
+                  onSelect={rowSelect}
                   onSelectForBulk={toggleBulkSelection}
                   isAnimating={animatingIds.has(task.id)}
                   isSelected={selectedTaskId === task.id}
@@ -798,14 +814,14 @@ export function TaskList({ tasks, loading, error, onToggle, onSelect, onBulkComp
                   isBulkSelected={bulkSelectedIds.has(task.id)}
                   t={t}
                   index={index}
-                  onMakeSubtask={onMakeSubtask}
+                  onMakeSubtask={rowMakeSubtask}
                   isDragOver={dragOverTaskId === task.id}
                   onRowDragStart={handleRowDragStart}
                   onRowDragOver={handleRowDragOver}
                   onRowDragLeave={handleRowDragLeave}
                   onRowDrop={handleRowDrop}
                   onRowDragEnd={handleRowDragEnd}
-                  onRestore={onRestore}
+                  onRestore={rowRestore}
                   deferOffscreen={displayTasks.length > 50}
                 />
               ))}
@@ -826,8 +842,8 @@ export function TaskList({ tasks, loading, error, onToggle, onSelect, onBulkComp
                   projectMap={projectMap}
                   tagMap={tagMap}
                   subtaskStat={subtaskStats.get(task.id)}
-                  onToggle={onToggle}
-                  onSelect={onSelect}
+                  onToggle={rowToggle}
+                  onSelect={rowSelect}
                   onSelectForBulk={toggleBulkSelection}
                   isAnimating={animatingIds.has(task.id)}
                   isSelected={selectedTaskId === task.id}
@@ -836,14 +852,14 @@ export function TaskList({ tasks, loading, error, onToggle, onSelect, onBulkComp
                   isBulkSelected={bulkSelectedIds.has(task.id)}
                   t={t}
                   index={index}
-                  onMakeSubtask={onMakeSubtask}
+                  onMakeSubtask={rowMakeSubtask}
                   isDragOver={dragOverTaskId === task.id}
                   onRowDragStart={handleRowDragStart}
                   onRowDragOver={handleRowDragOver}
                   onRowDragLeave={handleRowDragLeave}
                   onRowDrop={handleRowDrop}
                   onRowDragEnd={handleRowDragEnd}
-                  onRestore={onRestore}
+                  onRestore={rowRestore}
                   deferOffscreen={displayTasks.length > 50}
                 />
               ))}
@@ -859,8 +875,8 @@ export function TaskList({ tasks, loading, error, onToggle, onSelect, onBulkComp
               projectMap={projectMap}
               tagMap={tagMap}
               subtaskStat={subtaskStats.get(task.id)}
-              onToggle={onToggle}
-              onSelect={onSelect}
+              onToggle={rowToggle}
+              onSelect={rowSelect}
               onSelectForBulk={toggleBulkSelection}
               isAnimating={animatingIds.has(task.id)}
               isSelected={selectedTaskId === task.id}
@@ -869,14 +885,14 @@ export function TaskList({ tasks, loading, error, onToggle, onSelect, onBulkComp
               isBulkSelected={bulkSelectedIds.has(task.id)}
               t={t}
               index={index}
-              onMakeSubtask={onMakeSubtask}
+              onMakeSubtask={rowMakeSubtask}
               isDragOver={dragOverTaskId === task.id}
               onRowDragStart={handleRowDragStart}
               onRowDragOver={handleRowDragOver}
               onRowDragLeave={handleRowDragLeave}
               onRowDrop={handleRowDrop}
               onRowDragEnd={handleRowDragEnd}
-              onRestore={onRestore}
+              onRestore={rowRestore}
               deferOffscreen={displayTasks.length > 50}
             />
           ))}

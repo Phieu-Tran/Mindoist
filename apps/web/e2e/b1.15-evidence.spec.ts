@@ -65,6 +65,10 @@ async function setTheme(page: Page, theme: 'light' | 'dark') {
 
 async function arrangeDetailScene(page: Page) {
   const title = `Plan sprint retro ${Date.now()}`;
+  // Work in All: the deadline set below moves the task out of My Day, and the
+  // list behind the panel stays on the view the task was opened from.
+  await page.goto('/tasks');
+  await expect(page.getByRole('heading', { level: 2, name: 'All tasks' })).toBeVisible();
   await page.keyboard.press('Control+k');
   await page.getByTestId('global-quick-capture-input').fill(title);
   await page.getByTestId('global-quick-capture-submit').click();
