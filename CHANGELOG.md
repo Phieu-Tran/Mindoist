@@ -2,6 +2,11 @@
 
 Notable changes to Mindoist, grouped by date. This project doesn't cut versioned releases yet — entries are dated instead.
 
+## 2026-11-18
+
+### Security
+- The database tables can no longer be read or changed through Supabase's built-in Data API. Row-level security was off on every table, so anyone holding the project's public anon key could read accounts (password hashes, Google refresh tokens) and every user's tasks. Mindoist never used that API — the app talks only to its own API — so nothing in the app changes. A CI check now fails if a new table is added without row-level security.
+
 ## 2026-11-16 (evening)
 
 ### Changed
