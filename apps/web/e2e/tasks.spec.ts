@@ -361,6 +361,34 @@ test.describe('Task Management E2E', () => {
     await expect(page.getByText(newTitle, { exact: true })).toBeVisible();
   });
 
+  test('[DETAIL-03] opening a task on My Day keeps My Day behind the panel, also after a reload', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await login(page);
+    const title = `Stay on My Day ${Date.now()}`;
+    // "today" is parsed into the due date and removed from the title.
+    await page.keyboard.press('Control+k');
+    await page.getByTestId('global-quick-capture-input').fill(`${title} today`);
+    await page.getByTestId('global-quick-capture-submit').click();
+    await expect(page.getByTestId('global-quick-capture')).toBeHidden();
+    await expect(page.getByTestId('task-list').getByText(title, { exact: true })).toBeVisible();
+    const myDayHeading = page.getByRole('heading', { level: 2, name: 'My Day' });
+    await expect(myDayHeading).toBeVisible();
+
+    await page.getByText(title, { exact: true }).click();
+    await expect(page.getByTestId('task-detail')).toBeVisible();
+    await expect(page).toHaveURL(/\/tasks\/[0-9a-f-]{36}$/);
+    await expect(myDayHeading).toBeVisible();
+    await expect(page.getByRole('heading', { level: 2, name: 'All tasks' })).toHaveCount(0);
+
+    await page.reload();
+    await expect(page.getByTestId('task-detail')).toBeVisible();
+    await expect(myDayHeading).toBeVisible();
+
+    await page.goBack();
+    await expect(page).toHaveURL(/\/today$/);
+    await expect(myDayHeading).toBeVisible();
+  });
+
   test('[DETAIL-02] creates and assigns a tag from task details', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await login(page);

@@ -283,12 +283,19 @@ function AuthenticatedWorkspace({ user, setPassword, logout }: AuthenticatedWork
       return;
     }
     const route = routeToView(routerLocation.pathname, routerLocation.searchStr);
-    setSidebarView(route.view);
-    setCurrentProjectId(route.projectId);
+    // /tasks/:id on its own maps to All. A task opened from a list keeps that
+    // list behind the panel: its route is in the location state, which also
+    // survives a reload. Only a bare deep link falls back to All. Read it from
+    // the router, which writes window.history after notifying us.
+    const returnRoute = route.taskId ? (routerLocation.state as { mindoistReturnRoute?: string } | undefined)?.mindoistReturnRoute : undefined;
+    const [returnPath, returnSearch = ''] = returnRoute?.split('?') ?? [];
+    const behind = returnPath && !isTaskDetailPath(returnPath) ? routeToView(returnPath, returnSearch) : route;
+    setSidebarView(behind.view);
+    setCurrentProjectId(behind.projectId);
     setRouteTaskId(route.taskId);
-    setCurrentTagId(route.tagId);
+    setCurrentTagId(behind.tagId);
     if (!route.taskId) setSelectedTask(null);
-  }, [navigate, routerLocation.pathname, routerLocation.searchStr, user]);
+  }, [navigate, routerLocation.pathname, routerLocation.searchStr, routerLocation.state, user]);
 
   useEffect(() => {
     if (!user || tagsLoading || tagsError || sidebarView !== 'tags' || !currentTagId) return;
@@ -299,7 +306,7 @@ function AuthenticatedWorkspace({ user, setPassword, logout }: AuthenticatedWork
   }, [currentTagId, navigate, sidebarView, tags, tagsError, tagsLoading, user]);
 
   useEffect(() => {
-    if (!routeTaskId || tasksLoading) return;
+    if (!routeTaskId || tasksLoading || allTasksQuery.loading) return;
     // Selecting a task already gives us the full entity synchronously. Keep
     // that selection while the route changes instead of resolving the new
     // /tasks/:id URL against a task query that may still contain the previous
@@ -309,11 +316,11 @@ function AuthenticatedWorkspace({ user, setPassword, logout }: AuthenticatedWork
       setRouteTaskId(undefined);
       return;
     }
-    const task = tasks.find(item => item.id === routeTaskId);
+    const task = tasks.find(item => item.id === routeTaskId) ?? allTasksQuery.tasks.find(item => item.id === routeTaskId);
     setSelectedTask(task || null);
     setRouteTaskId(undefined);
     if (!task) void navigate({ to: '/tasks', replace: true });
-  }, [navigate, routeTaskId, selectedTask?.id, tasks, tasksLoading]);
+  }, [allTasksQuery.loading, allTasksQuery.tasks, navigate, routeTaskId, selectedTask?.id, tasks, tasksLoading]);
 
   useEffect(() => {
     if (!currentProjectId || projectsLoading || !projectsLoaded) return;

@@ -7,6 +7,14 @@ Notable changes to Mindoist, grouped by date. This project doesn't cut versioned
 ### Security
 - The database tables can no longer be read or changed through Supabase's built-in Data API. Row-level security was off on every table, so anyone holding the project's public anon key could read accounts (password hashes, Google refresh tokens) and every user's tasks. Mindoist never used that API — the app talks only to its own API — so nothing in the app changes. A CI check now fails if a new table is added without row-level security.
 
+### Fixed
+- Opening a task no longer swaps the list behind it. On My Day, a project or a tag, clicking a task switched the page to All tasks — different order, no Today group — and it stayed there after closing the panel. The list now stays put, also after a reload; only a shared `/tasks/…` link opened on its own shows All tasks.
+- Opening, closing and completing tasks is smoother. Opening a task used to freeze the page for about 0.3 s (about 3 s on a slow phone or laptop), mostly from drawing the other list; it now takes about 0.06 s (0.3 s on the slow machine). Selecting or ticking one task no longer redraws every row, so completing a task in a long list no longer stutters.
+
+### Validation
+- Measured on a production build with 200 tasks, before → after, worst delay from the click to the next frame: open a task 336 → 56 ms (4× slower CPU: 2,912 → 296 ms); close 184 → 40 ms; open from a 200-task list 208 → 72 ms; completing a task left no long frames (4× slower CPU: 594 → 208 ms).
+- New e2e check: a task opened on My Day keeps My Day behind the panel, after a reload too, and Back returns to My Day. It fails on the previous code.
+
 ## 2026-11-16 (evening)
 
 ### Changed
